@@ -1,0 +1,78 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "TCSpMVlib",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "TCSpMVlib::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-TCSpMVlib-9ee96a84b9274b846ca6.json",
+					"name" : "TCSpMVlib",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "TCSpMVlib_analyze::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-TCSpMVlib_analyze-48baef29927cf5b9bcc3.json",
+					"name" : "TCSpMVlib_analyze",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "TCSpMVlib_perf::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-TCSpMVlib_perf-18ce8932577f6f54ec48.json",
+					"name" : "TCSpMVlib_perf",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/v-luhanwang/code/TCSpMV/build",
+		"source" : "/home/v-luhanwang/code/TCSpMV"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

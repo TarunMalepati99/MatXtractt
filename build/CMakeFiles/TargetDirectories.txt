@@ -1,0 +1,5 @@
+/home/v-luhanwang/code/TCSpMV/build/CMakeFiles/TCSpMVlib.dir
+/home/v-luhanwang/code/TCSpMV/build/CMakeFiles/TCSpMVlib_perf.dir
+/home/v-luhanwang/code/TCSpMV/build/CMakeFiles/TCSpMVlib_analyze.dir
+/home/v-luhanwang/code/TCSpMV/build/CMakeFiles/edit_cache.dir
+/home/v-luhanwang/code/TCSpMV/build/CMakeFiles/rebuild_cache.dir

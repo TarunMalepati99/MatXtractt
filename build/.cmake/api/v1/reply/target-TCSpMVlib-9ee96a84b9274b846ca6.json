@@ -1,0 +1,81 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "libTCSpMVlib.a"
+		}
+	],
+	"backtrace" : 2,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"cuda_add_library"
+		],
+		"files" : 
+		[
+			"/usr/share/cmake-3.22/Modules/FindCUDA.cmake",
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 32,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 1985,
+				"parent" : 1
+			}
+		]
+	},
+	"id" : "TCSpMVlib::@6890427a1f51a3e7e1df",
+	"name" : "TCSpMVlib",
+	"nameOnDisk" : "libTCSpMVlib.a",
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Object Files",
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				1
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 2,
+			"isGenerated" : true,
+			"path" : "build/CMakeFiles/TCSpMVlib.dir/src/spmv_kernel/TCSpMVlib_generated_necSpMV_fp64.cu.o",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 2,
+			"path" : "src/spmv_kernel/necSpMV_fp64.cu",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}
