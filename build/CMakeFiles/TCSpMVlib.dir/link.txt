@@ -1,2 +1,0 @@
-/usr/bin/ar qc libTCSpMVlib.a CMakeFiles/TCSpMVlib.dir/src/spmv_kernel/TCSpMVlib_generated_necSpMV_fp64.cu.o
-/usr/bin/ranlib libTCSpMVlib.a
