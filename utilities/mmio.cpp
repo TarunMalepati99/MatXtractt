@@ -946,12 +946,12 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
 }
 
 
-void exclusive_scan(MAT_PTR_TYPE *input, int length)
+void exclusive_scan(indT *input, int length)
 {
     if (length == 0 || length == 1)
         return;
 
-    MAT_PTR_TYPE old_val, new_val;
+    indT old_val, new_val;
 
     old_val = input[0];
     input[0] = 0;
@@ -1058,7 +1058,7 @@ int mmio_info(int *m, int *n, int *nnz, int *isSymmetric, char *filename)
 
     int *csrColIdx_tmp = (int *)malloc(nnz_mtx_report * sizeof(int));
 
-    MAT_VAL_TYPE *csrVal_tmp    = (MAT_VAL_TYPE *)malloc(nnz_mtx_report * sizeof(MAT_VAL_TYPE));
+    valT *csrVal_tmp    = (valT *)malloc(nnz_mtx_report * sizeof(valT));
 
 
 
@@ -1224,7 +1224,7 @@ int mmio_info(int *m, int *n, int *nnz, int *isSymmetric, char *filename)
 
 // read matrix infomation from mtx file
 
-int mmio_data(int *csrRowPtr, int *csrColIdx, MAT_VAL_TYPE *csrVal, char *filename)
+int mmio_data(int *csrRowPtr, int *csrColIdx, valT *csrVal, char *filename)
 
 {
 
@@ -1316,7 +1316,7 @@ int mmio_data(int *csrRowPtr, int *csrColIdx, MAT_VAL_TYPE *csrVal, char *filena
 
     int *csrColIdx_tmp = (int *)malloc(nnz_mtx_report * sizeof(int));
 
-    MAT_VAL_TYPE *csrVal_tmp    = (MAT_VAL_TYPE *)malloc(nnz_mtx_report * sizeof(MAT_VAL_TYPE));
+    valT *csrVal_tmp    = (valT *)malloc(nnz_mtx_report * sizeof(valT));
 
 
 
@@ -1544,18 +1544,18 @@ int mmio_data(int *csrRowPtr, int *csrColIdx, MAT_VAL_TYPE *csrVal, char *filena
 
 }
 // read matrix infomation from mtx file
-int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric, 
-                  MAT_PTR_TYPE **csrRowPtr, MAT_PTR_TYPE **csrColIdx, MAT_VAL_TYPE **csrVal, 
+int mmio_allinone(int *m, int *n, indT *nnz, int *isSymmetric, 
+                  indT **csrRowPtr, indT **csrColIdx, valT **csrVal, 
                   char *filename)
 {
     int m_tmp, n_tmp;
-    MAT_PTR_TYPE nnz_tmp;
+    indT nnz_tmp;
 
     int ret_code;
     MM_typecode matcode;
     FILE *f;
 
-    MAT_PTR_TYPE nnz_mtx_report;
+    indT nnz_mtx_report;
     int isInteger = 0, isReal = 0, isPattern = 0, isSymmetric_tmp = 0, isComplex = 0;
 
     // load matrix
@@ -1588,18 +1588,18 @@ int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric,
         //printf("input matrix is symmetric = false\n");
     }
 
-    MAT_PTR_TYPE *csrRowPtr_counter = (MAT_PTR_TYPE *)malloc((m_tmp+1) * sizeof(MAT_PTR_TYPE));
-    memset(csrRowPtr_counter, 0, (m_tmp+1) * sizeof(MAT_PTR_TYPE));
+    indT *csrRowPtr_counter = (indT *)malloc((m_tmp+1) * sizeof(indT));
+    memset(csrRowPtr_counter, 0, (m_tmp+1) * sizeof(indT));
 
     int *csrRowIdx_tmp = (int *)malloc(nnz_mtx_report * sizeof(int));
     int *csrColIdx_tmp = (int *)malloc(nnz_mtx_report * sizeof(int));
-    MAT_VAL_TYPE *csrVal_tmp    = (MAT_VAL_TYPE *)malloc(nnz_mtx_report * sizeof(MAT_VAL_TYPE));
+    valT *csrVal_tmp    = (valT *)malloc(nnz_mtx_report * sizeof(valT));
 
     /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
     /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
     /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
 
-    for (MAT_PTR_TYPE i = 0; i < nnz_mtx_report; i++)
+    for (indT i = 0; i < nnz_mtx_report; i++)
     {
         int idxi, idxj;
         double fval, fval_im;
@@ -1640,7 +1640,7 @@ int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric,
 
     if (isSymmetric_tmp)
     {
-        for (MAT_PTR_TYPE i = 0; i < nnz_mtx_report; i++)
+        for (indT i = 0; i < nnz_mtx_report; i++)
         {
             if (csrRowIdx_tmp[i] != csrColIdx_tmp[i])
                 csrRowPtr_counter[csrColIdx_tmp[i]]++;
@@ -1650,21 +1650,21 @@ int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric,
     // exclusive scan for csrRowPtr_counter
     exclusive_scan(csrRowPtr_counter, m_tmp+1);
 
-    MAT_PTR_TYPE *csrRowPtr_alias = (MAT_PTR_TYPE *)malloc((m_tmp+1) * sizeof(MAT_PTR_TYPE));
+    indT *csrRowPtr_alias = (indT *)malloc((m_tmp+1) * sizeof(indT));
     nnz_tmp = csrRowPtr_counter[m_tmp];
     int *csrColIdx_alias = (int *)malloc(nnz_tmp * sizeof(int));
-    MAT_VAL_TYPE *csrVal_alias    = (MAT_VAL_TYPE *)malloc(nnz_tmp * sizeof(MAT_VAL_TYPE));
+    valT *csrVal_alias    = (valT *)malloc(nnz_tmp * sizeof(valT));
 
-    memcpy(csrRowPtr_alias, csrRowPtr_counter, (m_tmp+1) * sizeof(MAT_PTR_TYPE));
-    memset(csrRowPtr_counter, 0, (m_tmp+1) * sizeof(MAT_PTR_TYPE));
+    memcpy(csrRowPtr_alias, csrRowPtr_counter, (m_tmp+1) * sizeof(indT));
+    memset(csrRowPtr_counter, 0, (m_tmp+1) * sizeof(indT));
 
     if (isSymmetric_tmp)
     {
-        for (MAT_PTR_TYPE i = 0; i < nnz_mtx_report; i++)
+        for (indT i = 0; i < nnz_mtx_report; i++)
         {
             if (csrRowIdx_tmp[i] != csrColIdx_tmp[i])
             {
-                MAT_PTR_TYPE offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
+                indT offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
                 csrColIdx_alias[offset] = csrColIdx_tmp[i];
                 csrVal_alias[offset] = csrVal_tmp[i];
                 csrRowPtr_counter[csrRowIdx_tmp[i]]++;
@@ -1676,7 +1676,7 @@ int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric,
             }
             else
             {
-                MAT_PTR_TYPE offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
+                indT offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
                 csrColIdx_alias[offset] = csrColIdx_tmp[i];
                 csrVal_alias[offset] = csrVal_tmp[i];
                 csrRowPtr_counter[csrRowIdx_tmp[i]]++;
@@ -1685,9 +1685,9 @@ int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric,
     }
     else
     {
-        for (MAT_PTR_TYPE i = 0; i < nnz_mtx_report; i++)
+        for (indT i = 0; i < nnz_mtx_report; i++)
         {            
-            MAT_PTR_TYPE offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
+            indT offset = csrRowPtr_alias[csrRowIdx_tmp[i]] + csrRowPtr_counter[csrRowIdx_tmp[i]];
             csrColIdx_alias[offset] = csrColIdx_tmp[i];
             csrVal_alias[offset] = csrVal_tmp[i];
             csrRowPtr_counter[csrRowIdx_tmp[i]]++;

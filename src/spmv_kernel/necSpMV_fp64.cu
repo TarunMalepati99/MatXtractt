@@ -312,8 +312,8 @@ __global__ void necspmv_kernel(T *d_val,
   */
 }
 
-void necspmv(char *filename, MAT_VAL_TYPE *csrVal, MAT_PTR_TYPE *csrRowPtr, int *csrColInd,
-             MAT_VAL_TYPE *X_val, MAT_VAL_TYPE *Y_val, int rowA, int colA, MAT_PTR_TYPE nnzA,
+void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, int *csrColInd,
+             valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA,
              double *necTime, double *necPre)
 {
   struct timeval t1;
@@ -335,7 +335,7 @@ void necspmv(char *filename, MAT_VAL_TYPE *csrVal, MAT_PTR_TYPE *csrRowPtr, int 
   cudaMemcpy(d_ptr, csrRowPtr, sizeof(perfSpB_index) * (rowA + 1), cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecX_csr, X_val, sizeof(double) * colA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecY_csr, Y_val, sizeof(double) * rowA, cudaMemcpyHostToDevice);
-  // cudaMemset(d_vecY_csr, 0.0, sizeof(MAT_VAL_TYPE) * rowA);
+  // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
 
   const int productNnzPerThread = 4;
   const int THREADS_PER_BLOCK = 128;
@@ -384,7 +384,7 @@ void necspmv(char *filename, MAT_VAL_TYPE *csrVal, MAT_PTR_TYPE *csrRowPtr, int 
 
   // printf("\nrowA = %d, row_long = %d, row_block = %d, row_short1 = %d, common13 = %d, row_short_3 = %d, row_short_4 = %d, row_short_2 = %d\n", rowA, row_long, row_block, short_row_1, common_13, short_row_3, short_row_4, short_row_2);
 
-  cudaMemcpy(Y_val, d_vecY_csr, sizeof(MAT_VAL_TYPE) * rowA, cudaMemcpyDeviceToHost);
+  cudaMemcpy(Y_val, d_vecY_csr, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
   cudaFree(d_vecY_csr);
   cudaFree(d_vecX_csr);
   cudaFree(d_val);

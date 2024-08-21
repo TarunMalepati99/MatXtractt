@@ -2,7 +2,7 @@
 #include "mmio.h"
 
 //-------------------------------------------------------------------------------
-int resCompare(MAT_VAL_TYPE *cusp_val, MAT_VAL_TYPE *cuda_val, int length)
+int resCompare(valT *cusp_val, valT *cuda_val, int length)
 {
     for (int i = 0; i < length; i++)
     {
@@ -16,28 +16,28 @@ int resCompare(MAT_VAL_TYPE *cusp_val, MAT_VAL_TYPE *cuda_val, int length)
     return 0;
 }
 
-void cusparse_spmv_all(MAT_VAL_TYPE *cu_ValA, MAT_PTR_TYPE *cu_RowPtrA, int *cu_ColIdxA,
-                       MAT_VAL_TYPE *cu_ValX, MAT_VAL_TYPE *cu_ValY, int rowA, int colA, MAT_PTR_TYPE nnzA,
+void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
+                       valT *cu_ValX, valT *cu_ValY, int rowA, int colA, indT nnzA,
                        long long int data_origin1, long long int data_origin2, double *cu_time, double *cu_gflops, double *cu_bandwidth1, double *cu_bandwidth2, double *cu_pre)
 {
     struct timeval t1, t2;
 
-    MAT_VAL_TYPE *dA_val, *dX, *dY;
+    valT *dA_val, *dX, *dY;
     int *dA_cid;
-    MAT_PTR_TYPE *dA_rpt;
-    MAT_VAL_TYPE alpha = 1.0, beta = 0.0;
+    indT *dA_rpt;
+    valT alpha = 1.0, beta = 0.0;
 
-    cudaMalloc((void **)&dA_val, sizeof(MAT_VAL_TYPE) * nnzA);
+    cudaMalloc((void **)&dA_val, sizeof(valT) * nnzA);
     cudaMalloc((void **)&dA_cid, sizeof(int) * nnzA);
-    cudaMalloc((void **)&dA_rpt, sizeof(MAT_PTR_TYPE) * (rowA + 1));
-    cudaMalloc((void **)&dX, sizeof(MAT_VAL_TYPE) * colA);
-    cudaMalloc((void **)&dY, sizeof(MAT_VAL_TYPE) * rowA);
+    cudaMalloc((void **)&dA_rpt, sizeof(indT) * (rowA + 1));
+    cudaMalloc((void **)&dX, sizeof(valT) * colA);
+    cudaMalloc((void **)&dY, sizeof(valT) * rowA);
 
-    cudaMemcpy(dA_val, cu_ValA, sizeof(MAT_VAL_TYPE) * nnzA, cudaMemcpyHostToDevice);
+    cudaMemcpy(dA_val, cu_ValA, sizeof(valT) * nnzA, cudaMemcpyHostToDevice);
     cudaMemcpy(dA_cid, cu_ColIdxA, sizeof(int) * nnzA, cudaMemcpyHostToDevice);
-    cudaMemcpy(dA_rpt, cu_RowPtrA, sizeof(MAT_PTR_TYPE) * (rowA + 1), cudaMemcpyHostToDevice);
-    cudaMemcpy(dX, cu_ValX, sizeof(MAT_VAL_TYPE) * colA, cudaMemcpyHostToDevice);
-    cudaMemset(dY, 0.0, sizeof(MAT_VAL_TYPE) * rowA);
+    cudaMemcpy(dA_rpt, cu_RowPtrA, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
+    cudaMemcpy(dX, cu_ValX, sizeof(valT) * colA, cudaMemcpyHostToDevice);
+    cudaMemset(dY, 0.0, sizeof(valT) * rowA);
 
     cusparseHandle_t handle = NULL;
     cusparseSpMatDescr_t matA;
@@ -90,7 +90,7 @@ void cusparse_spmv_all(MAT_VAL_TYPE *cu_ValA, MAT_PTR_TYPE *cu_RowPtrA, int *cu_
     cusparseDestroyDnVec(vecY);
     cusparseDestroy(handle);
 
-    cudaMemcpy(cu_ValY, dY, sizeof(MAT_VAL_TYPE) * rowA, cudaMemcpyDeviceToHost);
+    cudaMemcpy(cu_ValY, dY, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
 
     cudaFree(dA_val);
     cudaFree(dA_cid);
@@ -109,11 +109,11 @@ int main(int argc, char **argv)
 
     // struct timeval t1, t2;
     int rowA, colA;
-    MAT_PTR_TYPE nnzA;
+    indT nnzA;
     int isSymmetricA;
-    MAT_VAL_TYPE *csrVal;
+    valT *csrVal;
     int *csrColInd;
-    MAT_PTR_TYPE *csrRowPtr;
+    indT *csrRowPtr;
 
     char *filename;
     filename = argv[1];
@@ -121,18 +121,18 @@ int main(int argc, char **argv)
     printf("\n===%s===\n\n", filename);
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
-    MAT_VAL_TYPE *X_val = (MAT_VAL_TYPE *)malloc(sizeof(MAT_VAL_TYPE) * colA);
+    valT *X_val = (valT *)malloc(sizeof(valT) * colA);
     initVec(X_val, colA);
     initVec(csrVal, nnzA);
 
     printf("INIT DONE\n");
 
-    MAT_VAL_TYPE *cuY_val = (MAT_VAL_TYPE *)malloc(sizeof(MAT_VAL_TYPE) * rowA);
-    MAT_VAL_TYPE *Y_val = (MAT_VAL_TYPE *)malloc(sizeof(MAT_VAL_TYPE) * rowA);
+    valT *cuY_val = (valT *)malloc(sizeof(valT) * rowA);
+    valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
     double cu_time = 0, cu_gflops = 0, cu_bandwidth1 = 0, cu_bandwidth2 = 0, cu_pre = 0;
-    long long int data_origin1 = (nnzA + colA + rowA) * sizeof(MAT_VAL_TYPE) + nnzA * sizeof(int) + (rowA + 1) * sizeof(MAT_PTR_TYPE);
-    long long int data_origin2 = (nnzA + nnzA + rowA) * sizeof(MAT_VAL_TYPE) + nnzA * sizeof(int) + (rowA + 1) * sizeof(MAT_PTR_TYPE);
+    long long int data_origin1 = (nnzA + colA + rowA) * sizeof(valT) + nnzA * sizeof(int) + (rowA + 1) * sizeof(indT);
+    long long int data_origin2 = (nnzA + nnzA + rowA) * sizeof(valT) + nnzA * sizeof(int) + (rowA + 1) * sizeof(indT);
 
     cusparse_spmv_all(csrVal, csrRowPtr, csrColInd, X_val, cuY_val, rowA, colA, nnzA, data_origin1, data_origin2, &cu_time, &cu_gflops, &cu_bandwidth1, &cu_bandwidth2, &cu_pre);
 

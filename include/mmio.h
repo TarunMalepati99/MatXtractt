@@ -162,7 +162,7 @@ int mm_read_unsymmetric_sparse(const char *fname, int *M_, int *N_, int *nz_,
 #endif
 
 
-void exclusive_scan(MAT_PTR_TYPE *input, int length);
+void exclusive_scan(indT *input, int length);
 
 
 // read matrix infomation from mtx file
@@ -171,9 +171,9 @@ int mmio_info(int *m, int *n, int *nnz, int *isSymmetric, char *filename);
 
 // read matrix infomation from mtx file
 
-int mmio_data(int *csrRowPtr, int *csrColIdx, MAT_VAL_TYPE *csrVal, char *filename);
+int mmio_data(int *csrRowPtr, int *csrColIdx, valT *csrVal, char *filename);
 
 // read matrix infomation from mtx file
-int mmio_allinone(int *m, int *n, MAT_PTR_TYPE *nnz, int *isSymmetric, 
-                  MAT_PTR_TYPE **csrRowPtr, int **csrColIdx, MAT_VAL_TYPE **csrVal, 
+int mmio_allinone(int *m, int *n, indT *nnz, int *isSymmetric, 
+                  indT **csrRowPtr, int **csrColIdx, valT **csrVal, 
                   char *filename);

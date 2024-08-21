@@ -1,6 +1,7 @@
 .vscode
 make.sh
 *.mtx
+*.json
 !data/graph/pdf_test/pdf_test.mtx
 *.tar.gz
 *.zip

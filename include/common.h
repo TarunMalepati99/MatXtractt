@@ -22,9 +22,9 @@
 
 
 // #ifdef f64
-#define MAT_VAL_TYPE double
+#define valT double
 // #else
-// #define MAT_VAL_TYPE half
+// #define valT half
 // #endif
 
 
@@ -35,7 +35,7 @@
 #define MMA_N 8
 #define MMA_K 4
 
-#define MAT_PTR_TYPE int
+#define indT int
 
 #define NEW_CID_TYPE int
 
@@ -154,7 +154,7 @@ inline void quick_sort_key_idx(int *key, int *len, int length)
     quick_sort_key_idx(&key[small_length + 1], &len[small_length + 1], length - small_length - 1);
 }
 
-inline void initVec(MAT_VAL_TYPE *vec, int length)
+inline void initVec(valT *vec, int length)
 {
     for (int i = 0; i < length; ++ i)
     {
@@ -164,7 +164,7 @@ inline void initVec(MAT_VAL_TYPE *vec, int length)
 }
 
 #ifdef f64
-__device__ __forceinline__ void mma_m8n8k4(MAT_VAL_TYPE *acc, MAT_VAL_TYPE &frag_a, MAT_VAL_TYPE &frag_b)
+__device__ __forceinline__ void mma_m8n8k4(valT *acc, valT &frag_a, valT &frag_b)
 {
     asm volatile(
         "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64"

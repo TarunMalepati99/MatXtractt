@@ -2,7 +2,7 @@
 
 # 设置mtx文件目录路径
 mtx_dir="../../../data/SF-graph/GAP/mtx"
-spmv_executable="../build/TCSpMVlib_analyze"
+analyze_exec="../build/TCSpMVlib_analyze"
 log_file="result/GAP_1_10.log"
 
 
@@ -20,7 +20,7 @@ for graph_dir in "$mtx_dir"/*; do
              echo "Running test case for $graph_name with $mtx_file"
             
             # 执行命令并捕获输出
-            output=$("$spmv_executable" "$mtx_file")
+            output=$("$analyze_exec" "$mtx_file")
             
             # 提取'dense ratio = '后的数字
             dense_ratio=$(echo "$output" | grep -oP 'dense ratio = \K[0-9.]+')

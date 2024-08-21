@@ -2,7 +2,7 @@
 
 # 设置mtx文件目录路径
 mtx_dir="../../../data/SF-graph/SNAP/mtx"
-spmv_executable="../build/TCSpMVlib_perf"
+spmv_exec="../build/TCSpMVlib_perf"
 
 # 创建或清空 perf.csv 文件，并添加标题行
 echo "graph_name,our_perf,cusparse_perf,our_pre,cusparse_pre" > perf.csv
@@ -21,7 +21,7 @@ for graph_dir in "$mtx_dir"/*; do
             echo "Running test case for $graph_name with $mtx_file"
             
             # 执行命令并捕获输出
-            output=$("$spmv_executable" "$mtx_file")
+            output=$("$spmv_exec" "$mtx_file")
             echo "$output"
             
             # 从输出中提取性能数据
