@@ -2,13 +2,13 @@
 // cusparseCsr2cscEx2
 #include "csr2csc.h"
 //TODO: csc格式需要在这里边分配内存，二级指针，参考mmio_all
-void csr2csc(valT *csrVal, indT *csrRowPtr, int *csrColInd, int rowA, int colA, indT nnzA,
+void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA, indT nnzA,
              valT **cscVal, indT **cscColPtr, indT **cscRowInd)
 {
     struct timeval t1, t2;
 
     valT *d_csrVal;
-    int *d_csrColInd;
+    indT *d_csrColInd;
     indT *d_csrRowPtr;
 
     valT *d_cscVal;
@@ -22,7 +22,7 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, int *csrColInd, int rowA, int colA, 
     valT alpha = 1.0, beta = 0.0;
 
     cudaMalloc((void **)&d_csrVal, sizeof(valT) * nnzA);
-    cudaMalloc((void **)&d_csrColInd, sizeof(int) * nnzA);
+    cudaMalloc((void **)&d_csrColInd, sizeof(indT) * nnzA);
     cudaMalloc((void **)&d_csrRowPtr, sizeof(indT) * (rowA + 1));
 
 
@@ -32,7 +32,7 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, int *csrColInd, int rowA, int colA, 
 
 
     cudaMemcpy(d_csrVal, csrVal, sizeof(valT) * nnzA, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_csrColInd, csrColInd, sizeof(int) * nnzA, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_csrColInd, csrColInd, sizeof(indT) * nnzA, cudaMemcpyHostToDevice);
     cudaMemcpy(d_csrRowPtr, csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
 
     cudaMemset(d_cscVal, 0, sizeof(valT) * nnzA);

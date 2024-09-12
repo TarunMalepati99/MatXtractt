@@ -7,5 +7,5 @@
 */
 #include "common.h"
 
-void csr2csc(valT *csrVal, indT *csrRowPtr, int *csrColInd, int rowA, int colA, indT nnzA,
+void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA, indT nnzA,
              valT **cscVal, indT **cscColPtr, indT **cscRowInd);

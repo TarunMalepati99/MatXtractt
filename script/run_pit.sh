@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # 设置mtx文件目录路径
-mtx_dir="../../../data/SF-graph/LAW/mtx"
+mtx_dir="../../../data/SF-graph/SNAP/mtx"
 analyze_exec="../build/TCSpMVlib_analyze"
-log_file="result/LAW_1_100.log"
+log_file="result/SNAP_cols.log"
 
 
 # 遍历所有子文件夹
@@ -23,8 +23,8 @@ for graph_dir in "$mtx_dir"/*; do
             output=$("$analyze_exec" "$mtx_file")
             
             # 提取'dense ratio = '后的数字
-            dense_ratio=$(echo "$output" | grep -oP 'dense ratio = \K[0-9.]+')
-            
+            #dense_ratio=$(echo "$output" | grep -oP 'cols = \K[0-9.]+')
+            dense_ratio=$(echo "$output" | grep -oP 'cols = \K[0-9.]+' | bc)
             # 将graph_name和dense_ratio写入log文件
             if [[ -n "$dense_ratio" ]]; then
                 echo "$graph_name, $dense_ratio" >> "$log_file"

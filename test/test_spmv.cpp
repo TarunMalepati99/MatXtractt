@@ -1,14 +1,13 @@
 #include "TCSpMV.h"
 #include "mmio.h"
-
 //-------------------------------------------------------------------------------
-int resCompare(valT *cusp_val, valT *cuda_val, int length)
+int resCompare(valT *our_val, valT *cuda_val, int length)
 {
     for (int i = 0; i < length; i++)
     {
-        if (fabs(cusp_val[i] - cuda_val[i]) > 1e-5)
+        if (fabs(our_val[i] - cuda_val[i]) > 1e-5)
         {
-            printf("error in (%d), cusp(%4.2f), cuda(%4.2f),please check your code!\n", i, cusp_val[i], cuda_val[i]);
+            printf("error in (%d), cusp(%4.2f), cuda(%4.2f),please check your code!\n", i, our_val[i], cuda_val[i]);
             return -1;
         }
     }
@@ -112,7 +111,7 @@ int main(int argc, char **argv)
     indT nnzA;
     int isSymmetricA;
     valT *csrVal;
-    int *csrColInd;
+    indT *csrColInd;
     indT *csrRowPtr;
 
     char *filename;
@@ -138,6 +137,7 @@ int main(int argc, char **argv)
 
     double necTime = 0, necPre = 0;
     necspmv(filename, csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA, &necTime, &necPre);
+    // spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
 
     int iter = (int)((necPre - cu_pre) / (cu_time - necTime));
 
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
     // fclose(fout);
 
     /* verify the result with cusparse */
-    // int result = resCompare(cuY_val, Y_val, rowA);
+    int result = resCompare(cuY_val, Y_val, rowA);
 
     free(X_val);
     free(Y_val);

@@ -1,6 +1,6 @@
 #include "common.h"
 
-typedef int perfSpB_index;
+// typedef int indT;
 
 template <typename T>
 __host__ __device__ __forceinline__ T divup(T a, T b)
@@ -27,7 +27,7 @@ __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr,
       startRowPerBlock[blocka] = global_thread_id;
 }
 
-template <typename I, typename T, perfSpB_index NNZ_PER_BLOCK, perfSpB_index THREADS_PER_BLOCK>
+template <typename I, typename T, indT NNZ_PER_BLOCK, indT THREADS_PER_BLOCK>
 __device__ __forceinline__ void lbNEC_reduce_oneRow_in_thread(const int tid_in_block, const int block_id,
                                                               const I reduceStartRowId, const I reduceEndRowId,
                                                               const I *__restrict__ row_ptr,
@@ -38,7 +38,7 @@ __device__ __forceinline__ void lbNEC_reduce_oneRow_in_thread(const int tid_in_b
   for (; reduce_row_id < reduceEndRowId; reduce_row_id += THREADS_PER_BLOCK)
   {
     T sum = 0;
-    // const I reduce_start_idx = max((perfSpB_index)0, row_ptr[reduce_row_id] - nnz_id_before);
+    // const I reduce_start_idx = max((indT)0, row_ptr[reduce_row_id] - nnz_id_before);
     // const I reduce_end_idx = min(NNZ_PER_BLOCK, row_ptr[reduce_row_id + 1] - nnz_id_before);
     const I reduce_start_idx = (row_ptr[reduce_row_id] - nnz_id_before) < 0 ? 0 : (row_ptr[reduce_row_id] - nnz_id_before);
     const I reduce_end_idx = (row_ptr[reduce_row_id + 1] - nnz_id_before) > NNZ_PER_BLOCK ? NNZ_PER_BLOCK : (row_ptr[reduce_row_id + 1] - nnz_id_before);
@@ -50,7 +50,7 @@ __device__ __forceinline__ void lbNEC_reduce_oneRow_in_thread(const int tid_in_b
   }
 }
 
-template <typename I, typename T, perfSpB_index NNZ_PER_BLOCK, perfSpB_index THREADS_PER_BLOCK>
+template <typename I, typename T, indT NNZ_PER_BLOCK, indT THREADS_PER_BLOCK>
 __device__ __forceinline__ void lbNEC_reduce_oneRow_in_block(const int tid_in_block, const int block_id,
                                                              const I reduceStartRowId, const I reduceEndRowId,
                                                              const I *__restrict__ row_ptr,
@@ -59,7 +59,7 @@ __device__ __forceinline__ void lbNEC_reduce_oneRow_in_block(const int tid_in_bl
   __shared__ volatile T LDS[THREADS_PER_BLOCK];
 
   T sum = 0;
-  const I reduce_start_idx = max((perfSpB_index)0, row_ptr[reduceStartRowId] - block_id * NNZ_PER_BLOCK);
+  const I reduce_start_idx = max((indT)0, row_ptr[reduceStartRowId] - block_id * NNZ_PER_BLOCK);
   const I reduce_end_idx = min(NNZ_PER_BLOCK, row_ptr[reduceStartRowId + 1] - block_id * NNZ_PER_BLOCK);
 
   for (int j = reduce_start_idx + threadIdx.x; j < reduce_end_idx; j += blockDim.x)
@@ -112,8 +112,8 @@ lbNEC_reduce_oneRow_in_vector(const int n_reduce_rows_num, const int tid_in_bloc
   I reduce_row_id = reduceStartRowId + vec_id;
   for (; reduce_row_id < reduceEndRowId; reduce_row_id += vec_num)
   {
-    const I reduce_start_idx = max((perfSpB_index)0, row_ptr[reduce_row_id] - block_id * NNZ_PER_BLOCK);
-    const I reduce_end_idx = min((perfSpB_index)NNZ_PER_BLOCK, row_ptr[reduce_row_id + 1] - block_id * NNZ_PER_BLOCK);
+    const I reduce_start_idx = max((indT)0, row_ptr[reduce_row_id] - block_id * NNZ_PER_BLOCK);
+    const I reduce_end_idx = min((indT)NNZ_PER_BLOCK, row_ptr[reduce_row_id + 1] - block_id * NNZ_PER_BLOCK);
     // reduce LDS via vectors.
     T sum = 0;
     for (int i = reduce_start_idx + tid_in_vec; i < reduce_end_idx; i += vec_size)
@@ -145,8 +145,8 @@ lbNEC_reduce_oneRow_in_vector_L(const int n_reduce_rows_num, const int tid_in_bl
   I reduce_row_id = reduceStartRowId + vec_id;
   for (; reduce_row_id < reduceEndRowId; reduce_row_id += vec_num)
   {
-    const I reduce_start_idx = max((perfSpB_index)0, row_ptr[reduce_row_id] - block_id * NNZ_PER_BLOCK);
-    const I reduce_end_idx = min((perfSpB_index)NNZ_PER_BLOCK, row_ptr[reduce_row_id + 1] - block_id * NNZ_PER_BLOCK);
+    const I reduce_start_idx = max((indT)0, row_ptr[reduce_row_id] - block_id * NNZ_PER_BLOCK);
+    const I reduce_end_idx = min((indT)NNZ_PER_BLOCK, row_ptr[reduce_row_id + 1] - block_id * NNZ_PER_BLOCK);
     // reduce LDS via vectors.
     T sum = 0;
     for (int i = reduce_start_idx + tid_in_vec; i < reduce_end_idx; i += vec_size)
@@ -166,11 +166,11 @@ lbNEC_reduce_oneRow_in_vector_L(const int n_reduce_rows_num, const int tid_in_bl
   }
 }
 
-template <perfSpB_index productNnzPerThread, perfSpB_index THREADS_PER_BLOCK, typename I, typename T>
+template <indT productNnzPerThread, indT THREADS_PER_BLOCK, typename I, typename T>
 __global__ void necspmv_kernel(T *d_val,
-                               perfSpB_index *d_ptr,
-                               perfSpB_index *d_cols,
-                               perfSpB_index rowA,
+                               indT *d_ptr,
+                               indT *d_cols,
+                               indT rowA,
                                T *d_vector,
                                T *d_out,
                                I *__restrict__ startRowPerBlock)
@@ -312,7 +312,7 @@ __global__ void necspmv_kernel(T *d_val,
   */
 }
 
-void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, int *csrColInd,
+void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
              valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA,
              double *necTime, double *necPre)
 {
@@ -322,17 +322,17 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, int *csrColInd,
   struct timeval tpre2;
 
   double *d_vecY_csr, *d_vecX_csr, *d_val;
-  perfSpB_index *d_indices, *d_ptr;
+  indT *d_indices, *d_ptr;
 
   cudaMalloc(&d_vecY_csr, sizeof(double) * rowA);
   cudaMalloc(&d_vecX_csr, sizeof(double) * colA);
   cudaMalloc(&d_val, sizeof(double) * nnzA);
-  cudaMalloc(&d_indices, sizeof(perfSpB_index) * nnzA);
-  cudaMalloc(&d_ptr, sizeof(perfSpB_index) * (rowA + 1));
+  cudaMalloc(&d_indices, sizeof(indT) * nnzA);
+  cudaMalloc(&d_ptr, sizeof(indT) * (rowA + 1));
 
   cudaMemcpy(d_val, csrVal, sizeof(double) * nnzA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_indices, csrColInd, sizeof(perfSpB_index) * nnzA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_ptr, csrRowPtr, sizeof(perfSpB_index) * (rowA + 1), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_indices, csrColInd, sizeof(indT) * nnzA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecX_csr, X_val, sizeof(double) * colA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecY_csr, Y_val, sizeof(double) * rowA, cudaMemcpyHostToDevice);
   // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
@@ -342,16 +342,16 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, int *csrColInd,
 
   const int WORK_BLOCKS = nnzA / (productNnzPerThread * THREADS_PER_BLOCK) + ((nnzA % (productNnzPerThread * THREADS_PER_BLOCK) == 0) ? 0 : 1);
 
-  const perfSpB_index startRowPerBlock_len = WORK_BLOCKS + 1;
+  const indT startRowPerBlock_len = WORK_BLOCKS + 1;
 
-  perfSpB_index *startRowPerBlock;
-  cudaMalloc((void **)&startRowPerBlock, sizeof(perfSpB_index) * startRowPerBlock_len);
-  cudaMemset(startRowPerBlock, 0, sizeof(perfSpB_index) * startRowPerBlock_len);
+  indT *startRowPerBlock;
+  cudaMalloc((void **)&startRowPerBlock, sizeof(indT) * startRowPerBlock_len);
+  cudaMemset(startRowPerBlock, 0, sizeof(indT) * startRowPerBlock_len);
   gettimeofday(&tpre1, NULL);
-  pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, perfSpB_index><<<divup<uint32_t>(rowA + 1, 256), 256>>>(d_ptr, rowA, startRowPerBlock);
+  pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, indT><<<divup<uint32_t>(rowA + 1, 256), 256>>>(d_ptr, rowA, startRowPerBlock);
 
   // int carveout = 0;
-  // cudaFuncSetAttribute(necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, perfSpB_index, double>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
+  // cudaFuncSetAttribute(necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
 
   gettimeofday(&tpre2, NULL);
   int warmup_time = 100;
@@ -359,13 +359,13 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, int *csrColInd,
 
   for (int i = 0; i < warmup_time; ++i)
   {
-    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, perfSpB_index, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
-    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, perfSpB_index, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
   }
   cudaDeviceSynchronize();
 

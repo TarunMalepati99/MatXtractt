@@ -45,7 +45,8 @@ target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})
 file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_spmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
-file(GLOB CUDA_ANALYZE_FILES "${CUDA_TEST_PATH}/analyze.cpp")
+#file(GLOB CUDA_ANALYZE_FILES "${CUDA_TEST_PATH}/analyze.cpp")
+file(GLOB CUDA_ANALYZE_FILES "${CUDA_TEST_PATH}/pit2axes.cpp")
 
 
 if(CUDA_TEST_FILES)

@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # 设置mtx文件目录路径
-mtx_dir="../../../data/SF-graph/LAW/mtx"
+mtx_dir="../../../data/SF-graph/SNAP/mtx"
 analyze_exec="../build/TCSpMVlib_analyze"
-log_file="result/LAW_1_100.log"
-
+log_file="result/SNAP2222.log"
 
 # 遍历所有子文件夹
 for graph_dir in "$mtx_dir"/*; do
@@ -22,14 +21,16 @@ for graph_dir in "$mtx_dir"/*; do
             # 执行命令并捕获输出
             output=$("$analyze_exec" "$mtx_file")
             
-            # 提取'dense ratio = '后的数字
-            dense_ratio=$(echo "$output" | grep -oP 'dense ratio = \K[0-9.]+')
+            # 提取'accc1 = '后的数字
+            accc1=$(echo "$output" | grep -oP 'accc1 = \K[0-9.]+')
+            # 提取'ci = '后的数字
+            ci=$(echo "$output" | grep -oP 'ci = \K[0-9.]+')
             
-            # 将graph_name和dense_ratio写入log文件
-            if [[ -n "$dense_ratio" ]]; then
-                echo "$graph_name, $dense_ratio" >> "$log_file"
+            # 将graph_name、accc1和ci写入log文件
+            if [[ -n "$accc1" && -n "$ci" ]]; then
+                echo "$graph_name, $accc1, $ci" >> "$log_file"
             else
-                echo "$graph_name, N/A" >> "$log_file"
+                echo "$graph_name, N/A, N/A" >> "$log_file"
             fi
         else
             echo "No $graph_name.mtx file found in $graph_dir"

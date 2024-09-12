@@ -158,8 +158,7 @@ inline void initVec(valT *vec, int length)
 {
     for (int i = 0; i < length; ++ i)
     {
-        // vec[i] = rand() % 20 * 0.1;
-        vec[i] = 1;
+        vec[i] = rand() % 20 * 0.1;
     }
 }
 
