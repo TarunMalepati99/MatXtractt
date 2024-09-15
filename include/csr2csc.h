@@ -9,3 +9,6 @@
 
 void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA, indT nnzA,
              valT **cscVal, indT **cscColPtr, indT **cscRowInd);
+
+void csc2csr(valT *cscVal, indT *cscColPtr, indT *cscRowInd, int rowA, int colA, indT nnzA,
+             valT **csrVal, indT **csrRowPtr, indT **csrColInd);

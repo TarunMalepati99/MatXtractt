@@ -5,8 +5,6 @@
 void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA, indT nnzA,
              valT **cscVal, indT **cscColPtr, indT **cscRowInd)
 {
-    struct timeval t1, t2;
-
     valT *d_csrVal;
     indT *d_csrColInd;
     indT *d_csrRowPtr;
@@ -45,8 +43,6 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA,
     void *dBuffer = NULL;
     size_t bufferSize = 0;
 
-    gettimeofday(&t1, NULL);
-
     cusparseCreate(&handle);
     // cusparseCreateCsr(&matA, rowA, colA, nnzA, d_csrRowPtr, d_csrColInd, d_csrVal,
     //                   CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
@@ -67,7 +63,7 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA,
                                   d_cscColPtr,
                                   d_cscRowInd,
                                   CUDA_R_64F,
-                                  CUSPARSE_ACTION_SYMBOLIC,
+                                  CUSPARSE_ACTION_NUMERIC,
                                   CUSPARSE_INDEX_BASE_ZERO,
                                   CUSPARSE_CSR2CSC_ALG_DEFAULT,
                                   &bufferSize);
@@ -84,7 +80,7 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA,
                        d_cscColPtr,
                        d_cscRowInd,
                        CUDA_R_64F,
-                       CUSPARSE_ACTION_SYMBOLIC,
+                       CUSPARSE_ACTION_NUMERIC,
                        CUSPARSE_INDEX_BASE_ZERO,
                        CUSPARSE_CSR2CSC_ALG_DEFAULT,
                        dBuffer);
@@ -116,3 +112,98 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA,
     cudaFree(d_cscColPtr);
     cudaFree(d_cscRowInd);
 }
+
+void csc2csr(valT *cscVal, indT *cscColPtr, indT *cscRowInd, int rowA, int colA, indT nnzA,
+             valT **csrVal, indT **csrRowPtr, indT **csrColInd)
+{
+    valT *d_csrVal;
+    indT *d_csrColInd;
+    indT *d_csrRowPtr;
+    valT *d_cscVal;
+    indT *d_cscColPtr;
+    indT *d_cscRowInd;
+
+    valT *csrVal_alias = (valT *)malloc(nnzA * sizeof(valT));
+    indT *csrRowPtr_alias = (indT *)malloc((rowA + 1) * sizeof(indT));
+    indT *csrColInd_alias = (indT *)malloc(nnzA * sizeof(indT));
+
+    valT alpha = 1.0, beta = 0.0;
+
+
+    cudaMalloc((void **)&d_cscVal, sizeof(valT) * nnzA);
+    cudaMalloc((void **)&d_cscColPtr, sizeof(indT) * (colA + 1));
+    cudaMalloc((void **)&d_cscRowInd, sizeof(indT) * nnzA);
+
+    cudaMalloc((void **)&d_csrVal, sizeof(valT) * nnzA);
+    cudaMalloc((void **)&d_csrColInd, sizeof(indT) * nnzA);
+    cudaMalloc((void **)&d_csrRowPtr, sizeof(indT) * (rowA + 1));
+
+
+    cudaMemcpy(d_cscVal, cscVal, sizeof(valT) * nnzA, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_cscRowInd, cscRowInd, sizeof(indT) * nnzA, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_cscColPtr, cscColPtr, sizeof(indT) * (colA + 1), cudaMemcpyHostToDevice);
+
+    cudaMemset(d_csrVal, 0, sizeof(valT) * nnzA);
+    cudaMemset(d_csrRowPtr, 0, sizeof(indT) * (rowA + 1));
+    cudaMemset(d_csrColInd, 0, sizeof(indT) * nnzA);
+
+    cusparseHandle_t handle = NULL;
+    void *dBuffer = NULL;
+    size_t bufferSize = 0;
+
+    cusparseCreate(&handle);
+
+    cusparseCsr2cscEx2_bufferSize(handle,
+                                  colA,
+                                  rowA,
+                                  nnzA,
+                                  d_cscVal,
+                                  d_cscColPtr,
+                                  d_cscRowInd,
+                                  d_csrVal,
+                                  d_csrRowPtr,
+                                  d_csrColInd,
+                                  CUDA_R_64F,
+                                  CUSPARSE_ACTION_NUMERIC,
+                                  CUSPARSE_INDEX_BASE_ZERO,
+                                  CUSPARSE_CSR2CSC_ALG_DEFAULT,
+                                  &bufferSize);
+    cudaMalloc(&dBuffer, bufferSize);
+
+    cusparseCsr2cscEx2(handle,
+                       colA,
+                       rowA,
+                       nnzA,
+                       d_cscVal,
+                       d_cscColPtr,
+                       d_cscRowInd,
+                       d_csrVal,
+                       d_csrRowPtr,
+                       d_csrColInd,
+                       CUDA_R_64F,
+                       CUSPARSE_ACTION_NUMERIC,
+                       CUSPARSE_INDEX_BASE_ZERO,
+                       CUSPARSE_CSR2CSC_ALG_DEFAULT,
+                       dBuffer);
+
+    cudaDeviceSynchronize();
+    
+    cusparseDestroy(handle);
+
+    cudaMemcpy(csrVal_alias, d_csrVal, sizeof(valT) * nnzA, cudaMemcpyDeviceToHost);
+    cudaMemcpy(csrRowPtr_alias, d_csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyDeviceToHost);
+    cudaMemcpy(csrColInd_alias, d_csrColInd, sizeof(indT) * nnzA, cudaMemcpyDeviceToHost);
+
+    *csrVal = csrVal_alias;
+    *csrRowPtr = csrRowPtr_alias;
+    *csrColInd = csrColInd_alias;
+
+    cudaFree(d_csrVal);
+    cudaFree(d_csrColInd);
+    cudaFree(d_csrRowPtr);
+    cudaFree(d_cscVal);
+    cudaFree(d_cscColPtr);
+    cudaFree(d_cscRowInd);
+}
+
+
