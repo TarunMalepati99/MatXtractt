@@ -1,5 +1,3 @@
-// TODO: CSR如何快速拆分为iCSR与rCSR。
-
 #include "mmio.h"
 #include "csr2csc.h"
 

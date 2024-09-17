@@ -1,7 +1,6 @@
 
 // cusparseCsr2cscEx2
 #include "csr2csc.h"
-//TODO: csc格式需要在这里边分配内存，二级指针，参考mmio_all
 void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA, indT nnzA,
              valT **cscVal, indT **cscColPtr, indT **cscRowInd)
 {
@@ -105,6 +104,7 @@ void csr2csc(valT *csrVal, indT *csrRowPtr, indT *csrColInd, int rowA, int colA,
     *cscColPtr = cscColPtr_alias;
     *cscRowInd = cscRowInd_alias;
 
+    cudaFree(dBuffer);
     cudaFree(d_csrVal);
     cudaFree(d_csrColInd);
     cudaFree(d_csrRowPtr);
@@ -198,6 +198,7 @@ void csc2csr(valT *cscVal, indT *cscColPtr, indT *cscRowInd, int rowA, int colA,
     *csrRowPtr = csrRowPtr_alias;
     *csrColInd = csrColInd_alias;
 
+    cudaFree(dBuffer);
     cudaFree(d_csrVal);
     cudaFree(d_csrColInd);
     cudaFree(d_csrRowPtr);

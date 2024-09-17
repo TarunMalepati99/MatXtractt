@@ -1,10 +1,8 @@
-// TODO: CSR如何快速拆分为iCSR与rCSR。
-
 #include "mmio.h"
 #include "csr2csc.h"
 
 // const float colProp = 0.82;
-const float rowProp = 0.8;
+const float rowProp = 0.6;
 const float colProp = 0.8;
 
 const int fragM = 8;
@@ -107,6 +105,25 @@ void spmv_fp64_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
     }
 }
 
+void spmv_fp64_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+                       valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order)
+{
+    valT t;
+    for (indT i = 0; i < rowA; i++)
+    {
+        t = 0.0f;
+        indT ptr_start = csrRowPtr[i];
+        indT n_one_line = csrRowPtr[i + 1] - ptr_start;
+        for (indT j = 0; j < n_one_line; j++)
+        {
+            indT v_idx = csrColInd[j + ptr_start];
+            t += csrVal[j + ptr_start] * X_val[v_idx];
+        }
+        Y_val[row_order[i]] += t;
+        // if(i == 0) printf("!!!!!!!  %d  %f\n", row_order[i], Y_val[row_order[i]]);
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -124,10 +141,6 @@ int main(int argc, char **argv)
     indT *cscColPtr;
     indT *cscRowInd;
 
-    // valT *csrVal_;
-    // indT *csrColInd_;
-    // indT *csrRowPtr_;
-
     char *filename;
     filename = argv[1];
     printf("\n===%s===\n\n", filename);
@@ -139,44 +152,6 @@ int main(int argc, char **argv)
 
     csr2csc(csrVal, csrRowPtr, csrColInd, rowA, colA, nnzA,
             &cscVal, &cscColPtr, &cscRowInd);
-    /*
-    // csc2csr(cscVal, cscColPtr, cscRowInd, colA, rowA, nnzA,
-    //         &csrVal_, &csrRowPtr_, &csrColInd_);
-
-    // valT *X_val = (valT *)malloc(sizeof(valT) * colA);
-    // initVec(X_val, colA);
-
-    // valT *cscY_val = (valT *)malloc(sizeof(valT) * rowA);
-    // valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
-    // memset(cscY_val, 0, sizeof(int) * rowA);
-    // memset(Y_val, 0, sizeof(int) * rowA);
-
-    // spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
-    // spmv_fp64_serial_csc(cscVal, cscColPtr, cscRowInd, X_val, cscY_val, rowA, colA, nnzA);
-    // int result = eQcheck(Y_val, cscY_val, rowA);
-    */
-
-    /*
-    // check
-    for(int i = 0; i < nnzA; i++)
-    {
-        if(csrVal_[i] != csrVal[i])
-        {
-            printf(" csrVal failure \n");
-        }
-        if(csrColInd_[i] != csrColInd[i])
-        {
-            printf(" csrColInd failure \n");
-        }
-    }
-    for(int i = 0; i <= rowA; i++)
-    {
-        if(csrRowPtr_[i] != csrRowPtr[i])
-        {
-            printf(" csrRowPtr failure \n");
-        }
-    }
-    */
 
     CountWithIndex *descColId = (CountWithIndex *)malloc(sizeof(CountWithIndex) * colA);
     memset(descColId, 0, sizeof(CountWithIndex) * colA);
@@ -200,12 +175,10 @@ int main(int argc, char **argv)
     }
     printf("col_nnz_ratio = %f\n", (float)nnzColD / (float)nnzA);
     printf("cols_ratio = %f \n", (float)dCols / (float)colA);
-    // 稠密列部分包含nnzColD个非零元，dCols个列
     //-------------------------------------------------------------------//
-    // 将分为两个csc格式
-    int nnzColS = nnzA - nnzColD;// TODO: 问题
+    // split to two csc format
+    int nnzColS = nnzA - nnzColD;
     int sCols = colA - dCols;
-    // printf("dCols = %d and sCols = %d and colA = %d", dCols, sCols, colA);
 
     valT *dcscVal = (valT *)malloc(nnzColD * sizeof(valT));
     indT *dcscColPtr = (indT *)malloc((dCols + 1) * sizeof(indT));
@@ -214,7 +187,6 @@ int main(int argc, char **argv)
     valT *scscVal = (valT *)malloc(nnzColS * sizeof(valT));
     indT *scscColPtr = (indT *)malloc((sCols + 1) * sizeof(indT));
     indT *scscRowInd = (indT *)malloc(nnzColS * sizeof(indT));
-    // printf(" %d %d | %d %d \n", nnzColD, dCols, nnzColS, sCols);
 
     memset(dcscVal, 0, sizeof(valT) * nnzColD);
     memset(dcscRowInd, 0, sizeof(indT) * nnzColD);
@@ -277,7 +249,7 @@ int main(int argc, char **argv)
         }
     }
     */
-    
+
     // Create a bitmap to mark present values
     char *bitmap = (char *)calloc((colA + 7) / 8, sizeof(char));
     if (!bitmap)
@@ -289,7 +261,8 @@ int main(int argc, char **argv)
     for (int i = 0; i < dCols; i++)
     {
         int index = descColId[i].index;
-        if (index < colA) {
+        if (index < colA)
+        {
             bitmap[index / 8] |= (1 << (index % 8));
         }
     }
@@ -306,7 +279,6 @@ int main(int argc, char **argv)
             newArraySize++;
         }
     }
-    
 
     scscColPtr[0] = 0;
     int accu_s_col_ptr = 0;
@@ -321,6 +293,134 @@ int main(int argc, char **argv)
             scscRowInd[sc_ptr] = cscRowInd[j];
             scscVal[sc_ptr] = cscVal[j];
             sc_ptr++;
+        }
+    }
+    /*********************************************
+    *                                           *
+    ***********************************************/
+    // dcsrVal, dcsrRowPtr, dcsrColInd
+    // csrVal_dd, csrRowPtr_dd, csrColInd_dd
+    // csrVal_ds, csrRowPtr_ds, csrColInd_ds
+
+    // dcscVal, dcscColPtr, dcscRowInd, x_d, cscY_val, rowA, dCols, nnzColD
+    valT *dcsrVal;
+    indT *dcsrColInd;
+    indT *dcsrRowPtr;
+    valT *scsrVal;
+    indT *scsrColInd;
+    indT *scsrRowPtr;
+    csc2csr(dcscVal, dcscColPtr, dcscRowInd, rowA, dCols, nnzColD,
+            &dcsrVal, &dcsrRowPtr, &dcsrColInd);
+
+    csc2csr(scscVal, scscColPtr, scscRowInd, rowA, sCols, nnzColS,
+            &scsrVal, &scsrRowPtr, &scsrColInd);
+
+    CountWithIndex *descRowId = (CountWithIndex *)malloc(sizeof(CountWithIndex) * rowA);
+    memset(descRowId, 0, sizeof(CountWithIndex) * rowA);
+
+    for (int i = 0; i < rowA; i++)
+    {
+        descRowId[i].count = dcsrRowPtr[i + 1] - dcsrRowPtr[i];
+        descRowId[i].index = i;
+    }
+    qsort(descRowId, rowA, sizeof(CountWithIndex), compare_desc_structure);
+    int dRowsNnz = nnzA * rowProp;
+    int nnzRowD = 0, dRows = 0;
+    for (int i = 0; i < rowA; i++)
+    {
+        nnzRowD += descRowId[i].count;
+        if (nnzRowD >= dRowsNnz)
+        {
+            dRows = i + 1;
+            break;
+        }
+    }
+    printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
+    printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
+    printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
+    int *rId = (int *)malloc(sizeof(int) * dRows);
+    for (int i = 0; i < dRows; i++)
+    {
+        rId[i] = descRowId[i].index;
+    }
+    int nnzRowS = nnzColD - nnzRowD;
+    int sRows = rowA - dRows;
+
+    valT *csrVal_dd = (valT *)malloc(nnzRowD * sizeof(valT));
+    indT *csrRowPtr_dd = (indT *)malloc((dRows + 1) * sizeof(indT));
+    indT *csrColInd_dd = (indT *)malloc(nnzRowD * sizeof(indT));
+
+    valT *csrVal_ds = (valT *)malloc(nnzRowS * sizeof(valT));
+    indT *csrRowPtr_ds = (indT *)malloc((sRows + 1) * sizeof(indT));
+    indT *csrColInd_ds = (indT *)malloc(nnzRowS * sizeof(indT));
+    // printf(" %d %d | %d %d \n", nnzRowD, dRows, nnzRowS, sRows);
+
+    memset(csrVal_dd, 0, sizeof(valT) * nnzRowD);
+    memset(csrColInd_dd, 0, sizeof(indT) * nnzRowD);
+    memset(csrRowPtr_dd, 0, sizeof(indT) * (dRows + 1));
+
+    memset(csrVal_ds, 0, sizeof(valT) * nnzRowS);
+    memset(csrColInd_ds, 0, sizeof(indT) * nnzRowS);
+    memset(csrRowPtr_ds, 0, sizeof(indT) * (sRows + 1));
+
+    csrRowPtr_dd[0] = 0;
+    int accu_d_row_ptr = 0;
+    int dr_ptr = 0;
+    for (int i = 0; i < dRows; i++)
+    {
+        int row_idx = descRowId[i].index;
+        accu_d_row_ptr += dcsrRowPtr[row_idx + 1] - dcsrRowPtr[row_idx];
+        csrRowPtr_dd[i + 1] = accu_d_row_ptr;
+        for (int j = dcsrRowPtr[row_idx]; j < dcsrRowPtr[row_idx + 1]; j++)
+        {
+            csrColInd_dd[dr_ptr] = dcsrColInd[j];
+            csrVal_dd[dr_ptr] = dcsrVal[j];
+            dr_ptr++;
+        }
+    }
+
+    char *bitmap_ = (char *)calloc((rowA + 7) / 8, sizeof(char));
+    if (!bitmap_)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        return -1;
+    }
+    // Mark values present in descRowId
+    for (int i = 0; i < dRows; i++)
+    {
+        int index = descRowId[i].index;
+        if (index < rowA)
+        {
+            bitmap_[index / 8] |= (1 << (index % 8));
+        }
+    }
+    // Find missing values and add to newArray
+    int *newArray_ = (int *)malloc(sizeof(int) * sRows);
+    memset(newArray_, 0, sizeof(int) * sRows);
+    int newArraySize_ = 0;
+
+    for (int i = 0; i < rowA; i++)
+    {
+        if (!(bitmap_[i / 8] & (1 << (i % 8))))
+        {
+            newArray_[newArraySize_] = i;
+            newArraySize_++;
+        }
+    }
+
+    csrRowPtr_ds[0] = 0;
+    int accu_s_row_ptr = 0;
+    int sr_ptr = 0;
+    for (int i = 0; i < sRows; i++)
+    {
+        int row_idx = newArray_[i];
+        accu_s_row_ptr += dcsrRowPtr[row_idx + 1] - dcsrRowPtr[row_idx];
+        csrRowPtr_ds[i + 1] = accu_s_row_ptr;
+        for (int j = dcsrRowPtr[row_idx]; j < dcsrRowPtr[row_idx + 1]; j++)
+        {
+            csrColInd_ds[sr_ptr] = dcsrColInd[j];
+            csrVal_ds[sr_ptr] = dcsrVal[j];
+            sr_ptr++;
         }
     }
 
@@ -346,95 +446,13 @@ int main(int argc, char **argv)
 
     spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
 
-    spmv_fp64_serial_csc(dcscVal, dcscColPtr, dcscRowInd, x_d, cscY_val, rowA, dCols, nnzColD);
-    spmv_fp64_serial_csc(scscVal, scscColPtr, scscRowInd, x_s, cscY_val, rowA, sCols, nnzColS);
+    spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, cscY_val, rowA, sCols, nnzColS);
+    // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, cscY_val, rowA, dCols, nnzColD);
+    spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, cscY_val, dRows, dCols, nnzRowD, rId);
+    spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, cscY_val, sRows, dCols, nnzRowS, newArray_);
 
     int result = eQcheck(Y_val, cscY_val, rowA);
-    //-------------------------------------------------------------------//
-    /*
-    // 行维度的压缩
-    CountWithIndex *descRowId = (CountWithIndex *)malloc(sizeof(CountWithIndex) * rowA);
-    memset(descRowId, 0, sizeof(CountWithIndex) * rowA);
-    for (int i = 0; i < rowA; i++)
-    {
-        descRowId[i].count = csrRowPtr[i + 1] - csrRowPtr[i];
-        descRowId[i].index = i;
-    }
-    qsort(descRowId, rowA, sizeof(CountWithIndex), compare_desc_structure);
-    // int avgColNnz = (int)(nnzA / rowA);
-    // float max_mean = (float)(descRowId[1].count + descRowId[2].count + descRowId[3].count) / (float)(avgColNnz * 3);
-    // printf("max_mean = %f\n", max_mean);
-    // int dRows = (int)rowA / 10;
-    // int dRows = 0;
-    int dRowsNnz = nnzA * rowProp;
-    int acc2 = 0, rowThreshNum;
-    for (int i = 0; i < rowA; i++)
-    {
-        acc2 += descRowId[i].count;
-        if (acc2 >= dRowsNnz)
-        {
-            rowThreshNum = i;
-            break;
-        }
-    }
-    printf("row_nnz_ratio = %f\n", (float)acc2 / (float)nnzA);
-    printf("rows_ratio = %f \n", (float)rowThreshNum / (float)rowA);
-    */
-    /*
-    //----------------------------2nd  compress----------------------------//
-    // int dRows =  (int)((rowA * 0.2) / (double)fragM) * fragM;
-    //ECR操作
-    int numStripe = rowA / fragM;
-    int *strpBuffer = (int *)malloc(sizeof(int) * colA);
-    int *strpNEC = (int *)malloc(sizeof(int) * numStripe);
-    int *TCnnzs = (int *)malloc(sizeof(int) * numStripe);
-    memset(strpNEC, 0, sizeof(int) * numStripe);
-    memset(TCnnzs, 0, sizeof(int) * numStripe);
 
-    for (int s = 0; s < numStripe; s++)
-    {
-        memset(strpBuffer, 0, sizeof(int) * colA);
-        int firstRow = s * fragM;
-        int lastRow = firstRow + fragM;
-        for(int r = firstRow; r < lastRow; r++)
-        {
-            TCnnzs[s] += descRowId[r].count;
-            // 对于stripe的每一行
-            for(int j = csrRowPtr[descRowId[r].index]; j < csrRowPtr[descRowId[r].index + 1]; j++)
-            {
-                for(int k = 0; k < dCols; k++)
-                {
-                    if(descColId[k].index == csrColInd[j])
-                    {
-                        strpBuffer[k] = 1;
-                        break;
-                    }
-                }
-            }
-        }
-        strpNEC[s] = sum_array(strpBuffer, colA);
-        // printf("\n [%d] row nnzs = %d \n", i, descRowId[i].count);
-        // printf("\n [%d] mean nnz = %d \n",i, (descColId[i].count));
-    }
-    // float ratioAll = (float)TCnnzs / (float)(nnzA);
-    // printf("\n ratioAll = %f", ratioAll);
-    float ss_sum = 0;
-    for(int s = 0; s < numStripe; s++)
-    {
-        ss_sum += (float)TCnnzs[s] / (float)(strpNEC[s] * fragM);
-    }
-    printf("\n ss       = %f", ss_sum / numStripe);
-    // printf("\n nnzA = %d", nnzA);
-    int dense_nnzs = 0;
-    for (int i = 0; i < dCols; i++)
-    {
-        dense_nnzs += descColId[i].count;
-    }
-    double dense_ratio = (double)dense_nnzs / (double)nnzA;
-    printf("\n ratioDenseCol = %lf \n", dense_ratio);
-    // printf("\n r = %lf \n", ratioAll/dense_ratio);
-    */
-    // free(descRowId);
     free(bitmap);
     // free(colHash);
     free(descColId);
@@ -456,6 +474,24 @@ int main(int argc, char **argv)
     free(Y_val);
     free(cscY_val);
     free(X_val);
+
+    free(csrVal_dd);
+    free(csrRowPtr_dd);
+    free(csrColInd_dd);
+    free(csrVal_ds);
+    free(csrRowPtr_ds);
+    free(csrColInd_ds);
+
+    free(dcsrColInd);
+    free(dcsrRowPtr);
+    free(dcsrVal);
+    free(scsrColInd);
+    free(scsrRowPtr);
+    free(scsrVal);
+
+    free(newArray_);
+    free(bitmap_);
+    free(descRowId);
 
     return 0;
 }
