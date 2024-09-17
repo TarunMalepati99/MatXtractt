@@ -147,8 +147,9 @@ int main(int argc, char **argv)
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
-    //-------------------------------------------------------------------//
-    // generate dense rId
+    /**************************************************************
+    *                   split to two csc format                   *
+    ***************************************************************/
 
     csr2csc(csrVal, csrRowPtr, csrColInd, rowA, colA, nnzA,
             &cscVal, &cscColPtr, &cscRowInd);
@@ -175,8 +176,7 @@ int main(int argc, char **argv)
     }
     printf("col_nnz_ratio = %f\n", (float)nnzColD / (float)nnzA);
     printf("cols_ratio = %f \n", (float)dCols / (float)colA);
-    //-------------------------------------------------------------------//
-    // split to two csc format
+
     int nnzColS = nnzA - nnzColD;
     int sCols = colA - dCols;
 
@@ -211,45 +211,6 @@ int main(int argc, char **argv)
             dc_ptr++;
         }
     }
-    /*
-    // Create a bitmap to mark present values
-    HashTable *colHash = (HashTable *)malloc(sizeof(HashTable) * colA);
-    for (int i = 0; i < colA; i++)
-    {
-        colHash[i].index = i;
-        colHash[i].isIn = false;
-    }
-    // Mark values present in descColId
-    for (int i = 0; i < dCols; i++)
-    {
-        int id = descColId[i].index;
-        colHash[id].isIn = true;
-    }
-    // Find missing values and add to newArray
-    int *newArray = (int *)malloc(sizeof(int) * sCols);
-    memset(newArray, 0, sizeof(int) * sCols);
-    int newArraySize = 0;
-
-    for (int i = 0; i < colA; i++)
-    {
-        if (!(colHash[i].isIn))
-        {
-            // newArray[newArraySize] = i;
-            // newArraySize++;
-            if (newArraySize < sCols)
-            {
-                newArray[newArraySize] = i;
-                newArraySize++;
-            }
-            else
-            {
-                printf("Error: newArray size exceeded!\n");
-                break;
-            }
-        }
-    }
-    */
-
     // Create a bitmap to mark present values
     char *bitmap = (char *)calloc((colA + 7) / 8, sizeof(char));
     if (!bitmap)
@@ -295,14 +256,12 @@ int main(int argc, char **argv)
             sc_ptr++;
         }
     }
-    /*********************************************
-    *                                           *
-    ***********************************************/
-    // dcsrVal, dcsrRowPtr, dcsrColInd
-    // csrVal_dd, csrRowPtr_dd, csrColInd_dd
-    // csrVal_ds, csrRowPtr_ds, csrColInd_ds
-
-    // dcscVal, dcscColPtr, dcscRowInd, x_d, cscY_val, rowA, dCols, nnzColD
+    /**************************************************************
+    *    split dense col-segment to two csr format                *
+    *    dense col-segment: dcsrVal, dcsrRowPtr, dcsrColInd       *
+    *    sparse row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd  *
+    *    dense row-chunk: csrVal_ds, csrRowPtr_ds, csrColInd_ds   *
+    ***************************************************************/
     valT *dcsrVal;
     indT *dcsrColInd;
     indT *dcsrRowPtr;
@@ -353,7 +312,6 @@ int main(int argc, char **argv)
     valT *csrVal_ds = (valT *)malloc(nnzRowS * sizeof(valT));
     indT *csrRowPtr_ds = (indT *)malloc((sRows + 1) * sizeof(indT));
     indT *csrColInd_ds = (indT *)malloc(nnzRowS * sizeof(indT));
-    // printf(" %d %d | %d %d \n", nnzRowD, dRows, nnzRowS, sRows);
 
     memset(csrVal_dd, 0, sizeof(valT) * nnzRowD);
     memset(csrColInd_dd, 0, sizeof(indT) * nnzRowD);
@@ -385,7 +343,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Memory allocation failed\n");
         return -1;
     }
-    // Mark values present in descRowId
+
     for (int i = 0; i < dRows; i++)
     {
         int index = descRowId[i].index;
@@ -423,6 +381,9 @@ int main(int argc, char **argv)
             sr_ptr++;
         }
     }
+    /**************************************************************
+    *          check the sparsity-aware compression               *
+    ***************************************************************/
 
     valT *X_val = (valT *)malloc(sizeof(valT) * colA);
     initVec(X_val, colA);
