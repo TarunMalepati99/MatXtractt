@@ -1,5 +1,11 @@
 #pragma once
 
+#include <map>
+#include <algorithm>
+#include <cstring>
+#include <cstdio>
+#include <omp.h>
+#include <cstdlib> // 为了使用malloc和free
 
 #include <cuda.h>
 #include <cuda_fp16.h>

@@ -123,6 +123,136 @@ void spmv_fp64_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         // if(i == 0) printf("!!!!!!!  %d  %f\n", row_order[i], Y_val[row_order[i]]);
     }
 }
+// TODO:
+void spmv_fp64_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+                          valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order, int *ecrId, int **use_x_id)
+{
+    valT t;
+    for (int i = 0; i < rowA; i ++)
+    {
+        int windowId = i / fragM;
+        t = 0.0f;
+        indT ptr_start = csrRowPtr[i];
+        indT n_one_line = csrRowPtr[i + 1] - ptr_start;
+        for (indT j = 0; j < n_one_line; j++)
+        {
+            indT v_idx = use_x_id[windowId][ecrId[j + ptr_start]];
+            t += csrVal[j + ptr_start] * X_val[v_idx];
+        }
+        Y_val[row_order[i]] += t;
+    }
+}
+
+// condense an sorted array with duplication: [1,2,2,3,4,5,5]
+// after condense, it becomes: [1,2,3,4,5].
+// Also, mapping the origin value to the corresponding new location in the new array.
+// 1->[0], 2->[1], 3->[2], 4->[3], 5->[4].
+// 去重函数
+std::map<int, int> inplace_deduplication(int *array, int length)
+{
+    if (length == 0)
+        return {};
+
+    int loc = 0;
+    int cur = 1;
+    std::map<int, int> nb2col;
+    nb2col[array[0]] = 0;
+
+    while (cur < length)
+    {
+        if (array[cur] != array[cur - 1])
+        {
+            loc++;
+            array[loc] = array[cur];
+            nb2col[array[cur]] = loc; // 从eid到TC_block列索引的映射
+        }
+        cur++;
+    }
+    return nb2col;
+}
+
+void ecrPreprocess(
+    int *csrColInd,
+    int *csrRowPtr,
+    int rowA,
+    int colA,
+    int fragSize_h,
+    int fragSize_w,
+    int *chunkPtr,
+    int *ecrId, // output
+    int **use_x_id,
+    int *nec_num)
+{
+    int block_counter = 0;
+    chunkPtr[0] = block_counter;
+#pragma omp parallel for reduction(+ : block_counter)
+    for (int iter = 0; iter < rowA + 1; iter += fragSize_h)
+    {
+        int windowId = iter / fragSize_h;
+        int block_start = csrRowPtr[iter];
+        int iter_plus = iter + fragSize_h;
+        // 防止越界，取较小值
+        int block_end = csrRowPtr[(iter_plus > rowA) ? rowA : iter_plus];
+        int num_window_nnzs = block_end - block_start;
+
+        if (num_window_nnzs <= 0)
+        {
+            chunkPtr[windowId] = 0;
+            continue;
+        }
+
+        int *neighbor_window = (int *)malloc(num_window_nnzs * sizeof(int));
+        if (neighbor_window == nullptr)
+        {
+            fprintf(stderr, "Memory allocation failed for neighbor_window\n");
+            exit(EXIT_FAILURE);
+        }
+        std::memcpy(neighbor_window, &csrColInd[block_start], num_window_nnzs * sizeof(int));
+
+        std::sort(neighbor_window, neighbor_window + num_window_nnzs);
+
+        std::map<int, int> clean_edges2col = inplace_deduplication(neighbor_window, num_window_nnzs);
+
+        use_x_id[windowId] = (int *)malloc(clean_edges2col.size() * sizeof(int));
+        memset(use_x_id[windowId], 0, clean_edges2col.size() * sizeof(int));
+        std::map<int, int>::iterator it;
+        int index = 0;
+        for (it = clean_edges2col.begin(); it != clean_edges2col.end(); ++it)
+        {
+            use_x_id[windowId][index++] = it->first;
+        }
+        nec_num[windowId] = clean_edges2col.size();
+
+        // 生成chunkPtr：每个窗口中的TC_block数量
+        int partition = (clean_edges2col.size() + fragSize_w - 1) / fragSize_w;
+        // chunkPtr[windowId] = partition;
+        // block_counter += partition;
+        block_counter += partition;
+        chunkPtr[windowId + 1] = block_counter;
+
+        for (int e_index = block_start; e_index < block_end; e_index++)
+        {
+            int eid = csrColInd[e_index];
+
+            auto it = clean_edges2col.find(eid);
+            if (it != clean_edges2col.end())
+            {
+                ecrId[e_index] = it->second;
+            }
+            else
+            {
+                ecrId[e_index] = -1;
+                fprintf(stderr, "Element ID not found in clean_edges2col map\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // 释放内存
+        free(neighbor_window);
+    }
+
+    printf("TC_Blocks:\t%d\nExp_Edges:\t%d\n", block_counter, block_counter * 4 * 8);
+}
 
 int main(int argc, char **argv)
 {
@@ -147,9 +277,13 @@ int main(int argc, char **argv)
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
-    /**************************************************************
-    *                   split to two csc format                   *
-    ***************************************************************/
+    /***************************************************************
+     *                 1.Sparsity-aware Compression                *
+     ***************************************************************/
+
+    /***************************************************************
+     *                  1.1split to two csc format                 *
+     ***************************************************************/
 
     csr2csc(csrVal, csrRowPtr, csrColInd, rowA, colA, nnzA,
             &cscVal, &cscColPtr, &cscRowInd);
@@ -256,12 +390,12 @@ int main(int argc, char **argv)
             sc_ptr++;
         }
     }
-    /**************************************************************
-    *    split dense col-segment to two csr format                *
-    *    dense col-segment: dcsrVal, dcsrRowPtr, dcsrColInd       *
-    *    sparse row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd  *
-    *    dense row-chunk: csrVal_ds, csrRowPtr_ds, csrColInd_ds   *
-    ***************************************************************/
+    /***************************************************************
+     *    1.2split  dense col-segment to two csr format            *
+     *    dense  col-segment: dcsrVal, dcsrRowPtr, dcsrColInd      *
+     *    dense  row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd  *
+     *    sparse row-chunk: csrVal_ds, csrRowPtr_ds, csrColInd_ds  *
+     ***************************************************************/
     valT *dcsrVal;
     indT *dcsrColInd;
     indT *dcsrRowPtr;
@@ -381,17 +515,34 @@ int main(int argc, char **argv)
             sr_ptr++;
         }
     }
-    /**************************************************************
-    *          check the sparsity-aware compression               *
-    ***************************************************************/
+
+    /***************************************************************
+     *                     2.TCU-aware Compression                 *
+     *   dense  row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd   *
+     ***************************************************************/
+    // TODO: chunkPtr and nec_num not check
+    int *ecrId = (int *)malloc(sizeof(int) * nnzRowD);
+    memset(ecrId, 0, sizeof(int) * nnzRowD);
+    int chunkNum = ceil(dRows / fragM);
+    int *chunkPtr = (int *)malloc(sizeof(int) * (chunkNum + 1));
+    memset(chunkPtr, 0, sizeof(int) * (chunkNum + 1));
+
+    int **use_x_id = (int **)malloc((chunkNum + 1) * sizeof(int *));
+    int *nec_num = (int *)malloc((chunkNum + 1) * sizeof(int));
+    ecrPreprocess(csrColInd_dd, csrRowPtr_dd, dRows, dCols, fragM, fragK, chunkPtr, ecrId, use_x_id, nec_num);
+    printf("TC_ratio = %f\n", (float)nnzRowD / (float)(chunkPtr[chunkNum] * 4 * 8));
+
+    /***************************************************************
+     *         check the Sparsity-TCU-aware compression            *
+     ***************************************************************/
 
     valT *X_val = (valT *)malloc(sizeof(valT) * colA);
     initVec(X_val, colA);
 
-    valT *cscY_val = (valT *)malloc(sizeof(valT) * rowA);
+    valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
     valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
-    memset(cscY_val, 0, sizeof(valT) * rowA);
+    memset(ourY_val, 0, sizeof(valT) * rowA);
     memset(Y_val, 0, sizeof(valT) * rowA);
 
     valT *x_d = (valT *)malloc(sizeof(valT) * dCols);
@@ -404,16 +555,26 @@ int main(int argc, char **argv)
     {
         x_s[i] = X_val[newArray[i]];
     }
-
+    // Baseline
     spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
 
-    spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, cscY_val, rowA, sCols, nnzColS);
-    // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, cscY_val, rowA, dCols, nnzColD);
-    spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, cscY_val, dRows, dCols, nnzRowD, rId);
-    spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, cscY_val, sRows, dCols, nnzRowS, newArray_);
 
-    int result = eQcheck(Y_val, cscY_val, rowA);
 
+    // Peripheral-Sparse Block
+    spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
+    // Edge-Sparse Block
+    spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
+    // Core-Dense Block
+    spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
+    // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
+    // spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
+
+    int result = eQcheck(Y_val, ourY_val, rowA);
+
+    free(nec_num);
+    free(use_x_id);
+    free(ecrId);
+    free(chunkPtr);
     free(bitmap);
     // free(colHash);
     free(descColId);
@@ -433,7 +594,7 @@ int main(int argc, char **argv)
     free(x_s);
     free(x_d);
     free(Y_val);
-    free(cscY_val);
+    free(ourY_val);
     free(X_val);
 
     free(csrVal_dd);
