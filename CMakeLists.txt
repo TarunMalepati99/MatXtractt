@@ -45,8 +45,7 @@ target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})
 file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_spmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
-#file(GLOB CUDA_ANALYZE_FILES "${CUDA_TEST_PATH}/analyze.cpp")
-file(GLOB CUDA_ANALYZE_FILES "${CUDA_TEST_PATH}/pit1axe.cpp")
+file(GLOB CUDA_PREPROS_FILES "${CUDA_TEST_PATH}/dpc.cpp")
 
 
 if(CUDA_TEST_FILES)
@@ -55,10 +54,10 @@ if(CUDA_TEST_FILES)
     target_link_libraries(TCSpMVlib_perf TCSpMVlib cuda_utilities_lib)
     target_include_directories(TCSpMVlib_perf PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-    #analyze
-    add_executable(TCSpMVlib_analyze ${CUDA_ANALYZE_FILES})
-    target_link_libraries(TCSpMVlib_analyze TCSpMVlib cuda_utilities_lib)
-    target_include_directories(TCSpMVlib_analyze PRIVATE ${PROJECT_SOURCE_DIR}/include)
+    #preprocess
+    add_executable(TCSpMVlib_preprocess ${CUDA_PREPROS_FILES})
+    target_link_libraries(TCSpMVlib_preprocess TCSpMVlib cuda_utilities_lib)
+    target_include_directories(TCSpMVlib_preprocess PRIVATE ${PROJECT_SOURCE_DIR}/include)
 else()
     message(FATAL_ERROR "No test files found!")
 endif()

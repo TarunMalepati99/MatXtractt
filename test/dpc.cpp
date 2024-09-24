@@ -1,3 +1,8 @@
+/*
+ * Dual-Phase Compression
+ * Author: Luhan Wang
+ * Date: 2024.9.24
+ */
 #include "mmio.h"
 #include "csr2csc.h"
 
@@ -164,7 +169,7 @@ std::map<int, int> inplace_deduplication(int *array, int length)
         {
             loc++;
             array[loc] = array[cur];
-            nb2col[array[cur]] = loc; // 从eid到TC_block列索引的映射
+            nb2col[array[cur]] = loc;
         }
         cur++;
     }
@@ -246,13 +251,14 @@ void ecrPreprocess(
                 exit(EXIT_FAILURE);
             }
         }
-
-        // 释放内存
         free(neighbor_window);
     }
 
     printf("TC_Blocks:\t%d\nExp_Edges:\t%d\n", block_counter, block_counter * 4 * 8);
 }
+
+
+
 
 int main(int argc, char **argv)
 {
