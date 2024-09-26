@@ -128,12 +128,12 @@ void spmv_fp64_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         // if(i == 0) printf("!!!!!!!  %d  %f\n", row_order[i], Y_val[row_order[i]]);
     }
 }
-// TODO:
+
 void spmv_fp64_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
                           valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order, int *ecrId, int **use_x_id)
 {
     valT t;
-    for (int i = 0; i < rowA; i ++)
+    for (int i = 0; i < rowA; i++)
     {
         int windowId = i / fragM;
         t = 0.0f;
@@ -183,14 +183,13 @@ void ecrPreprocess(
     int colA,
     int fragSize_h,
     int fragSize_w,
-    int *chunkPtr,
+    int *blockPartition,
     int *ecrId, // output
     int **use_x_id,
     int *nec_num)
 {
     int block_counter = 0;
-    chunkPtr[0] = block_counter;
-#pragma omp parallel for reduction(+ : block_counter)
+    // #pragma omp parallel for reduction(+ : block_counter)
     for (int iter = 0; iter < rowA + 1; iter += fragSize_h)
     {
         int windowId = iter / fragSize_h;
@@ -202,7 +201,7 @@ void ecrPreprocess(
 
         if (num_window_nnzs <= 0)
         {
-            chunkPtr[windowId] = 0;
+            blockPartition[windowId] = 0;
             continue;
         }
 
@@ -228,12 +227,9 @@ void ecrPreprocess(
         }
         nec_num[windowId] = clean_edges2col.size();
 
-        // 生成chunkPtr：每个窗口中的TC_block数量
-        int partition = (clean_edges2col.size() + fragSize_w - 1) / fragSize_w;
-        // chunkPtr[windowId] = partition;
-        // block_counter += partition;
-        block_counter += partition;
-        chunkPtr[windowId + 1] = block_counter;
+        blockPartition[windowId] = (clean_edges2col.size() + fragSize_w - 1) / fragSize_w;
+        block_counter += blockPartition[windowId];
+        // printf("[%d] %d \n",windowId, block_counter);
 
         for (int e_index = block_start; e_index < block_end; e_index++)
         {
@@ -253,12 +249,145 @@ void ecrPreprocess(
         }
         free(neighbor_window);
     }
-
-    printf("TC_Blocks:\t%d\nExp_Edges:\t%d\n", block_counter, block_counter * 4 * 8);
+    // printf("block_counter:%d \n", block_counter);
 }
+// TODO: generateFormat not check
+void generateFormat(
+    const double *vals,             // Input: Non-zero values in CSR format
+    const int *rowPtr,              // Input: Row pointers in CSR format
+    const int *ecrId,               // Input: Adjusted column indices after empty column removal
+    int dRows,                      // Input: Number of rows
+    int dCols,                      // Input: Number of columns
+    int fragM,                      // Input: Fragment row size
+    int fragK,                      // Input: Fragment column size
+    int *chunkPtr,                  // Input: Offsets of tcFrags for each rowChunk
+    std::vector<int> &fragPtr,      // Output: Fragment pointer array
+    std::vector<uint32_t> &fragBit, // Output: fragBit array for each tcFrag
+    std::vector<double> &tcVal      // Output: Non-zero values in tcFrags
+)
+{
+    // int numRowChunks = (dRows + fragM - 1) / fragM;
+    int numRowChunks = ceil((double)dRows / (double)fragM);
+    int totalTcFrags = chunkPtr[numRowChunks];
+    // printf("\n totalTcFrags = %d \n", totalTcFrags);
 
+    // Initialize fragPtr and per-tcFrag non-zero counts
+    fragPtr.resize(totalTcFrags + 1, 0);
+    std::vector<int> perTcFragNnz(totalTcFrags, 0);
 
+    // Initialize fragBit
+    fragBit.resize(totalTcFrags, 0); // 修改：大小现在是 totalTcFrags
 
+    // Temporary data structures for values in tcFrags
+    std::vector<std::vector<std::vector<double>>> valueGrids;  // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
+
+    for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
+    {
+        int rowChunkStart = rowChunkIndex * fragM;
+        int rowChunkEnd = std::min(rowChunkStart + fragM, dRows);
+        int numTcFragsInChunk = chunkPtr[rowChunkIndex + 1] - chunkPtr[rowChunkIndex];
+
+        if (numTcFragsInChunk == 0)
+        {
+            // 跳过处理，避免访问空向量
+            continue;
+        }
+        // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
+        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<double>>(fragM, std::vector<double>(fragK, 0.0)));
+        hasValueGrids.assign(numTcFragsInChunk, std::vector<std::vector<bool>>(fragM, std::vector<bool>(fragK, false)));
+
+        // Process each row in the rowChunk
+        for (int r = rowChunkStart; r < rowChunkEnd; ++r)
+        {
+            int rowLocalIndex = r - rowChunkStart;
+
+            // Iterate over non-zero elements in the row
+            for (int idx = rowPtr[r]; idx < rowPtr[r + 1]; ++idx)
+            {
+                int adjustedColId = ecrId[idx];
+                if (adjustedColId < 0 || adjustedColId >= dCols)
+                {
+                    std::cerr << "Invalid adjustedColId: " << adjustedColId << std::endl;
+                    continue;
+                }
+                int tcFragInChunkIndex = adjustedColId / fragK;
+                int colLocalIndex = adjustedColId % fragK;
+
+                // Validate indices
+                if (tcFragInChunkIndex < 0 || tcFragInChunkIndex >= numTcFragsInChunk)
+                {
+                    std::cerr << "Invalid tcFragInChunkIndex: " << tcFragInChunkIndex << std::endl;
+                    continue;
+                }
+
+                if (colLocalIndex < 0 || colLocalIndex >= fragK)
+                {
+                    std::cerr << "Invalid colLocalIndex: " << colLocalIndex << std::endl;
+                    continue;
+                }
+
+                // Store the value in valueGrid
+                valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = vals[idx];
+                hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = true;
+
+                // Update fragBit
+                int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+                if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+                {
+                    // std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                    continue;
+                }
+
+                // Compute bit position
+                int bitPosition = rowLocalIndex * fragK + colLocalIndex;
+
+                // Ensure bitPosition is within 0 to 31
+                if (bitPosition < 0 || bitPosition >= 32)
+                {
+                    std::cerr << "Invalid bitPosition: " << bitPosition << std::endl;
+                    continue;
+                }
+
+                // Set the bit in the fragBit
+                fragBit[tcFragIndex] |= (1U << bitPosition);
+            }
+        }
+        // printf("\n 000 \n");
+        // Traverse valueGrid and fill tcVal and perTcFragNnz
+        for (int tcFragInChunkIndex = 0; tcFragInChunkIndex < numTcFragsInChunk; ++tcFragInChunkIndex)
+        {
+            int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+            if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+            {
+                // std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                continue;
+            }
+            int nzCount = 0;
+
+            for (int rowLocalIndex = 0; rowLocalIndex < fragM; ++rowLocalIndex)
+            {
+                for (int colLocalIndex = 0; colLocalIndex < fragK; ++colLocalIndex)
+                {
+                    if (hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex])
+                    {
+                        tcVal.push_back(valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex]);
+                        ++nzCount;
+                    }
+                }
+            }
+
+            perTcFragNnz[tcFragIndex] = nzCount;
+        }
+    }
+
+    // Build fragPtr from perTcFragNnz
+    fragPtr[0] = 0;
+    for (int i = 0; i < totalTcFrags; ++i)
+    {
+        fragPtr[i + 1] = fragPtr[i] + perTcFragNnz[i];
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -529,14 +658,28 @@ int main(int argc, char **argv)
     // TODO: chunkPtr and nec_num not check
     int *ecrId = (int *)malloc(sizeof(int) * nnzRowD);
     memset(ecrId, 0, sizeof(int) * nnzRowD);
-    int chunkNum = ceil(dRows / fragM);
-    int *chunkPtr = (int *)malloc(sizeof(int) * (chunkNum + 1));
-    memset(chunkPtr, 0, sizeof(int) * (chunkNum + 1));
-
+    int chunkNum = ceil((double)dRows / (double)fragM);
+    int *blockPartition = (int *)malloc(sizeof(int) * (chunkNum));
+    memset(blockPartition, 0, sizeof(int) * (chunkNum));
     int **use_x_id = (int **)malloc((chunkNum + 1) * sizeof(int *));
     int *nec_num = (int *)malloc((chunkNum + 1) * sizeof(int));
-    ecrPreprocess(csrColInd_dd, csrRowPtr_dd, dRows, dCols, fragM, fragK, chunkPtr, ecrId, use_x_id, nec_num);
-    printf("TC_ratio = %f\n", (float)nnzRowD / (float)(chunkPtr[chunkNum] * 4 * 8));
+    ecrPreprocess(csrColInd_dd, csrRowPtr_dd, dRows, dCols, fragM, fragK, blockPartition, ecrId, use_x_id, nec_num);
+
+    int *chunkPtr = (int *)malloc(sizeof(int) * (chunkNum + 1));
+    memset(chunkPtr, 0, sizeof(int) * (chunkNum + 1));
+    for (int i = 1; i <= chunkNum; i++)
+    {
+        chunkPtr[i] += chunkPtr[i - 1] + blockPartition[i - 1];
+    }
+    // int totalTcFrags = chunkPtr[chunkNum];
+    // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
+    printf("TC_ratio = %lf\n", (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8));
+
+    /// Outputs
+    std::vector<int> fragPtr;
+    std::vector<uint32_t> fragBit;
+    std::vector<double> tcVal;
+    generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, fragM, fragK, chunkPtr, fragPtr, fragBit, tcVal);
 
     /***************************************************************
      *         check the Sparsity-TCU-aware compression            *
@@ -563,8 +706,6 @@ int main(int argc, char **argv)
     }
     // Baseline
     spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
-
-
 
     // Peripheral-Sparse Block
     spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
