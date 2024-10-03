@@ -13,6 +13,8 @@
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <mma.h>
+// #include <cuda/std/future>
+// #include <cuda_pipeline.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +26,7 @@
 // #include <helper_cuda.h>
 // #include <helper_functions.h>
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <cusparse.h>
 #include <cublas_v2.h>
 
@@ -35,10 +38,14 @@
 // #include <vector>
 
 #include "omp.h"
+#define valT double
+
+
+#include "tcuOp.cuh"
 
 
 // #ifdef f64
-#define valT double
+
 // #else
 // #define valT half
 // #endif
@@ -47,9 +54,12 @@
 #define WARP_SIZE 32
 #define BlockSize 8
 
-#define MMA_M 8
-#define MMA_N 8
-#define MMA_K 4
+const int MMA_M = 8;
+const int MMA_N = 8;
+const int MMA_K = 4;
+
+const int fragM = 8;
+const int fragK = 4;
 
 #define indT int
 

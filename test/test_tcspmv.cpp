@@ -5,13 +5,12 @@
  */
 #include "mmio.h"
 #include "csr2csc.h"
+#include "TCSpMV.h"
 
 // const float colProp = 0.82;
 const float rowProp = 0.6;
 const float colProp = 0.8;
 
-const int fragM = 8;
-const int fragK = 4;
 bool isDenseTC = 0;
 typedef struct
 {
@@ -266,17 +265,15 @@ void generateFormat(
     std::vector<double> &tcVal      // Output: Non-zero values in tcFrags
 )
 {
-    // int numRowChunks = (dRows + fragM - 1) / fragM;
     int numRowChunks = ceil((double)dRows / (double)fragM);
     int totalTcFrags = chunkPtr[numRowChunks];
-    // printf("\n totalTcFrags = %d \n", totalTcFrags);
 
     // Initialize fragPtr and per-tcFrag non-zero counts
     fragPtr.resize(totalTcFrags + 1, 0);
     std::vector<int> perTcFragNnz(totalTcFrags, 0);
 
     // Initialize fragBit
-    fragBit.resize(totalTcFrags, 0); // 修改：大小现在是 totalTcFrags
+    fragBit.resize(totalTcFrags, 0);
 
     // Temporary data structures for values in tcFrags
     std::vector<std::vector<std::vector<double>>> valueGrids;  // [tcFrag][row][col]
@@ -290,7 +287,6 @@ void generateFormat(
 
         if (numTcFragsInChunk == 0)
         {
-            // 跳过处理，避免访问空向量
             continue;
         }
         // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
@@ -335,7 +331,7 @@ void generateFormat(
                 int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
                 if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
                 {
-                    // std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                    std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
                     continue;
                 }
 
@@ -360,7 +356,7 @@ void generateFormat(
             int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
             if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
             {
-                // std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
                 continue;
             }
             int nzCount = 0;
@@ -663,6 +659,7 @@ int main(int argc, char **argv)
     memset(blockPartition, 0, sizeof(int) * (chunkNum));
     int **use_x_id = (int **)malloc((chunkNum + 1) * sizeof(int *));
     int *nec_num = (int *)malloc((chunkNum + 1) * sizeof(int));
+
     ecrPreprocess(csrColInd_dd, csrRowPtr_dd, dRows, dCols, fragM, fragK, blockPartition, ecrId, use_x_id, nec_num);
 
     int *chunkPtr = (int *)malloc(sizeof(int) * (chunkNum + 1));
@@ -671,9 +668,23 @@ int main(int argc, char **argv)
     {
         chunkPtr[i] += chunkPtr[i - 1] + blockPartition[i - 1];
     }
-    // int totalTcFrags = chunkPtr[chunkNum];
+    int totalTcFrags = chunkPtr[chunkNum];
     // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
     printf("TC_ratio = %lf\n", (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8));
+
+    // TODO: 生成这个
+    int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
+    memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
+
+    for (int rowChunkIndex = 0; rowChunkIndex < chunkNum; ++rowChunkIndex)
+    {
+        int *use_x = use_x_id[rowChunkIndex];
+        for (int j = 0; j < nec_num[rowChunkIndex]; j++)
+        {
+            int *sparse_AToX = sparse_AToX_index + chunkPtr[rowChunkIndex] * fragK;
+            sparse_AToX[j] = use_x[j];
+        }
+    }
 
     /// Outputs
     std::vector<int> fragPtr;
@@ -713,6 +724,10 @@ int main(int argc, char **argv)
     spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
     // Core-Dense Block
     spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
+    double necTime = 0, necPre = 0;
+
+
+    tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, ourY_val, dRows, dCols, rId, &necTime, &necPre);
     // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
