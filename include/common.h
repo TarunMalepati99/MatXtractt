@@ -40,10 +40,6 @@
 #include "omp.h"
 #define valT double
 
-
-#include "tcuOp.cuh"
-
-
 // #ifdef f64
 
 // #else

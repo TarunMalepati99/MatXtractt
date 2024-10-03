@@ -170,6 +170,7 @@ __global__ void tcspmv_kernel(
     const int *__restrict__ sparse_AToX_index,
     int dRows)
 {
+    // printf("\n 11111111 \n");
     const int warpsPerBlock = 4;
     // const int threadsPerBlock = warpsPerBlock * 32;
     // Shared memory for double buffering tcVal and x_d
@@ -244,7 +245,7 @@ __global__ void tcspmv_kernel(
     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
     {
         // Compute indices for double buffering
-        int currentBufferIdx = bufferIdx; //初始时预取的第一个
+        int currentBufferIdx = bufferIdx; // 初始时预取的第一个
         int nextBufferIdx = 1 - bufferIdx;
 
         // Initiate prefetch for the next tcFrag if not the last one
@@ -316,7 +317,7 @@ __global__ void tcspmv_kernel(
             }
             if (bit)
             {
-                a_value = tcValShmPtr[valIdx];//TODO: ERROR
+                a_value = tcValShmPtr[valIdx]; // TODO: ERROR
             }
             double b_value = x_values[k];
             double c_value[2] = {0.0, 0.0};
@@ -346,8 +347,8 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
 {
     struct timeval t1;
     struct timeval t2;
-    struct timeval tpre1;
-    struct timeval tpre2;
+    // struct timeval tpre1;
+    // struct timeval tpre2;
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
     valT *d_tcVal, *d_X_val, *d_Y_val;
@@ -370,7 +371,9 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
     cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice);
     cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice);
     cudaMemcpy(d_X_val, X_val, sizeof(valT) * colA, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_Y_val, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+    // cudaMemcpy(d_Y_val, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+
+    cudaMemset(d_Y_val, 0.0, sizeof(valT) * rowA);
 
     int warpsPerBlock = 4;
     int warpSize = 32;
@@ -385,9 +388,9 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
     int per_buffer_total = per_buffer_size_tcVal + per_buffer_size_x_d;
     size_t sharedMemSize = warpsPerBlock * 2 * per_buffer_total * sizeof(double);
 
+    int execute_time = 1;
+    /*
     int warmup_time = 100;
-    int execute_time = 1000;
-
     for (int i = 0; i < warmup_time; ++i)
     {
         tcspmv_kernel<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(
@@ -395,7 +398,9 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
             d_sparse_AToX_index, rowA);
     }
     cudaDeviceSynchronize();
+    */
     gettimeofday(&t1, NULL);
+
     for (int i = 0; i < execute_time; ++i)
     {
         tcspmv_kernel<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(
@@ -403,6 +408,7 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
             d_sparse_AToX_index, rowA);
     }
     cudaDeviceSynchronize();
+    cudaMemcpy(Y_val, d_Y_val, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
 
     gettimeofday(&t2, NULL);
     cudaFree(d_tcVal);

@@ -700,8 +700,12 @@ int main(int argc, char **argv)
     initVec(X_val, colA);
 
     valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
+    valT *tryY_val = (valT *)malloc(sizeof(valT) * rowA);
+
+
     valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
+    memset(tryY_val, 0, sizeof(valT) * rowA);
     memset(ourY_val, 0, sizeof(valT) * rowA);
     memset(Y_val, 0, sizeof(valT) * rowA);
 
@@ -722,12 +726,19 @@ int main(int argc, char **argv)
     spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
     // Edge-Sparse Block
     spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
+    
+    
     // Core-Dense Block
     spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
+    tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    // for(int i = 0; i < 2; i++)
+    // {
+    //     printf("\n rId = %d \n",rId[i]);
+    //     ourY_val[rId[i]] += tryY_val[i];
+    // }
 
 
-    tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, ourY_val, dRows, dCols, rId, &necTime, &necPre);
     // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
