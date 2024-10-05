@@ -6,6 +6,16 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CPP_STANDARD 11)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80) 
 
+option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" ON)
+
+if(ENABLE_CUDA_MEMCHECK)
+    message(STATUS "cuda-memcheck is enabled")
+    set(CMAKE_BUILD_TYPE Debug)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -G -O0")
+else()
+    message(STATUS "cuda-memcheck is disabled")
+endif()
+
 set(the_description "cuda")  
 # set(CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src) 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

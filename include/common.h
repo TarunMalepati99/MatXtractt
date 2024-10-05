@@ -46,7 +46,6 @@
 // #define valT half
 // #endif
 
-
 #define WARP_SIZE 32
 #define BlockSize 8
 
@@ -61,10 +60,21 @@ const int fragK = 4;
 
 #define NEW_CID_TYPE int
 
+#define CUDA_CHECK(call)                                                          \
+    do                                                                            \
+    {                                                                             \
+        cudaError_t err = call;                                                   \
+        if (err != cudaSuccess)                                                   \
+        {                                                                         \
+            std::cerr << "CUDA error in " << __FILE__ << ":" << __LINE__ << " - " \
+                      << cudaGetErrorString(err) << std::endl;                    \
+            exit(EXIT_FAILURE);                                                   \
+        }                                                                         \
+    } while (0)
 
-#define GET_BIT_REST(x)  ((unsigned int)(x << 2) >> 2)
+#define GET_BIT_REST(x) ((unsigned int)(x << 2) >> 2)
 
-#define SET_16_BIT(dst, src, index)  \
+#define SET_16_BIT(dst, src, index)   \
     dst &= ~(0xffff << (index << 4)); \
     dst |= (src << (index << 4))
 
@@ -84,19 +94,22 @@ const int fragK = 4;
 #define GET_2_BIT(src) ((src >> 30) & 0b11)
 #define omp_valve 1e4
 
-
-
-inline int BinarySearch(int *arr, int len, int target) {
-	int low = 0;
-	int high = len;
-	int mid = 0;
-	while (low <= high) {
-		mid = (low + high) / 2;
-		if (target < arr[mid]) high = mid - 1;
-		else if (target > arr[mid]) low = mid + 1;
-		else return mid;
-	}
-	return -1;
+inline int BinarySearch(int *arr, int len, int target)
+{
+    int low = 0;
+    int high = len;
+    int mid = 0;
+    while (low <= high)
+    {
+        mid = (low + high) / 2;
+        if (target < arr[mid])
+            high = mid - 1;
+        else if (target > arr[mid])
+            low = mid + 1;
+        else
+            return mid;
+    }
+    return -1;
 }
 
 inline void swap_key(int *a, int *b)
@@ -178,7 +191,7 @@ inline void quick_sort_key_idx(int *key, int *len, int length)
 
 inline void initVec(valT *vec, int length)
 {
-    for (int i = 0; i < length; ++ i)
+    for (int i = 0; i < length; ++i)
     {
         vec[i] = (i % 29);
     }
@@ -193,19 +206,17 @@ __device__ __forceinline__ void mma_m8n8k4(valT *acc, valT &frag_a, valT &frag_b
         " { %2 }, "
         " { %3 }, "
         " { %0, %1 };"
-        : "+d"(acc[0]), "+d"(acc[1]):
-        "d"(frag_a), "d"(frag_b)
-    );
+        : "+d"(acc[0]), "+d"(acc[1]) : "d"(frag_a), "d"(frag_b));
 }
 #endif
-
 
 inline int get_max(int *arr, int len)
 {
     int max = arr[0];
-    for (int i = 1; i < len; i ++)
+    for (int i = 1; i < len; i++)
     {
-        if (arr[i] > max) max = arr[i];
+        if (arr[i] > max)
+            max = arr[i];
     }
     return max;
 }
@@ -216,25 +227,25 @@ inline void count_sort(int *arr, int *idx, int len, int exp)
     int *temp_idx = (int *)malloc(sizeof(int) * len);
     int buckets[10] = {0};
 
-    for (int i = 0; i < len; i ++)
+    for (int i = 0; i < len; i++)
     {
-        buckets[(arr[i] / exp) % 10] ++;
+        buckets[(arr[i] / exp) % 10]++;
     }
 
-    for (int i = 1; i < 10; i ++)
+    for (int i = 1; i < 10; i++)
     {
         buckets[i] += buckets[i - 1];
     }
 
-    for (int i = 0; i < len; i ++)
+    for (int i = 0; i < len; i++)
     {
         int offset = len - (buckets[(arr[i] / exp) % 10] - 1) - 1;
         temp_arr[offset] = arr[i];
         temp_idx[offset] = idx[i];
-        buckets[(arr[i] / exp) % 10] --;
+        buckets[(arr[i] / exp) % 10]--;
     }
 
-    for (int i = 0; i < len; i ++)
+    for (int i = 0; i < len; i++)
     {
         arr[i] = temp_arr[i];
         idx[i] = temp_idx[i];
@@ -250,25 +261,25 @@ inline void count_sort_asce(int *arr, int *idx, int len, int exp)
     int *temp_idx = (int *)malloc(sizeof(int) * len);
     int buckets[10] = {0};
 
-    for (int i = 0; i < len; i ++)
+    for (int i = 0; i < len; i++)
     {
-        buckets[(arr[i] / exp) % 10] ++;
+        buckets[(arr[i] / exp) % 10]++;
     }
 
-    for (int i = 1; i < 10; i ++)
+    for (int i = 1; i < 10; i++)
     {
         buckets[i] += buckets[i - 1];
     }
 
-    for (int i = len - 1; i >= 0; i ++)
+    for (int i = len - 1; i >= 0; i++)
     {
         int offset = buckets[(arr[i] / exp) % 10] - 1;
         temp_arr[offset] = arr[i];
         temp_idx[offset] = idx[i];
-        buckets[(arr[i] / exp) % 10] --;
+        buckets[(arr[i] / exp) % 10]--;
     }
 
-    for (int i = 0; i < len; i ++)
+    for (int i = 0; i < len; i++)
     {
         arr[i] = temp_arr[i];
         idx[i] = temp_idx[i];

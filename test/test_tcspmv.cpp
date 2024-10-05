@@ -385,6 +385,99 @@ void generateFormat(
     }
 }
 
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+
+void tcspmv_serial(
+    const double *x_d,                   
+    double *y_d,                         
+    const int *chunkPtr,                 
+    const std::vector<int> &fragPtr,     
+    const std::vector<uint32_t> &fragBit,
+    const std::vector<double> &tcVal,    
+    const int *sparse_AToX_index,        
+    int dRows,                           
+    int dCols,                           
+    int fragM,                           
+    int fragK                            
+)
+{
+    int chunkNum = (dRows + fragM - 1) / fragM; // 计算总的行块数
+
+    // 初始化输出向量 y_d 为零
+    for (int i = 0; i < dRows; ++i)
+        y_d[i] = 0.0;
+
+    // 遍历每个行块（chunk）
+    for (int rowChunkIndex = 0; rowChunkIndex < chunkNum; ++rowChunkIndex)
+    {
+        int rowStart = rowChunkIndex * fragM;
+        int rowEnd = std::min(rowStart + fragM, dRows);
+
+        int tcFragStart = chunkPtr[rowChunkIndex];
+        int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+
+        // 遍历该行块中的每个 Tc 碎片
+        for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+        {
+            // 获取位图
+            uint32_t bitmap = fragBit[tcFragIdx];
+
+            // 获取该 Tc 碎片在 tcVal 中的起始和结束索引
+            int valStartIdx = fragPtr[tcFragIdx];
+            int valEndIdx = fragPtr[tcFragIdx + 1];
+            int tcValNnz = valEndIdx - valStartIdx;
+
+            const double *tcValPtr = &tcVal[valStartIdx];
+
+            // 获取该 Tc 碎片对应的 x 的索引
+            const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK]; // 大小为 fragK
+
+            // 遍历碎片中的每个位置 (m, k)
+            int valIdx = 0; // tcValPtr 中的当前非零值索引
+
+            for (int m = 0; m < fragM; ++m)
+            {
+                int rowIdx = rowStart + m;
+                if (rowIdx >= dRows)
+                    continue; // 超出矩阵的行数，跳过
+
+                for (int k = 0; k < fragK; ++k)
+                {
+                    int bitPos = m * fragK + k;
+                    if (bitPos >= 32)
+                        continue; // 位图只有 32 位，超出则跳过
+
+                    int bit = (bitmap >> bitPos) & 1;
+
+                    if (bit)
+                    {
+                        // 碎片中位置 (m, k) 有非零元素
+                        double a_value = tcValPtr[valIdx];
+                        valIdx++; // 移动到 tcValPtr 中的下一个非零值
+
+                        int x_idx = x_indices[k];
+                        if (x_idx >= dCols)
+                        {
+                            // 非法的 x 索引，输出错误信息
+                            std::cerr << "Invalid x index: " << x_idx << std::endl;
+                            continue;
+                        }
+                        double x_value = x_d[x_idx];
+
+                        // 进行乘积并累加到 y_d 中
+                        y_d[rowIdx] += a_value * x_value;
+                    }
+                    // 否则该位置为零，跳过
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -691,7 +784,6 @@ int main(int argc, char **argv)
     std::vector<uint32_t> fragBit;
     std::vector<double> tcVal;
     generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, fragM, fragK, chunkPtr, fragPtr, fragBit, tcVal);
-
     /***************************************************************
      *         check the Sparsity-TCU-aware compression            *
      ***************************************************************/
@@ -700,12 +792,12 @@ int main(int argc, char **argv)
     initVec(X_val, colA);
 
     valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
-    valT *tryY_val = (valT *)malloc(sizeof(valT) * rowA);
+    valT *tryY_val = (valT *)malloc(sizeof(valT) * dRows);
 
 
     valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
-    memset(tryY_val, 0, sizeof(valT) * rowA);
+    memset(tryY_val, 0.0, sizeof(valT) * dRows);
     memset(ourY_val, 0, sizeof(valT) * rowA);
     memset(Y_val, 0, sizeof(valT) * rowA);
 
@@ -729,14 +821,21 @@ int main(int argc, char **argv)
     
     
     // Core-Dense Block
-    spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
+    // spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
     tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
-    // for(int i = 0; i < 2; i++)
+        // 假设已准备好输入数据结构和 x_d 向量
+    // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+    // for(int i = 0; i < 20; i++)
     // {
     //     printf("\n rId = %d \n",rId[i]);
-    //     ourY_val[rId[i]] += tryY_val[i];
     // }
+    for(int i = 0; i < dRows; i++)
+    {
+        // printf("\n rId = %d \n",rId[i]);
+        ourY_val[rId[i]] += tryY_val[i];
+        // printf("\n tryY_val = %lf \n",tryY_val[i]);
+    }
 
 
     // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
