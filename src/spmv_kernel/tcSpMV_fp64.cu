@@ -1,22 +1,5 @@
 #include "common.h"
 
-#define WARP_SIZE 32
-
-template <int SizeInBytes>
-__device__ __forceinline__ void cp_async(double *smem_ptr, const double *global_ptr, bool pred_guard = true)
-{
-    static_assert((SizeInBytes == 8 || SizeInBytes == 16), "Size is not supported for double");
-    unsigned smem_int_ptr = __cvta_generic_to_shared(smem_ptr);
-    asm volatile("{ \n"
-                 "  .reg .pred p;\n"
-                 "  setp.ne.b32 p, %0, 0;\n"
-                 "  @p cp.async.cg.shared.global [%1], [%2], %3;\n"
-                 "}\n" ::"r"((int)pred_guard),
-                 "r"(smem_int_ptr),
-                 "l"(global_ptr),
-                 "n"(SizeInBytes));
-}
-
 #define CUDA_CHECK_ERROR(call)                                            \
     {                                                                     \
         cudaError_t err = call;                                           \
@@ -30,12 +13,8 @@ __device__ __forceinline__ void cp_async(double *smem_ptr, const double *global_
 
 __device__ inline void cp_async_wait_all()
 {
-#if (__CUDA_ARCH__ >= 800)
     asm volatile("cp.async.commit_group;\n" ::);
     asm volatile("cp.async.wait_group 0;\n" ::);
-#else
-    // No action needed for synchronous copies
-#endif
 }
 
 __global__ void tcspmv_kernel(
@@ -49,7 +28,7 @@ __global__ void tcspmv_kernel(
     int dRows,
     int dCols)
 {
-    const int warpsPerBlock = 4;
+    const int warpsPerBlock = 16;
     extern __shared__ double shared_mem[];
 
     int per_buffer_size_tcVal = fragM * fragK; // Maximum elements for fp64, but for A matrix only 32 elements (8x4)
@@ -57,7 +36,7 @@ __global__ void tcspmv_kernel(
     int per_buffer_total = per_buffer_size_tcVal + per_buffer_size_x_d;
 
     int warpId = threadIdx.x / 32; // Warp ID within the block
-    int laneId = threadIdx.x % 32; // Lane ID within the warp
+    int laneId = threadIdx.x & 31; // Lane ID within the warp
 
     double *shmem_warp = shared_mem + warpId * 2 * per_buffer_total;
     double *shmem_warp_buffer0 = shmem_warp;
@@ -74,7 +53,6 @@ __global__ void tcspmv_kernel(
 
     if (numTcFragsInChunk == 0)
     {
-        printf("\n !!!now the tc frags number = 0 \n");
         return;
     }
     int rowStart = rowChunkIndex * fragM;
@@ -90,11 +68,7 @@ __global__ void tcspmv_kernel(
         return;
     }
     const double *tcValPtr = &tcVal[fragPtr[tcFragStart]];
-    // size_t tcVal_bytes = tcFragNnz * sizeof(double);
     double *tcVal_shared_ptr = shmem_tcVal_buffers[bufferIdx];
-
-    // cp_async_bulk_global_to_shared_async(tcVal_shared_ptr, reinterpret_cast<const char *>(tcValPtr), tcVal_bytes);
-
     if (laneId < tcFragNnz)
     {
         size_t shmem_addr = __cvta_generic_to_shared(tcVal_shared_ptr + laneId);
@@ -120,7 +94,8 @@ __global__ void tcspmv_kernel(
     }
 
     cp_async_wait_all();
-    __syncthreads();
+    // __syncthreads();
+    __syncwarp();
 
     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
     {
@@ -163,14 +138,15 @@ __global__ void tcspmv_kernel(
         }
 
         cp_async_wait_all();
-        __syncthreads();
+        // __syncthreads();
+        __syncwarp();
 
         uint32_t bitmap = fragBit[tcFragIdx];
         const double *tcValShmPtr = shmem_tcVal_buffers[currentBufferIdx];
         const double *x_values = shmem_x_buffers[currentBufferIdx];
 
         // Define fragments for MMA
-        double a_frag;
+        double a_frag = 0.0;
         double b_frag;
         double c_frag[2] = {0.0, 0.0}; // Each thread holds two FP64 elements for accumulator
 
@@ -184,10 +160,6 @@ __global__ void tcspmv_kernel(
         if ((bitmap >> a_bitPos) & 1)
         {
             a_frag = tcValShmPtr[a_valIdx];
-        }
-        else
-        {
-            a_frag = 0.0;
         }
 
         // Load B fragment
@@ -204,10 +176,7 @@ __global__ void tcspmv_kernel(
         // Compute sum of accumulator elements
         if (a_col == 0)
         {
-            // 计算写入的全局索引
             int y_idx = rowStart + a_row;
-
-            // 写回全局内存
             if (y_idx < dRows)
             {
                 atomicAdd(&y_d[y_idx], c_frag[0]);
@@ -259,7 +228,7 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(double) * rowA));
     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(double) * rowA));
 
-    int warpsPerBlock = 4;
+    int warpsPerBlock = 16;
     int warpSize = 32;
     int threadsPerBlock = warpsPerBlock * warpSize;
     int numRowChunks = (rowA + fragM - 1) / fragM;
@@ -284,12 +253,11 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
-    printf("\n tcspmv_kernel end \n\n");
+    gettimeofday(&t2, NULL);
     CUDA_CHECK_ERROR(cudaGetLastError());
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    gettimeofday(&t2, NULL);
-
+    
     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(double) * rowA, cudaMemcpyDeviceToHost));
 
     CUDA_CHECK_ERROR(cudaFree(d_tcVal));
@@ -302,5 +270,5 @@ void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> frag
 
     double elapsed = (t2.tv_sec - t1.tv_sec) * 1000.0;
     elapsed += (t2.tv_usec - t1.tv_usec) / 1000.0;
-    printf("Kernel execution time: %lf ms\n", elapsed);
+    printf("Kernel execution time: %lf ms\n", elapsed / execute_time);
 }

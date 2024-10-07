@@ -61,7 +61,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     // printf("cusparse preprocessing time: %8.4lf ms\n", cusparse_pre);
     *cu_pre = cusparse_pre;
 
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                      &alpha, matA, vecX, &beta, vecY, CUDA_R_64F,
@@ -70,7 +70,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     cudaDeviceSynchronize();
 
     gettimeofday(&t1, NULL);
-    for (int i = 0; i < 1000; ++i)
+    for (int i = 0; i < 100; ++i)
     {
         cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                      &alpha, matA, vecX, &beta, vecY, CUDA_R_64F,
@@ -78,7 +78,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     }
     cudaDeviceSynchronize();
     gettimeofday(&t2, NULL);
-    *cu_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / 1000;
+    *cu_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / 100;
     *cu_gflops = (double)((long)nnzA * 2) / (*cu_time * 1e6);
     *cu_bandwidth1 = (double)data_origin1 / (*cu_time * 1e6);
     *cu_bandwidth2 = (double)data_origin2 / (*cu_time * 1e6);
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     long long int data_origin2 = (nnzA + nnzA + rowA) * sizeof(valT) + nnzA * sizeof(int) + (rowA + 1) * sizeof(indT);
 
     cusparse_spmv_all(csrVal, csrRowPtr, csrColInd, X_val, cuY_val, rowA, colA, nnzA, data_origin1, data_origin2, &cu_time, &cu_gflops, &cu_bandwidth1, &cu_bandwidth2, &cu_pre);
-
+    printf("cusparse end\n");
     double necTime = 0, necPre = 0;
     necspmv(filename, csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA, &necTime, &necPre);
     // spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);

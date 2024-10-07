@@ -763,7 +763,7 @@ int main(int argc, char **argv)
     }
     int totalTcFrags = chunkPtr[chunkNum];
     // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
-    printf("TC_ratio = %lf\n", (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8));
+    printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
 
     // TODO: 生成这个
     int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
@@ -816,14 +816,18 @@ int main(int argc, char **argv)
 
     // Peripheral-Sparse Block
     spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
+    printf("Peripheral-Sparse nnz pre row = %f\n", (double)nnzColS/ (double)rowA);
     // Edge-Sparse Block
     spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
+    printf("Edge-Sparse nnz pre row = %f\n", (double)nnzRowS/ (double)sRows);
     
     
     // Core-Dense Block
+    printf("Core-Dense nnz pre row = %f\n", (double)nnzRowD/ (double)dRows);
     // spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
     tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    
         // 假设已准备好输入数据结构和 x_d 向量
     // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
     // for(int i = 0; i < 20; i++)

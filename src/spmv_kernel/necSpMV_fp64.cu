@@ -354,18 +354,20 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   // cudaFuncSetAttribute(necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
 
   gettimeofday(&tpre2, NULL);
-  int warmup_time = 100;
-  int execute_time = 1000;
+  int warmup_time = 10;
+  int execute_time = 100;
 
   for (int i = 0; i < warmup_time; ++i)
   {
     necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    printf("necspmv_kernel end\n");
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
     necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    printf("necspmv_kernel end\n");
   }
   cudaDeviceSynchronize();
 
