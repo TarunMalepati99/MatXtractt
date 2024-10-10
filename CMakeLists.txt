@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CPP_STANDARD 11)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80) 
 
-option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" ON)
+option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
 
 if(ENABLE_CUDA_MEMCHECK)
     message(STATUS "cuda-memcheck is enabled")
@@ -55,8 +55,9 @@ target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})
 file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_spmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
-file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
-
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_preprocess.cpp")
+file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_kernel.cpp")
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
 
 if(CUDA_TEST_FILES)
     #fp64

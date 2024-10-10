@@ -60,8 +60,10 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     double cusparse_pre = (t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0;
     // printf("cusparse preprocessing time: %8.4lf ms\n", cusparse_pre);
     *cu_pre = cusparse_pre;
+    int warp_iter = 100;
+    int test_iter = 1000;
 
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < warp_iter; ++i)
     {
         cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                      &alpha, matA, vecX, &beta, vecY, CUDA_R_64F,
@@ -70,15 +72,20 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     cudaDeviceSynchronize();
 
     gettimeofday(&t1, NULL);
-    for (int i = 0; i < 100; ++i)
+    cuda_time_test_start();
+    for (int i = 0; i < test_iter; ++i)
     {
         cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                      &alpha, matA, vecX, &beta, vecY, CUDA_R_64F,
                      CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
     }
+    cuda_time_test_end();
     cudaDeviceSynchronize();
     gettimeofday(&t2, NULL);
-    *cu_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / 100;
+    double runtime = (elapsedTime) / test_iter;
+    // double gflops = (2.0 * matA_csr->nnz) / ((runtime / 1000) * 1e9);
+    printf("\n CUSPARSE CUDA kernel runtime = %g ms\n", runtime);
+    *cu_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / test_iter;
     *cu_gflops = (double)((long)nnzA * 2) / (*cu_time * 1e6);
     *cu_bandwidth1 = (double)data_origin1 / (*cu_time * 1e6);
     *cu_bandwidth2 = (double)data_origin2 / (*cu_time * 1e6);

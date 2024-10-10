@@ -501,6 +501,7 @@ int main(int argc, char **argv)
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
+    printf("\n 1111111111 \n");
     /***************************************************************
      *                 1.Sparsity-aware Compression                *
      ***************************************************************/
@@ -744,7 +745,7 @@ int main(int argc, char **argv)
      *                     2.TCU-aware Compression                 *
      *   dense  row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd   *
      ***************************************************************/
-
+    // TODO: chunkPtr and nec_num not check
     int *ecrId = (int *)malloc(sizeof(int) * nnzRowD);
     memset(ecrId, 0, sizeof(int) * nnzRowD);
     int chunkNum = ceil((double)dRows / (double)fragM);
@@ -763,8 +764,9 @@ int main(int argc, char **argv)
     }
     int totalTcFrags = chunkPtr[chunkNum];
     // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
-    // printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
-    printf("---TC_nnz_ratio = %lf---\n",((double)nnzRowD / ((double)chunkPtr[chunkNum] * 4 * 8)));
+    printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
+
+    // TODO: 生成这个
     int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
     memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
 
@@ -783,68 +785,42 @@ int main(int argc, char **argv)
     std::vector<uint32_t> fragBit;
     std::vector<double> tcVal;
     generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, fragM, fragK, chunkPtr, fragPtr, fragBit, tcVal);
-    /***************************************************************
-     *         check the Sparsity-TCU-aware compression            *
-     ***************************************************************/
+    std::string outfile_name = std::string(filename) + "_preprocessed.dat";
+    std::cout << "Saving preprocessed data to: " << std::filesystem::absolute(outfile_name).string() << std::endl;
+    std::ofstream outfile(outfile_name.c_str(), std::ios::binary);
 
-    valT *X_val = (valT *)malloc(sizeof(valT) * colA);
-    initVec(X_val, colA);
-
-    valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
-    valT *tryY_val = (valT *)malloc(sizeof(valT) * dRows);
-
-
-    valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
-
-    memset(tryY_val, 0.0, sizeof(valT) * dRows);
-    memset(ourY_val, 0, sizeof(valT) * rowA);
-    memset(Y_val, 0, sizeof(valT) * rowA);
-
-    valT *x_d = (valT *)malloc(sizeof(valT) * dCols);
-    valT *x_s = (valT *)malloc(sizeof(valT) * sCols);
-    for (int i = 0; i < dCols; i++)
-    {
-        x_d[i] = X_val[descColId[i].index];
-    }
-    for (int i = 0; i < sCols; i++)
-    {
-        x_s[i] = X_val[newArray[i]];
-    }
-    // Baseline
-    spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
-
-    // Peripheral-Sparse Block
-    spmv_fp64_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
-    printf("Peripheral-Sparse nnz pre row = %f\n", (double)nnzColS/ (double)rowA);
-    // Edge-Sparse Block
-    spmv_fp64_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
-    printf("Edge-Sparse nnz pre row = %f\n", (double)nnzRowS/ (double)sRows);
-    
-    
-    // Core-Dense Block
-    printf("Core-Dense nnz pre row = %f\n", (double)nnzRowD/ (double)dRows);
-    // spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
-    double necTime = 0, necPre = 0;
-    tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
-    
-        // 假设已准备好输入数据结构和 x_d 向量
-    // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    // for(int i = 0; i < 20; i++)
-    // {
-    //     printf("\n rId = %d \n",rId[i]);
-    // }
-    for(int i = 0; i < dRows; i++)
-    {
-        // printf("\n rId = %d \n",rId[i]);
-        ourY_val[rId[i]] += tryY_val[i];
-        // printf("\n tryY_val = %lf \n",tryY_val[i]);
+    if (!outfile) {
+        std::cerr << "Error: Unable to open file for writing: " << outfile_name << std::endl;
+        return 1;
     }
 
+    // 保存 chunkPtr
+    outfile.write(reinterpret_cast<char*>(&chunkNum), sizeof(int));
+    outfile.write(reinterpret_cast<char*>(chunkPtr), sizeof(int) * (chunkNum + 1));
 
-    // spmv_fp64_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
-    // spmv_fp64_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
+    // 保存 sparse_AToX_index
+    outfile.write(reinterpret_cast<char*>(&totalTcFrags), sizeof(int));
+    // outfile.write(reinterpret_cast<char*>(&fragK), sizeof(int));
+    outfile.write(const_cast<char*>(reinterpret_cast<const char*>(&fragK)), sizeof(int));
+    outfile.write(reinterpret_cast<char*>(sparse_AToX_index), sizeof(int) * totalTcFrags * fragK);
 
-    int result = eQcheck(Y_val, ourY_val, rowA);
+    // 保存 fragPtr
+    size_t fragPtr_size = fragPtr.size();
+    outfile.write(reinterpret_cast<char*>(&fragPtr_size), sizeof(size_t));
+    outfile.write(reinterpret_cast<char*>(fragPtr.data()), sizeof(int) * fragPtr_size);
+
+    // 保存 fragBit
+    size_t fragBit_size = fragBit.size();
+    outfile.write(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
+    outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint32_t) * fragBit_size);
+
+    // 保存 tcVal
+    size_t tcVal_size = tcVal.size();
+    outfile.write(reinterpret_cast<char*>(&tcVal_size), sizeof(size_t));
+    outfile.write(reinterpret_cast<char*>(tcVal.data()), sizeof(double) * tcVal_size);
+
+    outfile.close();
+
 
     free(nec_num);
     free(use_x_id);
@@ -866,11 +842,11 @@ int main(int argc, char **argv)
     free(dcscRowInd);
     free(dcscColPtr);
     free(dcscVal);
-    free(x_s);
-    free(x_d);
-    free(Y_val);
-    free(ourY_val);
-    free(X_val);
+    // free(x_s);
+    // free(x_d);
+    // free(Y_val);
+    // free(ourY_val);
+    // free(X_val);
 
     free(csrVal_dd);
     free(csrRowPtr_dd);

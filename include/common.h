@@ -9,6 +9,9 @@
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <fstream>
+#include <filesystem>
+// 其他可能需要的头文件
 
 #include <cuda.h>
 #include <cuda_fp16.h>
@@ -39,6 +42,7 @@
 
 #include "omp.h"
 #define valT double
+#define innzT int64_t
 
 // #ifdef f64
 
@@ -71,6 +75,27 @@ const int fragK = 4;
             exit(EXIT_FAILURE);                                                   \
         }                                                                         \
     } while (0)
+
+
+static cudaEvent_t start, stop;
+static float elapsedTime;
+
+static void cuda_time_test_start()
+{
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start, 0);
+    cudaEventQuery(start);
+}
+
+static void cuda_time_test_end()
+{
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+}
 
 #define GET_BIT_REST(x) ((unsigned int)(x << 2) >> 2)
 
