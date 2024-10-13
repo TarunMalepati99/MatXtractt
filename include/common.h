@@ -15,6 +15,7 @@
 
 #include <cuda.h>
 #include <cuda_fp16.h>
+#include <cuda_fp16.hpp>
 #include <mma.h>
 // #include <cuda/std/future>
 // #include <cuda_pipeline.h>
@@ -41,14 +42,21 @@
 // #include <vector>
 
 #include "omp.h"
+
+#ifdef fp64
 #define valT double
+#define VAL_CUDA_R_TYPE CUDA_R_64F
+const int fragM = 8;
+const int fragK = 4;
+#else
+#define valT half
+#define VAL_CUDA_R_TYPE CUDA_R_16F
+const int fragM = 16;
+const int fragK = 8;
+#endif
+
 #define innzT int64_t
 
-// #ifdef f64
-
-// #else
-// #define valT half
-// #endif
 
 #define WARP_SIZE 32
 #define BlockSize 8
@@ -57,8 +65,7 @@ const int MMA_M = 8;
 const int MMA_N = 8;
 const int MMA_K = 4;
 
-const int fragM = 8;
-const int fragK = 4;
+
 
 #define indT int
 

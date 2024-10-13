@@ -1,7 +1,7 @@
 #include "TCSpMV.h"
 #include "mmio.h"
 //-------------------------------------------------------------------------------
-int resCompare(valT *our_val, valT *cuda_val, int length)
+int resCompare(double *our_val, double *cuda_val, int length)
 {
     for (int i = 0; i < length; i++)
     {
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
     int iter = (int)((necPre - cu_pre) / (cu_time - necTime));
 
     printf("our_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime, necPre);
-    printf("cusparse_perf:%8.4lf ms, cusparse_pre:%8.4lf ms\n", cu_time, cu_pre);
+    printf("SpMV CUDA kernel runtime =%8.4lf ms, cusparse_pre:%8.4lf ms\n", cu_time, cu_pre);
     // printf("\n iterate= %d\n", iter);
 
     // FILE *fout;
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     // fclose(fout);
 
     /* verify the result with cusparse */
-    int result = resCompare(cuY_val, Y_val, rowA);
+    // int result = resCompare(cuY_val, Y_val, rowA);
 
     free(X_val);
     free(Y_val);

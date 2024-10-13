@@ -7,6 +7,7 @@ set(CMAKE_CPP_STANDARD 11)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80) 
 
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
+option(USE_FP64 "Enable fp64 support" ON) # 添加 fp64 选项
 
 if(ENABLE_CUDA_MEMCHECK)
     message(STATUS "cuda-memcheck is enabled")
@@ -14,6 +15,13 @@ if(ENABLE_CUDA_MEMCHECK)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -G -O0")
 else()
     message(STATUS "cuda-memcheck is disabled")
+endif()
+
+if(USE_FP64)
+    message(STATUS "FP64 is enabled")
+    add_definitions(-Dfp64)  # 向编译器传递 fp64 预处理宏
+else()
+    message(STATUS "FP64 is disabled")
 endif()
 
 set(the_description "cuda")  
@@ -55,9 +63,9 @@ target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})
 file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_spmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
-# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_preprocess.cpp")
-file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_kernel.cpp")
-# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_preprocess_fp64.cpp")
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tc_kernel_fp64.cpp")
+file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
 
 if(CUDA_TEST_FILES)
     #fp64
