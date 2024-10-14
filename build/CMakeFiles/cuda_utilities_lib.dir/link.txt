@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcuda_utilities_lib.a CMakeFiles/cuda_utilities_lib.dir/utilities/csr2csc.cpp.o CMakeFiles/cuda_utilities_lib.dir/utilities/mmio.cpp.o
-/usr/bin/ranlib libcuda_utilities_lib.a
