@@ -1,282 +1,261 @@
-// #include "common.h"
+#include "common.h"
+#define SHM_SIZE 128  // Shared memory size in doubles (8 KB)
+#define CONST_SIZE 4096  // 常量内存大小
+ __constant__ double x_const[CONST_SIZE];
 
-// #define CUDA_CHECK_ERROR(call)                                            \
-//     {                                                                     \
-//         cudaError_t err = call;                                           \
-//         if (err != cudaSuccess)                                           \
-//         {                                                                 \
-//             fprintf(stderr, "CUDA Error: %s (error code: %d) at %s:%d\n", \
-//                     cudaGetErrorString(err), err, __FILE__, __LINE__);    \
-//             exit(EXIT_FAILURE);                                           \
-//         }                                                                 \
-//     }
+// 重新组织tcVal、fragPtr和sparse_AToX_index的数据布局，使得连续线程访问连续的内存地址
+// 利用CUDA的Warp级别原语（如__shfl_down_sync）在warp内部高效地共享数据，减少同步开销
 
-// __device__ inline void cp_async_wait_all()
-// {
-//     asm volatile("cp.async.commit_group;\n" ::);
-//     asm volatile("cp.async.wait_group 0;\n" ::);
-// }
+__global__ void tcspmv_kernel_fp64(
+    const double *__restrict__ x_d,
+    double *__restrict__ y_d,
+    const int *__restrict__ chunkPtr,
+    const int *__restrict__ fragPtr,
+    const uint32_t *__restrict__ fragBit,
+    const double *__restrict__ tcVal,
+    const int *__restrict__ sparse_AToX_index,
+    int dRows,
+    int dCols)
+{
+    const int warpsPerBlock = 4;
+    int warpId = threadIdx.x / 32; // Warp ID within the block
+    int laneId = threadIdx.x & 31; // Lane ID within the warp
+    // double thr_accum = 0;
 
-// __global__ void tcspmv_kernel(
-//     const double *__restrict__ x_d,
-//     double *__restrict__ y_d,
-//     const int *__restrict__ chunkPtr,
-//     const int *__restrict__ fragPtr,
-//     const uint32_t *__restrict__ fragBit,
-//     const double *__restrict__ tcVal,
-//     const int *__restrict__ sparse_AToX_index,
-//     int dRows,
-//     int dCols)
-// {
-//     const int warpsPerBlock = 4;
-//     int warpId = threadIdx.x / 32; // Warp ID within the block
-//     int laneId = threadIdx.x & 31; // Lane ID within the warp
+    int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
+
+    int tcFragStart = chunkPtr[rowChunkIndex];
+    int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+    int numTcFragsInChunk = tcFragEnd - tcFragStart;
+
+    if (numTcFragsInChunk == 0)
+    {
+        return;
+    }
+    int rowStart = rowChunkIndex * fragM;
+
+    // Calculate positions according to the documentation
+    int a_row = laneId >> 2; // laneId / 4
+    int a_col = laneId & 3;  // laneId % 4
+    int a_bitPos = a_row * fragK + a_col;
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+    {
+        uint32_t bitmap = fragBit[tcFragIdx];
+        const double *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
+        const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
+
+        double c_frag[2] = {0.0, 0.0};
+        // Load A fragment
+        int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
+        int bit = (bitmap >> a_bitPos) & 1;
+        double a_frag = bit ? tcValPtr[a_valIdx] : 0.0;
+
+        int x_idx = sparse_AToX_idx[a_col];
+        // b_frag = x_d[x_idx];
+        double b_frag = __ldg(&x_d[x_idx]);
+
+        // Perform MMA operation
+        asm volatile(
+            "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 \n\t"
+            "{%0, %1}, {%2}, {%3}, {%0, %1};\n\t"
+            : "+d"(c_frag[0]), "+d"(c_frag[1])
+            : "d"(a_frag), "d"(b_frag));
+        // Compute sum of accumulator elements
+        // thr_accum += c_frag[0];
+        if (a_col == 0)
+        {
+            int y_idx = rowStart + a_row;
+            if (y_idx < dRows)
+            {
+                // atomicAdd(&y_d[y_idx], thr_accum);
+                atomicAdd(&y_d[y_idx], c_frag[0]);
+            }
+        }
+
+    } // End of tcFrag loop
     
-//     extern __shared__ double shared_mem[];
-//     int per_buffer_size_tcVal = fragM * fragK; // Maximum elements for fp64, but for A matrix only 32 elements (8x4)
-//     int per_buffer_size_x_d = fragK;           // 4 elements
-//     int per_buffer_total = per_buffer_size_tcVal + per_buffer_size_x_d;
+}
 
-//     double *shmem_warp = shared_mem + warpId * 2 * per_buffer_total;
-//     double *shmem_warp_buffer0 = shmem_warp;
-//     double *shmem_warp_buffer1 = shmem_warp + per_buffer_total;
-//     double *shmem_tcVal_buffers[2] = {shmem_warp_buffer0, shmem_warp_buffer1};                                             // Buffer for tcVal (matrix A)
-//     double *shmem_x_buffers[2] = {shmem_warp_buffer0 + per_buffer_size_tcVal, shmem_warp_buffer1 + per_buffer_size_tcVal}; // Buffer for x_d (matrix B)
+__global__ void tcspmv_kernel_fp64__(
+    const double *__restrict__ x_d,
+    double *__restrict__ y_d,
+    const int *__restrict__ chunkPtr,
+    const int *__restrict__ fragPtr,
+    const uint32_t *__restrict__ fragBit,
+    const double *__restrict__ tcVal,
+    const int *__restrict__ sparse_AToX_index,
+    int dRows,
+    int dCols)
+{
+    // __shared__ double x_shm[SHM_SIZE];
+    // int num_elements = SHM_SIZE;
+    // int num_threads = blockDim.x;
+    // int elements_per_thread = (num_elements + num_threads - 1) / num_threads;
 
-//     int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
+    // // Load data into shared memory
+    // for (int i = 0; i < elements_per_thread; ++i)
+    // {
+    //     int idx = threadIdx.x + i * num_threads;
+    //     if (idx < num_elements)
+    //     {
+    //         x_shm[idx] = x_d[idx];
+    //     }
+    // }
+    // __syncthreads();
 
-//     int tcFragStart = chunkPtr[rowChunkIndex];
-//     int tcFragEnd = chunkPtr[rowChunkIndex + 1];
-//     int numTcFragsInChunk = tcFragEnd - tcFragStart;
+    const int warpsPerBlock = 4;
+    int warpId = threadIdx.x / 32; // Warp ID within the block
+    int laneId = threadIdx.x & 31; // Lane ID within the warp
+    // double thr_accum = 0;
 
-//     if (numTcFragsInChunk == 0)
-//     {
-//         return;
-//     }
-//     int rowStart = rowChunkIndex * fragM;
-//     int rowEnd = min(rowStart + fragM, dRows);
+    int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
 
-//     int bufferIdx = 0; // Start with buffer 0
+    int tcFragStart = chunkPtr[rowChunkIndex];
+    int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+    int numTcFragsInChunk = tcFragEnd - tcFragStart;
 
-//     // Preload the first tcFragment data
-//     int tcFragNnz = fragPtr[tcFragStart + 1] - fragPtr[tcFragStart];
-//     if (tcFragNnz > per_buffer_size_tcVal)
-//     {
-//         printf("Error: tcFragNnz (%d) exceeds per_buffer_size_tcVal (%d)\n", tcFragNnz, per_buffer_size_tcVal);
-//         return;
-//     }
-//     const double *tcValPtr = &tcVal[fragPtr[tcFragStart]];
-//     double *tcVal_shared_ptr = shmem_tcVal_buffers[bufferIdx];
-//     if (laneId < tcFragNnz)
-//     {
-//         size_t shmem_addr = __cvta_generic_to_shared(tcVal_shared_ptr + laneId);
-//         asm volatile(
-//             "cp.async.ca.shared.global [%0], [%1], %2;\n"
-//             :
-//             : "l"(shmem_addr),
-//               "l"(tcValPtr + laneId),
-//               "n"(8));
-//     }
-//     const int *sparse_AToX_idx = &sparse_AToX_index[tcFragStart * fragK];
-//     if (laneId < fragK)
-//     {
-//         int x_idx = sparse_AToX_idx[laneId];
-//         if (x_idx >= 0 && x_idx < dCols)
-//         {
-//             size_t shmem_addr = __cvta_generic_to_shared(&shmem_x_buffers[bufferIdx][laneId]);
-//             asm volatile("cp.async.ca.shared.global [%0], [%1], 8;\n" ::
-//                              "l"(shmem_addr),
-//                          "l"(&x_d[x_idx]));
-//         }
-//     }
+    if (numTcFragsInChunk == 0)
+    {
+        return;
+    }
+    int rowStart = rowChunkIndex * fragM;
 
-//     cp_async_wait_all();
-//     __syncwarp();
+    // Calculate positions according to the documentation
+    int a_row = laneId >> 2; // laneId / 4
+    int a_col = laneId & 3;  // laneId % 4
+    int a_bitPos = a_row * fragK + a_col;
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+    {
+        uint32_t bitmap = fragBit[tcFragIdx];
+        const double *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
+        const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
 
-//     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
-//     {
-//         int currentBufferIdx = bufferIdx; // Buffer with current tcFragment data
-//         int nextBufferIdx = 1 - bufferIdx;
+        double c_frag[2] = {0.0, 0.0};
+        // Load A fragment
+        int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
+        int bit = (bitmap >> a_bitPos) & 1;
+        double a_frag = bit ? tcValPtr[a_valIdx] : 0.0;
 
-//         // Preload next tcFragment data while processing the current one
-//         if (tcFragIdx + 1 < tcFragEnd)
-//         {
-//             int next_tcFragNnz = fragPtr[tcFragIdx + 2] - fragPtr[tcFragIdx + 1];
-//             const double *next_tcValPtr = &tcVal[fragPtr[tcFragIdx + 1]];
+        int x_idx = sparse_AToX_idx[a_col];
+        // double b_frag;
+        // if (x_idx < SHM_SIZE)
+        // {
+        //     b_frag = x_shm[x_idx];
+        // }
+        // else
+        // {
+        //     b_frag = __ldg(&x_d[x_idx]);
+        // }
+        double b_frag = __ldg(&x_d[x_idx]);
 
-//             // size_t tcVal_bytes = next_tcFragNnz * sizeof(double);
-//             double *next_tcVal_shared_ptr = shmem_tcVal_buffers[nextBufferIdx];
-//             // cp_async_bulk_global_to_shared_async(next_tcVal_shared_ptr, reinterpret_cast<const char *>(next_tcValPtr), tcVal_bytes);
-//             if (laneId < next_tcFragNnz)
-//             {
-//                 size_t shmem_addr = __cvta_generic_to_shared(next_tcVal_shared_ptr + laneId);
-//                 asm volatile(
-//                     "cp.async.ca.shared.global [%0], [%1], %2;\n"
-//                     :
-//                     : "l"(shmem_addr),
-//                       "l"(next_tcValPtr + laneId),
-//                       "n"(8));
-//             }
+        // Perform MMA operation
+        asm volatile(
+            "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 \n\t"
+            "{%0, %1}, {%2}, {%3}, {%0, %1};\n\t"
+            : "+d"(c_frag[0]), "+d"(c_frag[1])
+            : "d"(a_frag), "d"(b_frag));
+        // Compute sum of accumulator elements
+        // thr_accum += c_frag[0];
+        if (a_col == 0)
+        {
+            int y_idx = rowStart + a_row;
+            if (y_idx < dRows)
+            {
+                // atomicAdd(&y_d[y_idx], thr_accum);
+                atomicAdd(&y_d[y_idx], c_frag[0]);
+            }
+        }
 
-//             // Async copy x_d for the next tcFrag
-//             const int *next_sparse_AToX_idx = &sparse_AToX_index[(tcFragIdx + 1) * fragK];
-//             if (laneId < fragK)
-//             {
-//                 int x_idx = next_sparse_AToX_idx[laneId];
-//                 if (x_idx >= 0 && x_idx < dCols)
-//                 {
-//                     size_t shmem_addr = __cvta_generic_to_shared(&shmem_x_buffers[nextBufferIdx][laneId]);
-//                     asm volatile("cp.async.ca.shared.global [%0], [%1], 8;\n" ::
-//                                      "l"(shmem_addr),
-//                                  "l"(&x_d[x_idx]));
-//                 }
-//             }
-//         }
-
-//         cp_async_wait_all();
-//         __syncwarp();
-
-//         uint32_t bitmap = fragBit[tcFragIdx];
-//         const double *tcValShmPtr = shmem_tcVal_buffers[currentBufferIdx];
-//         const double *x_values = shmem_x_buffers[currentBufferIdx];
-
-//         // Define fragments for MMA
-//         double a_frag = 0.0;
-//         double b_frag;
-//         double c_frag[2] = {0.0, 0.0}; // Each thread holds two FP64 elements for accumulator
-
-//         // Calculate positions according to the documentation
-//         int a_row = laneId >> 2; // laneId / 4
-//         int a_col = laneId & 3;  // laneId % 4
-
-//         // Load A fragment
-//         int a_bitPos = a_row * fragK + a_col;
-//         int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
-//         if ((bitmap >> a_bitPos) & 1)
-//         {
-//             a_frag = tcValShmPtr[a_valIdx];
-//         }
-
-//         // Load B fragment
-//         b_frag = x_values[a_col];
-
-
-//         // Perform MMA operation
-//         asm volatile(
-//             "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 \n\t"
-//             "{%0, %1}, {%2}, {%3}, {%0, %1};\n\t"
-//             : "+d"(c_frag[0]), "+d"(c_frag[1])
-//             : "d"(a_frag), "d"(b_frag));
-
-//         // Compute sum of accumulator elements
-//         if (a_col == 0)
-//         {
-//             int y_idx = rowStart + a_row;
-//             if (y_idx < dRows)
-//             {
-//                 atomicAdd(&y_d[y_idx], c_frag[0]);
-//             }
-//         }
-//         bufferIdx = nextBufferIdx;
-//     } // End of tcFrag loop
-// }
-
-// void tcspmv(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
-//             std::vector<double> tcVal, indT *sparse_AToX_index, double *X_val,
-//             double *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
-// {
-//     struct timeval t1;
-//     struct timeval t2;
-//     int fragM = 8;
-//     int fragK = 4;
-//     int chunkNum = ceil((double)rowA / (double)fragM);
-//     int totalTcFrags = chunkPtr[chunkNum];
-//     double *d_tcVal, *d_X_val, *d_Y_val;
-//     indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
-//     uint32_t *d_fragBit;
-
-//     //  tcVal
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_tcVal, tcVal.size() * sizeof(double)));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_tcVal, tcVal.data(), tcVal.size() * sizeof(double), cudaMemcpyHostToDevice));
-
-//     //  fragPtr
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_fragPtr, fragPtr.size() * sizeof(int)));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_fragPtr, fragPtr.data(), fragPtr.size() * sizeof(int), cudaMemcpyHostToDevice));
-
-//     //  fragBit
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBit.size() * sizeof(uint32_t)));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBit.size() * sizeof(uint32_t), cudaMemcpyHostToDevice));
-
-//     //  chunkPtr
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(indT) * (chunkNum + 1)));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice));
-
-//     //  sparse_AToX_index
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK)));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
-
-//     //  X_val
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_X_val, sizeof(double) * colA));
-//     CUDA_CHECK_ERROR(cudaMemcpy(d_X_val, X_val, sizeof(double) * colA, cudaMemcpyHostToDevice));
-
-//     //  Y_val
-//     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(double) * rowA));
-//     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(double) * rowA));
-
-//     int warpsPerBlock = 4;
-//     int warpSize = 32;
-//     int threadsPerBlock = warpsPerBlock * warpSize;
-//     int numRowChunks = (rowA + fragM - 1) / fragM;
-//     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
-
-//     // Calculate shared memory size
-//     int per_buffer_size_tcVal_total = fragM * fragK; // Max possible non-zero elements in a fragment
-//     int per_buffer_size_x_d_total = fragK;
-//     int per_buffer_total = per_buffer_size_tcVal_total + per_buffer_size_x_d_total;
-//     size_t sharedMemSize = warpsPerBlock * 2 * per_buffer_total * sizeof(double);
-
-//     printf("Launching kernel with %d blocks, %d threads per block, sharedMemSize = %zu bytes\n",
-//            blocksPerGrid, threadsPerBlock, sharedMemSize);
-
-//     int warp_iter = 100;
-//     for (int i = 0; i < warp_iter; ++i)
-//     {
-//         tcspmv_kernel<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(
-//             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
-//             d_sparse_AToX_index, rowA, colA);
-//     }
-//     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
-
-//     int test_iter = 1000;
-//     gettimeofday(&t1, NULL);
-//     cuda_time_test_start();
-//     for (int i = 0; i < test_iter; ++i)
-//     {
-//         tcspmv_kernel<<<blocksPerGrid, threadsPerBlock, sharedMemSize>>>(
-//             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
-//             d_sparse_AToX_index, rowA, colA);
-//     }
-//     cuda_time_test_end();
+    } // End of tcFrag loop
     
-//     double runtime = (elapsedTime) / test_iter;
-//     // double gflops = (2.0 * matA_csr->nnz) / ((runtime / 1000) * 1e9);
-//     printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
-//     gettimeofday(&t2, NULL);
-//     CUDA_CHECK_ERROR(cudaGetLastError());
-    
+}
 
-    
-//     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(double) * rowA, cudaMemcpyDeviceToHost));
 
-//     CUDA_CHECK_ERROR(cudaFree(d_tcVal));
-//     CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
-//     CUDA_CHECK_ERROR(cudaFree(d_fragBit));
-//     CUDA_CHECK_ERROR(cudaFree(d_chunkPtr));
-//     CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
-//     CUDA_CHECK_ERROR(cudaFree(d_X_val));
-//     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
 
-//     // double elapsed = (t2.tv_sec - t1.tv_sec) * 1000.0;
-//     // elapsed += (t2.tv_usec - t1.tv_usec) / 1000.0;
-//     // printf("Kernel execution time: %lf ms\n", elapsed / execute_time);
-// }
+void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+            std::vector<double> tcVal, indT *sparse_AToX_index, double *X_val,
+            double *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
+{
+    struct timeval t1;
+    struct timeval t2;
+
+    int chunkNum = ceil((double)rowA / (double)fragM);
+    int totalTcFrags = chunkPtr[chunkNum];
+    double *d_tcVal, *d_X_val, *d_Y_val;
+    indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
+    uint32_t *d_fragBit;
+   
+    // cudaMemcpyToSymbol(x_const, X_val, CONST_SIZE * sizeof(double));
+
+    //  tcVal
+    CUDA_CHECK_ERROR(cudaMalloc(&d_tcVal, tcVal.size() * sizeof(double)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_tcVal, tcVal.data(), tcVal.size() * sizeof(double), cudaMemcpyHostToDevice));
+
+    //  fragPtr
+    CUDA_CHECK_ERROR(cudaMalloc(&d_fragPtr, fragPtr.size() * sizeof(int)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_fragPtr, fragPtr.data(), fragPtr.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+    //  fragBit
+    CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBit.size() * sizeof(uint32_t)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBit.size() * sizeof(uint32_t), cudaMemcpyHostToDevice));
+
+    //  chunkPtr
+    CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(indT) * (chunkNum + 1)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice));
+
+    //  sparse_AToX_index
+    CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
+
+    //  X_val
+    CUDA_CHECK_ERROR(cudaMalloc(&d_X_val, sizeof(double) * colA));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_X_val, X_val, sizeof(double) * colA, cudaMemcpyHostToDevice));
+
+    //  Y_val
+    CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(double) * rowA));
+    CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(double) * rowA));
+
+    int warpsPerBlock = 4;
+    int warpSize = 32;
+    int threadsPerBlock = warpsPerBlock * warpSize;
+    int numRowChunks = (rowA + fragM - 1) / fragM;
+    int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
+
+    printf("Launching kernel with %d blocks, %d threads per block\n",
+           blocksPerGrid, threadsPerBlock);
+
+    int warp_iter = 100;
+    for (int i = 0; i < warp_iter; ++i)
+    {
+        tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
+    }
+    CUDA_CHECK_ERROR(cudaDeviceSynchronize());
+
+    int test_iter = 1000;
+    gettimeofday(&t1, NULL);
+    cuda_time_test_start();
+    for (int i = 0; i < test_iter; ++i)
+    {
+        tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
+    }
+    cuda_time_test_end();
+
+    double runtime = (elapsedTime) / test_iter;
+    printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
+    gettimeofday(&t2, NULL);
+    CUDA_CHECK_ERROR(cudaGetLastError());
+
+    CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(double) * rowA, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK_ERROR(cudaFree(d_tcVal));
+    CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
+    CUDA_CHECK_ERROR(cudaFree(d_fragBit));
+    CUDA_CHECK_ERROR(cudaFree(d_chunkPtr));
+    CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
+    CUDA_CHECK_ERROR(cudaFree(d_X_val));
+    CUDA_CHECK_ERROR(cudaFree(d_Y_val));
+}

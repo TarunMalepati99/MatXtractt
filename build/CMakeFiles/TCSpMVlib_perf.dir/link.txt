@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/TCSpMVlib_perf.dir/test/test_spmv.cpp.o -o TCSpMVlib_perf  libTCSpMVlib.a libcuda_utilities_lib.a /usr/local/cuda-12.5/lib64/libcudart_static.a -ldl /usr/lib/x86_64-linux-gnu/librt.a /usr/lib/x86_64-linux-gnu/libcusparse.so 

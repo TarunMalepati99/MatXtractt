@@ -48,41 +48,29 @@
 #define VAL_CUDA_R_TYPE CUDA_R_64F
 const int fragM = 8;
 const int fragK = 4;
+const int fragN = 8;
 #else
 #define valT half
 #define VAL_CUDA_R_TYPE CUDA_R_16F
 const int fragM = 16;
-const int fragK = 8;
+const int fragK = 16;
+const int fragN = 8;
 #endif
 
 #define innzT int64_t
 
-
-#define WARP_SIZE 32
-#define BlockSize 8
-
-const int MMA_M = 8;
-const int MMA_N = 8;
-const int MMA_K = 4;
-
-
-
 #define indT int
 
-#define NEW_CID_TYPE int
-
-#define CUDA_CHECK(call)                                                          \
-    do                                                                            \
-    {                                                                             \
-        cudaError_t err = call;                                                   \
-        if (err != cudaSuccess)                                                   \
-        {                                                                         \
-            std::cerr << "CUDA error in " << __FILE__ << ":" << __LINE__ << " - " \
-                      << cudaGetErrorString(err) << std::endl;                    \
-            exit(EXIT_FAILURE);                                                   \
-        }                                                                         \
-    } while (0)
-
+#define CUDA_CHECK_ERROR(call)                                            \
+    {                                                                     \
+        cudaError_t err = call;                                           \
+        if (err != cudaSuccess)                                           \
+        {                                                                 \
+            fprintf(stderr, "CUDA Error: %s (error code: %d) at %s:%d\n", \
+                    cudaGetErrorString(err), err, __FILE__, __LINE__);    \
+            exit(EXIT_FAILURE);                                           \
+        }                                                                 \
+    }
 
 static cudaEvent_t start, stop;
 static float elapsedTime;

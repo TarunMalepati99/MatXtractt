@@ -39,32 +39,20 @@ int compare_desc_structure(const void *a, const void *b)
     return ((CountWithIndex *)b)->count - ((CountWithIndex *)a)->count;
 }
 
-int eQcheck(valT *tmp1, valT *tmp2, int length)
-{
-    for (int i = 0; i < length; i++)
-    {
-        if (fabs(tmp1[i] - tmp2[i]) > 1e-5)
-        {
-            printf("error in (%d), cpu(%4.2f), our(%4.2f),please check your code!\n", i, tmp1[i], tmp2[i]);
-            return -1;
-        }
-    }
-    printf("Y(%d), compute succeed!\n", length);
-    return 0;
-}
-int eQcheck111(indT *tmp1, indT *tmp2, int length)
-{
-    for (int i = 0; i < length; i++)
-    {
-        if (tmp1[i] != tmp2[i])
-        {
-            printf("error in (%d), our(%d), cpu(%d),please check your code!\n", i, tmp1[i], tmp2[i]);
-            return -1;
-        }
-    }
-    printf("Y(%d), compute succeed!\n", length);
-    return 0;
-}
+// int eQcheck(valT *tmp1, valT *tmp2, int length)
+// {
+//     for (int i = 0; i < length; i++)
+//     {
+//         if (fabs(tmp1[i] - tmp2[i]) > 1e-5)
+//         {
+//             printf("error in (%d), cpu(%4.2f), our(%4.2f),please check your code!\n", i, tmp1[i], tmp2[i]);
+//             return -1;
+//         }
+//     }
+//     printf("Y(%d), compute succeed!\n", length);
+//     return 0;
+// }
+
 
 int compare_desc(const void *a, const void *b)
 {
@@ -624,7 +612,7 @@ int main(int argc, char **argv)
     //printf("Core-Dense nnz pre row = %f\n", (double)nnzRowD/ (double)dRows);
     // spmv_fp64_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
-    tcspmv(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 
         // 假设已准备好输入数据结构和 x_d 向量
     // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
