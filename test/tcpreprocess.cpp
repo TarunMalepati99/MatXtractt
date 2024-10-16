@@ -24,16 +24,6 @@ typedef struct
     bool isIn;
 } HashTable;
 
-int sum_array(const int *arr, int size)
-{
-    int sum = 0;
-    for (int i = 0; i < size; ++i)
-    {
-        sum += arr[i]; // 直接通过指针访问数组元素
-    }
-    return sum;
-}
-
 int compare_desc_structure(const void *a, const void *b)
 {
     return ((CountWithIndex *)b)->count - ((CountWithIndex *)a)->count;
@@ -41,43 +31,51 @@ int compare_desc_structure(const void *a, const void *b)
 
 int eQcheck(valT *tmp1, valT *tmp2, int length)
 {
+#ifdef fp64
+    // Use double precision (fp64), check for 15 significant digits
+    const double tolerance = 1e-8;  // 15 significant digits for double precision
     for (int i = 0; i < length; i++)
     {
-        if (fabs(tmp1[i] - tmp2[i]) > 1e-5)
+        double val1 = tmp1[i];
+        double val2 = tmp2[i];
+        if (fabs(val1 - val2) / fmax(fabs(val1), fabs(val2)) > tolerance)
         {
-            printf("error in (%d), cpu(%4.2f), our(%4.2f),please check your code!\n", i, tmp1[i], tmp2[i]);
+            printf("Error at index (%d), res(%4.15f), our(%4.15f), please check your code!\n", i, val1, val2);
             return -1;
         }
     }
-    printf("Y(%d), compute succeed!\n", length);
-    return 0;
-}
-int eQcheck111(indT *tmp1, indT *tmp2, int length)
-{
+#else
+    // Use half precision (fp16), check for 3-4 significant digits
+    const float tolerance = 1e-2;  // 3 significant digits for half precision
     for (int i = 0; i < length; i++)
     {
-        if (tmp1[i] != tmp2[i])
+        // Convert __half to float for computation
+        float val1 = static_cast<float>(tmp1[i]);
+        float val2 = static_cast<float>(tmp2[i]);
+        if (fabs(val1 - val2) / fmax(fabs(val1), fabs(val2)) > tolerance)
         {
-            printf("error in (%d), our(%d), cpu(%d),please check your code!\n", i, tmp1[i], tmp2[i]);
+            printf("Error at index (%d), res(%4.3f), our(%4.3f), please check your code!\n", i, val1, val2);
             return -1;
         }
     }
-    printf("Y(%d), compute succeed!\n", length);
+#endif
+    printf("Success! All values match within the tolerance for %d elements.\n", length);
     return 0;
 }
+
 
 int compare_desc(const void *a, const void *b)
 {
     return (*(int *)b - *(int *)a);
 }
 
-void spmv_fp64_serial(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-                      valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA)
+void spmv_serial(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+                 valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA)
 {
     valT t;
     for (indT i = 0; i < rowA; i++)
     {
-        t = 0.0f;
+        t = static_cast<valT>(0.0);
         indT ptr_start = csrRowPtr[i];
         indT n_one_line = csrRowPtr[i + 1] - ptr_start;
         // printf("%d\n",i);
@@ -90,8 +88,8 @@ void spmv_fp64_serial(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
     }
 }
 
-void spmv_fp64_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
-                          valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA)
+void spmv_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
+                     valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA)
 {
     for (indT i = 0; i < colA; i++)
     {
@@ -109,13 +107,13 @@ void spmv_fp64_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
     }
 }
 
-void spmv_fp64_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-                       valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order)
+void spmv_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+                  valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order)
 {
     valT t;
     for (indT i = 0; i < rowA; i++)
     {
-        t = 0.0f;
+        t = static_cast<valT>(0.0);
         indT ptr_start = csrRowPtr[i];
         indT n_one_line = csrRowPtr[i + 1] - ptr_start;
         for (indT j = 0; j < n_one_line; j++)
@@ -128,14 +126,14 @@ void spmv_fp64_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
     }
 }
 
-void spmv_fp64_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-                          valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order, int *ecrId, int **use_x_id)
+void spmv_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+                     valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order, int *ecrId, int **use_x_id)
 {
     valT t;
     for (int i = 0; i < rowA; i++)
     {
         int windowId = i / fragM;
-        t = 0.0f;
+        t = static_cast<valT>(0.0);
         indT ptr_start = csrRowPtr[i];
         indT n_one_line = csrRowPtr[i + 1] - ptr_start;
         for (indT j = 0; j < n_one_line; j++)
@@ -151,7 +149,6 @@ void spmv_fp64_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 // after condense, it becomes: [1,2,3,4,5].
 // Also, mapping the origin value to the corresponding new location in the new array.
 // 1->[0], 2->[1], 3->[2], 4->[3], 5->[4].
-// 去重函数
 std::map<int, int> inplace_deduplication(int *array, int length)
 {
     if (length == 0)
@@ -189,12 +186,12 @@ void ecrPreprocess(
 {
     int block_counter = 0;
     // #pragma omp parallel for reduction(+ : block_counter)
-    for (int iter = 0; iter < rowA + 1; iter += fragSize_h)
+    for (int iter = 0; iter < rowA; iter += fragSize_h)
     {
         int windowId = iter / fragSize_h;
         int block_start = csrRowPtr[iter];
         int iter_plus = iter + fragSize_h;
-        // 防止越界，取较小值
+
         int block_end = csrRowPtr[(iter_plus > rowA) ? rowA : iter_plus];
         int num_window_nnzs = block_end - block_start;
 
@@ -250,19 +247,17 @@ void ecrPreprocess(
     }
     // printf("block_counter:%d \n", block_counter);
 }
-// TODO: generateFormat not check
-void generateFormat(
-    const double *vals,             // Input: Non-zero values in CSR format
+
+void generateFormat_fp64(
+    const double *vals,               // Input: Non-zero values in CSR format
     const int *rowPtr,              // Input: Row pointers in CSR format
     const int *ecrId,               // Input: Adjusted column indices after empty column removal
     int dRows,                      // Input: Number of rows
     int dCols,                      // Input: Number of columns
-    int fragM,                      // Input: Fragment row size
-    int fragK,                      // Input: Fragment column size
     int *chunkPtr,                  // Input: Offsets of tcFrags for each rowChunk
     std::vector<int> &fragPtr,      // Output: Fragment pointer array
     std::vector<uint32_t> &fragBit, // Output: fragBit array for each tcFrag
-    std::vector<double> &tcVal      // Output: Non-zero values in tcFrags
+    std::vector<double> &tcVal        // Output: Non-zero values in tcFrags
 )
 {
     int numRowChunks = ceil((double)dRows / (double)fragM);
@@ -276,7 +271,7 @@ void generateFormat(
     fragBit.resize(totalTcFrags, 0);
 
     // Temporary data structures for values in tcFrags
-    std::vector<std::vector<std::vector<double>>> valueGrids;  // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<double>>> valueGrids;    // [tcFrag][row][col]
     std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
 
     for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
@@ -385,25 +380,18 @@ void generateFormat(
     }
 }
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <cstdint>
-#include <cstring>
-
-void tcspmv_serial(
-    const double *x_d,                   
-    double *y_d,                         
-    const int *chunkPtr,                 
-    const std::vector<int> &fragPtr,     
+void tcspmv_serial_fp64(
+    const double *x_d,
+    double *y_d,
+    const int *chunkPtr,
+    const std::vector<int> &fragPtr,
     const std::vector<uint32_t> &fragBit,
-    const std::vector<double> &tcVal,    
-    const int *sparse_AToX_index,        
-    int dRows,                           
-    int dCols,                           
-    int fragM,                           
-    int fragK                            
-)
+    const std::vector<double> &tcVal,
+    const int *sparse_AToX_index,
+    int dRows,
+    int dCols,
+    int fragM,
+    int fragK)
 {
     int chunkNum = (dRows + fragM - 1) / fragM; // 计算总的行块数
 
@@ -478,6 +466,422 @@ void tcspmv_serial(
     }
 }
 
+void generateFormat_half(
+    const half *vals,                              // Input: Non-zero values in CSR format
+    const int *rowPtr,                             // Input: Row pointers in CSR format
+    const int *ecrId,                              // Input: Adjusted column indices after empty column removal
+    int dRows,                                     // Input: Number of rows
+    int dCols,                                     // Input: Number of columns
+    int *chunkPtr,                                 // Input: Offsets of tcFrags for each rowChunk
+    std::vector<int> &fragPtr,                     // Output: Fragment pointer array
+    std::vector<std::array<uint64_t, 2>> &fragBit, // Output: fragBit array for each tcFrag
+    std::vector<half> &tcVal                       // Output: Non-zero values in tcFrags
+)
+{
+    int numRowChunks = (dRows + fragM - 1) / fragM;
+    int totalTcFrags = chunkPtr[numRowChunks];
+
+    // Initialize fragPtr and per-tcFrag non-zero counts
+    fragPtr.resize(totalTcFrags + 1, 0);
+    std::vector<int> perTcFragNnz(totalTcFrags, 0);
+
+    // Initialize fragBit
+    fragBit.resize(totalTcFrags);
+
+    // Temporary data structures for values in tcFrags
+    std::vector<std::vector<std::vector<half>>> valueGrids;    // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
+
+    for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
+    {
+        int rowChunkStart = rowChunkIndex * fragM;
+        int rowChunkEnd = std::min(rowChunkStart + fragM, dRows);
+        int numTcFragsInChunk = chunkPtr[rowChunkIndex + 1] - chunkPtr[rowChunkIndex];
+
+        if (numTcFragsInChunk == 0)
+        {
+            continue;
+        }
+        // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
+        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<half>>(fragM, std::vector<half>(fragK, half(0.0f))));
+        hasValueGrids.assign(numTcFragsInChunk, std::vector<std::vector<bool>>(fragM, std::vector<bool>(fragK, false)));
+
+        // Process each row in the rowChunk
+        for (int r = rowChunkStart; r < rowChunkEnd; ++r)
+        {
+            int rowLocalIndex = r - rowChunkStart;
+
+            // Iterate over non-zero elements in the row
+            for (int idx = rowPtr[r]; idx < rowPtr[r + 1]; ++idx)
+            {
+                int adjustedColId = ecrId[idx];
+                if (adjustedColId < 0 || adjustedColId >= dCols)
+                {
+                    std::cerr << "Invalid adjustedColId: " << adjustedColId << std::endl;
+                    continue;
+                }
+                int tcFragInChunkIndex = adjustedColId / fragK;
+                int colLocalIndex = adjustedColId % fragK;
+
+                // Validate indices
+                if (tcFragInChunkIndex < 0 || tcFragInChunkIndex >= numTcFragsInChunk)
+                {
+                    std::cerr << "Invalid tcFragInChunkIndex: " << tcFragInChunkIndex << std::endl;
+                    continue;
+                }
+
+                if (colLocalIndex < 0 || colLocalIndex >= fragK)
+                {
+                    std::cerr << "Invalid colLocalIndex: " << colLocalIndex << std::endl;
+                    continue;
+                }
+
+                // Store the value in valueGrid
+                valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = vals[idx];
+                hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = true;
+
+                // Update fragBit
+                int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+                if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+                {
+                    std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                    continue;
+                }
+
+                // Compute bit position
+                int bitPosition = rowLocalIndex * fragK + colLocalIndex;
+
+                // Ensure bitPosition is within 0 to 127
+                if (bitPosition < 0 || bitPosition >= 128)
+                {
+                    std::cerr << "Invalid bitPosition: " << bitPosition << std::endl;
+                    continue;
+                }
+
+                // Set the bit in fragBit[tcFragIndex]
+                int bitArrayIndex = bitPosition / 64; // 0 or 1
+                int bitOffset = bitPosition % 64;     // 0 to 63
+                fragBit[tcFragIndex][bitArrayIndex] |= (uint64_t(1) << bitOffset);
+            }
+        }
+
+        for (int tcFragInChunkIndex = 0; tcFragInChunkIndex < numTcFragsInChunk; ++tcFragInChunkIndex)
+        {
+            int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+            if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+            {
+                std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                continue;
+            }
+            int nzCount = 0;
+
+            for (int rowLocalIndex = 0; rowLocalIndex < fragM; ++rowLocalIndex)
+            {
+                for (int colLocalIndex = 0; colLocalIndex < fragK; ++colLocalIndex)
+                {
+                    if (hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex])
+                    {
+                        tcVal.push_back(valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex]);
+                        ++nzCount;
+                    }
+                }
+            }
+
+            perTcFragNnz[tcFragIndex] = nzCount;
+        }
+    }
+    fragPtr[0] = 0;
+    for (int i = 0; i < totalTcFrags; ++i)
+    {
+        fragPtr[i + 1] = fragPtr[i] + perTcFragNnz[i];
+    }
+}
+
+void tcspmv_serial_half(
+    const half *x_d,                                     // Input vector x
+    half *y_d,                                           // Output vector y
+    const int *chunkPtr,                                 // Offsets of tcFrags for each rowChunk
+    const std::vector<int> &fragPtr,                     // Fragment pointer array
+    const std::vector<std::array<uint64_t, 2>> &fragBit, // fragBit array for each tcFrag
+    const std::vector<half> &tcVal,                      // Non-zero values in tcFrags
+    const int *sparse_AToX_index,                        // Mapping from tcFrag to x indices
+    int dRows,                                           // Number of rows
+    int dCols,                                           // Number of columns
+    int fragM,                                           // Fragment row size (16)
+    int fragK                                            // Fragment column size (8)
+)
+{
+    int chunkNum = (dRows + fragM - 1) / fragM;
+
+    for (int i = 0; i < dRows; ++i)
+        y_d[i] = half(0.0f);
+
+    for (int rowChunkIndex = 0; rowChunkIndex < chunkNum; ++rowChunkIndex)
+    {
+        int rowStart = rowChunkIndex * fragM;
+        int rowEnd = std::min(rowStart + fragM, dRows);
+
+        int tcFragStart = chunkPtr[rowChunkIndex];
+        int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+
+        for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+        {
+            const std::array<uint64_t, 2> &bitmapArray = fragBit[tcFragIdx];
+            int valStartIdx = fragPtr[tcFragIdx];
+            int valEndIdx = fragPtr[tcFragIdx + 1];
+            int tcValNnz = valEndIdx - valStartIdx;
+
+            const half *tcValPtr = &tcVal[valStartIdx];
+            const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK];
+
+            int valIdx = 0;
+
+            for (int m = 0; m < fragM; ++m)
+            {
+                int rowIdx = rowStart + m;
+                if (rowIdx >= dRows)
+                    continue;
+
+                for (int k = 0; k < fragK; ++k)
+                {
+                    int bitPos = m * fragK + k;
+                    if (bitPos >= 128)
+                        continue;
+
+                    int bitArrayIndex = bitPos / 64; // 0 or 1
+                    int bitOffset = bitPos % 64;     // 0 to 63
+
+                    int bit = (bitmapArray[bitArrayIndex] >> bitOffset) & 1;
+
+                    if (bit)
+                    {
+                        half a_value = tcValPtr[valIdx];
+                        valIdx++;
+
+                        int x_idx = x_indices[k];
+                        if (x_idx >= dCols)
+                        {
+                            std::cerr << "Invalid x index: " << x_idx << std::endl;
+                            continue;
+                        }
+                        half x_value = x_d[x_idx];
+                        y_d[rowIdx] += a_value * x_value;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+void generateFormat_half_(
+    const half *vals,                              // Input: Non-zero values in CSR format
+    const int *rowPtr,                             // Input: Row pointers in CSR format
+    const int *ecrId,                              // Input: Adjusted column indices after empty column removal
+    int dRows,                                     // Input: Number of rows
+    int dCols,                                     // Input: Number of columns
+    int *chunkPtr,                                 // Input: Offsets of tcFrags for each rowChunk
+    std::vector<int> &fragPtr,                     // Output: Fragment pointer array
+    std::vector<std::array<uint64_t, 4>> &fragBit, // Output: fragBit array for each tcFrag
+    std::vector<half> &tcVal                       // Output: Non-zero values in tcFrags
+)
+{
+    int numRowChunks = (dRows + fragM - 1) / fragM;
+    int totalTcFrags = chunkPtr[numRowChunks];
+
+    // Initialize fragPtr and per-tcFrag non-zero counts
+    fragPtr.resize(totalTcFrags + 1, 0);
+    std::vector<int> perTcFragNnz(totalTcFrags, 0);
+
+    // Initialize fragBit
+    fragBit.resize(totalTcFrags);
+
+    // Temporary data structures for values in tcFrags
+    std::vector<std::vector<std::vector<half>>> valueGrids;    // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
+
+    for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
+    {
+        int rowChunkStart = rowChunkIndex * fragM;
+        int rowChunkEnd = std::min(rowChunkStart + fragM, dRows);
+        int numTcFragsInChunk = chunkPtr[rowChunkIndex + 1] - chunkPtr[rowChunkIndex];
+
+        if (numTcFragsInChunk == 0)
+        {
+            continue;
+        }
+        // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
+        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<half>>(fragM, std::vector<half>(fragK, half(0.0f))));
+        hasValueGrids.assign(numTcFragsInChunk, std::vector<std::vector<bool>>(fragM, std::vector<bool>(fragK, false)));
+
+        // Process each row in the rowChunk
+        for (int r = rowChunkStart; r < rowChunkEnd; ++r)
+        {
+            int rowLocalIndex = r - rowChunkStart;
+
+            // Iterate over non-zero elements in the row
+            for (int idx = rowPtr[r]; idx < rowPtr[r + 1]; ++idx)
+            {
+                int adjustedColId = ecrId[idx];
+                if (adjustedColId < 0 || adjustedColId >= dCols)
+                {
+                    std::cerr << "Invalid adjustedColId: " << adjustedColId << std::endl;
+                    continue;
+                }
+                int tcFragInChunkIndex = adjustedColId / fragK;
+                int colLocalIndex = adjustedColId % fragK;
+
+                // Validate indices
+                if (tcFragInChunkIndex < 0 || tcFragInChunkIndex >= numTcFragsInChunk)
+                {
+                    std::cerr << "Invalid tcFragInChunkIndex: " << tcFragInChunkIndex << std::endl;
+                    continue;
+                }
+
+                if (colLocalIndex < 0 || colLocalIndex >= fragK)
+                {
+                    std::cerr << "Invalid colLocalIndex: " << colLocalIndex << std::endl;
+                    continue;
+                }
+
+                // Store the value in valueGrid
+                valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = vals[idx];
+                hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex] = true;
+
+                // Update fragBit
+                int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+                if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+                {
+                    std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                    continue;
+                }
+
+                // Compute bit position
+                int bitPosition = rowLocalIndex * fragK + colLocalIndex;
+
+                // Ensure bitPosition is within 0 to 255
+                if (bitPosition < 0 || bitPosition >= 256)
+                {
+                    std::cerr << "Invalid bitPosition: " << bitPosition << std::endl;
+                    continue;
+                }
+
+                // Set the bit in fragBit[tcFragIndex]
+                int bitArrayIndex = bitPosition / 64; // 0 to 3
+                int bitOffset = bitPosition % 64;     // 0 to 63
+                fragBit[tcFragIndex][bitArrayIndex] |= (uint64_t(1) << bitOffset);
+            }
+        }
+
+        for (int tcFragInChunkIndex = 0; tcFragInChunkIndex < numTcFragsInChunk; ++tcFragInChunkIndex)
+        {
+            int tcFragIndex = chunkPtr[rowChunkIndex] + tcFragInChunkIndex;
+            if (tcFragIndex < 0 || tcFragIndex >= totalTcFrags)
+            {
+                std::cerr << "Invalid tcFragIndex: " << tcFragIndex << std::endl;
+                continue;
+            }
+            int nzCount = 0;
+
+            for (int rowLocalIndex = 0; rowLocalIndex < fragM; ++rowLocalIndex)
+            {
+                for (int colLocalIndex = 0; colLocalIndex < fragK; ++colLocalIndex)
+                {
+                    if (hasValueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex])
+                    {
+                        tcVal.push_back(valueGrids[tcFragInChunkIndex][rowLocalIndex][colLocalIndex]);
+                        ++nzCount;
+                    }
+                }
+            }
+
+            perTcFragNnz[tcFragIndex] = nzCount;
+        }
+    }
+    fragPtr[0] = 0;
+    for (int i = 0; i < totalTcFrags; ++i)
+    {
+        fragPtr[i + 1] = fragPtr[i] + perTcFragNnz[i];
+    }
+}
+
+
+void tcspmv_serial_half_(
+    const half *x_d,                                     // Input vector x
+    half *y_d,                                           // Output vector y
+    const int *chunkPtr,                                 // Offsets of tcFrags for each rowChunk
+    const std::vector<int> &fragPtr,                     // Fragment pointer array
+    const std::vector<std::array<uint64_t, 4>> &fragBit, // fragBit array for each tcFrag
+    const std::vector<half> &tcVal,                      // Non-zero values in tcFrags
+    const int *sparse_AToX_index,                        // Mapping from tcFrag to x indices
+    int dRows,                                           // Number of rows
+    int dCols,                                           // Number of columns
+    int fragM,                                           // Fragment row size (16)
+    int fragK                                            // Fragment column size (16)
+)
+{
+    int chunkNum = (dRows + fragM - 1) / fragM;
+
+    for (int i = 0; i < dRows; ++i)
+        y_d[i] = half(0.0f);
+
+    for (int rowChunkIndex = 0; rowChunkIndex < chunkNum; ++rowChunkIndex)
+    {
+        int rowStart = rowChunkIndex * fragM;
+        int rowEnd = std::min(rowStart + fragM, dRows);
+
+        int tcFragStart = chunkPtr[rowChunkIndex];
+        int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+
+        for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+        {
+            const std::array<uint64_t, 4> &bitmapArray = fragBit[tcFragIdx];
+            int valStartIdx = fragPtr[tcFragIdx];
+            int valEndIdx = fragPtr[tcFragIdx + 1];
+            int tcValNnz = valEndIdx - valStartIdx;
+
+            const half *tcValPtr = &tcVal[valStartIdx];
+            const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK];
+
+            int valIdx = 0;
+
+            for (int m = 0; m < fragM; ++m)
+            {
+                int rowIdx = rowStart + m;
+                if (rowIdx >= dRows)
+                    continue;
+
+                for (int k = 0; k < fragK; ++k)
+                {
+                    int bitPos = m * fragK + k;
+                    if (bitPos >= 256)
+                        continue;
+
+                    int bitArrayIndex = bitPos / 64; // 0 to 3
+                    int bitOffset = bitPos % 64;     // 0 to 63
+
+                    int bit = (bitmapArray[bitArrayIndex] >> bitOffset) & 1;
+
+                    if (bit)
+                    {
+                        half a_value = tcValPtr[valIdx];
+                        valIdx++;
+
+                        int x_idx = x_indices[k];
+                        if (x_idx >= dCols)
+                        {
+                            std::cerr << "Invalid x index: " << x_idx << std::endl;
+                            continue;
+                        }
+                        half x_value = x_d[x_idx];
+                        y_d[rowIdx] += a_value * x_value;
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -501,7 +905,6 @@ int main(int argc, char **argv)
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
-    printf("\n 1111111111 \n");
     /***************************************************************
      *                 1.Sparsity-aware Compression                *
      ***************************************************************/
@@ -547,11 +950,13 @@ int main(int argc, char **argv)
     indT *scscColPtr = (indT *)malloc((sCols + 1) * sizeof(indT));
     indT *scscRowInd = (indT *)malloc(nnzColS * sizeof(indT));
 
-    memset(dcscVal, 0, sizeof(valT) * nnzColD);
+    // memset(dcscVal, 0, sizeof(valT) * nnzColD);
+    std::fill(dcscVal, dcscVal + nnzColD, static_cast<valT>(0.0));
     memset(dcscRowInd, 0, sizeof(indT) * nnzColD);
     memset(dcscColPtr, 0, sizeof(indT) * (dCols + 1));
 
-    memset(scscVal, 0, sizeof(valT) * nnzColS);
+    // memset(scscVal, 0, sizeof(valT) * nnzColS);
+    std::fill(scscVal, scscVal + nnzColS, static_cast<valT>(0.0));
     memset(scscRowInd, 0, sizeof(indT) * nnzColS);
     memset(scscColPtr, 0, sizeof(indT) * (sCols + 1));
 
@@ -672,11 +1077,14 @@ int main(int argc, char **argv)
     indT *csrRowPtr_ds = (indT *)malloc((sRows + 1) * sizeof(indT));
     indT *csrColInd_ds = (indT *)malloc(nnzRowS * sizeof(indT));
 
-    memset(csrVal_dd, 0, sizeof(valT) * nnzRowD);
+    // memset(csrVal_dd, 0, sizeof(valT) * nnzRowD);
+    std::fill(csrVal_dd, csrVal_dd + nnzRowD, static_cast<valT>(0.0));
+
     memset(csrColInd_dd, 0, sizeof(indT) * nnzRowD);
     memset(csrRowPtr_dd, 0, sizeof(indT) * (dRows + 1));
 
-    memset(csrVal_ds, 0, sizeof(valT) * nnzRowS);
+    // memset(csrVal_ds, 0, sizeof(valT) * nnzRowS);
+    std::fill(csrVal_ds, csrVal_ds + nnzRowS, static_cast<valT>(0.0));
     memset(csrColInd_ds, 0, sizeof(indT) * nnzRowS);
     memset(csrRowPtr_ds, 0, sizeof(indT) * (sRows + 1));
 
@@ -745,12 +1153,12 @@ int main(int argc, char **argv)
      *                     2.TCU-aware Compression                 *
      *   dense  row-chunk: csrVal_dd, csrRowPtr_dd, csrColInd_dd   *
      ***************************************************************/
-    // TODO: chunkPtr and nec_num not check
+
     int *ecrId = (int *)malloc(sizeof(int) * nnzRowD);
     memset(ecrId, 0, sizeof(int) * nnzRowD);
     int chunkNum = ceil((double)dRows / (double)fragM);
-    int *blockPartition = (int *)malloc(sizeof(int) * (chunkNum));
-    memset(blockPartition, 0, sizeof(int) * (chunkNum));
+    int *blockPartition = (int *)malloc(sizeof(int) * (chunkNum + 1));
+    memset(blockPartition, 0, sizeof(int) * (chunkNum + 1));
     int **use_x_id = (int **)malloc((chunkNum + 1) * sizeof(int *));
     int *nec_num = (int *)malloc((chunkNum + 1) * sizeof(int));
 
@@ -764,9 +1172,8 @@ int main(int argc, char **argv)
     }
     int totalTcFrags = chunkPtr[chunkNum];
     // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
-    printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
-
-    // TODO: 生成这个
+    // printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
+    printf("---TC_nnz_ratio = %lf---\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
     int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
     memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
 
@@ -775,6 +1182,10 @@ int main(int argc, char **argv)
         int *use_x = use_x_id[rowChunkIndex];
         for (int j = 0; j < nec_num[rowChunkIndex]; j++)
         {
+            if (chunkPtr[rowChunkIndex] * fragK > totalTcFrags * fragK)
+            {
+                printf("!!!!!!!!!!!!!!");
+            }
             int *sparse_AToX = sparse_AToX_index + chunkPtr[rowChunkIndex] * fragK;
             sparse_AToX[j] = use_x[j];
         }
@@ -782,10 +1193,21 @@ int main(int argc, char **argv)
 
     /// Outputs
     std::vector<int> fragPtr;
+    std::vector<valT> tcVal;
+#ifdef fp64
     std::vector<uint32_t> fragBit;
-    std::vector<double> tcVal;
-    generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, fragM, fragK, chunkPtr, fragPtr, fragBit, tcVal);
+    generateFormat_fp64(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+#else
+    // std::vector<std::array<uint64_t, 2>> fragBit;
+    std::vector<std::array<uint64_t, 4>> fragBit;
+    generateFormat_half_(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+#endif
+    
+#ifdef fp64
     std::string outfile_name = std::string(filename) + "_preprocessed.dat";
+#else
+    std::string outfile_name = std::string(filename) + "_preprocessed_fp16.dat";
+#endif
     std::cout << "Saving preprocessed data to: " << std::filesystem::absolute(outfile_name).string() << std::endl;
     std::ofstream outfile(outfile_name.c_str(), std::ios::binary);
 
@@ -810,18 +1232,31 @@ int main(int argc, char **argv)
     outfile.write(reinterpret_cast<char*>(fragPtr.data()), sizeof(int) * fragPtr_size);
 
     // 保存 fragBit
+#ifdef fp64
     size_t fragBit_size = fragBit.size();
     outfile.write(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
     outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint32_t) * fragBit_size);
-
+#else
+    size_t fragBit_size = fragBit.size();
+    outfile.write(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
+    outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint64_t) * 4 * fragBit_size);
+#endif
     // 保存 tcVal
     size_t tcVal_size = tcVal.size();
     outfile.write(reinterpret_cast<char*>(&tcVal_size), sizeof(size_t));
-    outfile.write(reinterpret_cast<char*>(tcVal.data()), sizeof(double) * tcVal_size);
+    outfile.write(reinterpret_cast<char*>(tcVal.data()), sizeof(valT) * tcVal_size);
 
     outfile.close();
 
+    free(sparse_AToX_index);
 
+    for (int i = 0; i < chunkNum; i++)
+    {
+        if (use_x_id[i])
+        {
+            free(use_x_id[i]);
+        }
+    }
     free(nec_num);
     free(use_x_id);
     free(ecrId);
