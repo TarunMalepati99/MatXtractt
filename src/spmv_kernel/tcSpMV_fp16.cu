@@ -1,202 +1,347 @@
 #include "common.h"
-#define SHM_SIZE 1024
-__global__ void tcspmv_kernel_fp16(
+#define SHM_SIZE 256 // Shared memory size in halves (8 KB)
+
+__device__ __forceinline__ void mma_m8n8k4_fp16_v2(half *acc, uint32_t *A, half *frag_b)
+{
+    uint32_t const *B = reinterpret_cast<uint32_t const *>(&frag_b[0]);
+    uint32_t *C = reinterpret_cast<uint32_t *>(&acc[0]);
+
+    asm volatile(
+        "mma.sync.aligned.m8n8k4.row.col.f16.f16.f16.f16"
+        " { %0, %1, %2, %3 }, "
+        " { %4, %5 }, "
+        " { %6, %7 }, "
+        " { %0, %1, %2, %3 };"
+        : "+r"(C[0]), "+r"(C[1]), "+r"(C[2]), "+r"(C[3]) : "r"(A[0]), "r"(A[1]), "r"(B[0]), "r"(B[1]));
+}
+__device__ __forceinline__ void store_half_to_global(const half *a, half v)
+{
+    ushort *v_u = reinterpret_cast<ushort *>(&v);
+    asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(a), "h"(*v_u));
+}
+/*
+__global__ void tcspmv_kernel_fp16_(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
     const int *__restrict__ chunkPtr,
     const int *__restrict__ fragPtr,
-    const uint64_t *__restrict__ fragBit,
+    const uint32_t *__restrict__ fragBit,
     const half *__restrict__ tcVal,
     const int *__restrict__ sparse_AToX_index,
     int dRows,
     int dCols)
 {
-    __shared__ half x_shm[SHM_SIZE];
-    int num_elements = SHM_SIZE;
-    int num_threads = blockDim.x;
-    int elements_per_thread = (num_elements + num_threads - 1) / num_threads;
-
-    // Load data into shared memory
-    for (int i = 0; i < elements_per_thread; ++i)
-    {
-        int idx = threadIdx.x + i * num_threads;
-        if (idx < num_elements)
-        {
-            x_shm[idx] = x_d[idx];
-        }
-    }
-    __syncthreads();
-
     const int warpsPerBlock = 4;
     int warpId = threadIdx.x / 32; // Warp ID within the block
     int laneId = threadIdx.x & 31; // Lane ID within the warp
 
     int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
+
     int tcFragStart = chunkPtr[rowChunkIndex];
     int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+    int numTcFragsInChunk = tcFragEnd - tcFragStart;
 
-    if (tcFragStart == tcFragEnd)
+    if (numTcFragsInChunk == 0)
     {
         return;
     }
-
     int rowStart = rowChunkIndex * fragM;
-    int groupID = laneId >> 2;            // laneId / 4  四个线程为一组
-    int threadID_in_group = laneId & 0x3; // laneId % 4
 
-    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx) // 遍历当前行块的所有稀疏矩阵片段（tcFrag）
+    // Initialize the accumulators
+    half acc[8] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f),
+                   __float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
+
+    half frag_a[4] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
+    half frag_b[4] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
+
+    int mmaIndex;
+    if (laneId < 16)
     {
-        const uint64_t *bitmapArray = &fragBit[tcFragIdx * 4]; // 每个 tcFrag 有 4 个 uint64_t
-        const half *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
-        const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK];
-
-        // 每个线程负责8个寄存器的a_frag
-        half a_frag[8];
-        for (int i = 0; i < 8; ++i)
+        mmaIndex = laneId / 4;
+    }
+    else
+    {
+        mmaIndex = (laneId - 16) / 4;
+    }
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; tcFragIdx += 4)
+    {
+        int fragIdx = tcFragIdx + mmaIndex; //  对于4-7，20-23来说 等于 tcFragIdx + 1
+        if (fragIdx >= tcFragEnd)
         {
-            int row, col;
-            if (i < 2 || (i >= 4 && i < 6))
-            {
-                row = groupID;
-            }
-            else
-            {
-                row = groupID + 8;
-            }
-
-            if (i < 4)
-            {
-                col = (threadID_in_group * 2) + (i & 0x1);
-            }
-            else
-            {
-                col = (threadID_in_group * 2) + (i & 0x1) + 8;
-            }
-
-            int bitPos = row * fragK + col;
-            int bitArrayIndex = bitPos / 64;
-            int bitOffset = bitPos % 64;
-
-            uint64_t bitmapWord = bitmapArray[bitArrayIndex];
-            int bit = (bitmapWord >> bitOffset) & 1;
-
-            int a_valIdx = 0;
-            for (int j = 0; j < bitArrayIndex; ++j)
-            {
-                a_valIdx += __popcll(bitmapArray[j]);
-            }
-            uint64_t mask = ((uint64_t)1 << bitOffset) - 1;
-            a_valIdx += __popcll(bitmapWord & mask);
-
-            a_frag[i] = bit ? tcValPtr[a_valIdx] : __float2half(0.0f);
+            break; // 跳过越界的片段
         }
 
-        // 每个线程负责4个寄存器的b_frag, 只算第一列, 前四个线程即可
-        half b_frag[4];
+        uint32_t bitmap = fragBit[fragIdx];
+        const half *tcValPtr = &tcVal[fragPtr[fragIdx]];
+        // load A
         for (int i = 0; i < 4; ++i)
         {
-            int row_b;
-            if (i < 2)
-            {
-                row_b = (threadID_in_group * 2) + (i & 0x1);
-            }
-            else
-            {
-                row_b = (threadID_in_group * 2) + (i & 0x1) + 8;
-            }
-            int x_idx = x_indices[row_b];
-            // b_frag[i] = __ldg(&x_d[x_idx]);
-            if (x_idx < SHM_SIZE)
-            {
-                b_frag[i] = x_shm[x_idx];
-            }
-            else
-            {
-                b_frag[i] = __ldg(&x_d[x_idx]);
-            }
+            int a_row = (laneId % 4) + ((laneId < 16) ? 0 : 4);
+            int a_col = i; // Since i ranges from 0 to 3
+            int a_bitPos = a_row * fragK + a_col;
+            int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
+            int bit = (bitmap >> a_bitPos) & 1;
+            frag_a[i] = bit ? tcValPtr[a_valIdx] : __float2half(0.0f);
         }
+        // Pack frag_a into A[2]
+        uint32_t A[2];
+        uint32_t *frag_a_uint32 = reinterpret_cast<uint32_t *>(frag_a);
+        A[0] = frag_a_uint32[0];
+        A[1] = frag_a_uint32[1];
 
-        // 将单独的half组合成__half2
-        __half2 a_frag2[4];
-        a_frag2[0] = __halves2half2(a_frag[0], a_frag[1]);
-        a_frag2[1] = __halves2half2(a_frag[2], a_frag[3]);
-        a_frag2[2] = __halves2half2(a_frag[4], a_frag[5]);
-        a_frag2[3] = __halves2half2(a_frag[6], a_frag[7]);
-
-        __half2 b_frag2[2];
-        b_frag2[0] = __halves2half2(b_frag[0], b_frag[1]);
-        b_frag2[1] = __halves2half2(b_frag[2], b_frag[3]);
-
-        // Initialize c_frag
-        __half2 c_frag[2];
-        c_frag[0] = __float2half2_rn(0.0f);
-        c_frag[1] = __float2half2_rn(0.0f);
-
-        // 将__half2 转换为无符号整数类型，方便在汇编中操作
-        unsigned int *a_frag_int = reinterpret_cast<unsigned int *>(&a_frag2[0]);
-        unsigned int *b_frag_int = reinterpret_cast<unsigned int *>(&b_frag2[0]);
-        unsigned int *c_frag_int = reinterpret_cast<unsigned int *>(&c_frag[0]);
-
-        // Assembly code using scalar types (unsigned int)
-        asm volatile(
-            "mma.sync.aligned.m16n8k16.row.col.f16.f16.f16.f16 \n\t"
-            "{%0, %1}, {%2, %3, %4, %5}, {%6, %7}, {%0, %1};\n\t"
-            : "+r"(c_frag_int[0]), "+r"(c_frag_int[1])
-            : "r"(a_frag_int[0]), "r"(a_frag_int[1]), "r"(a_frag_int[2]), "r"(a_frag_int[3]),
-              "r"(b_frag_int[0]), "r"(b_frag_int[1]));
-
-        if (threadID_in_group == 0)
+        // load B
+        const int *sparse_AToX_idx = &sparse_AToX_index[fragIdx * fragK];
+        for (int i = 0; i < 4; ++i)
         {
-            int y_idx_0 = rowStart + groupID;
-            int y_idx_1 = y_idx_0 + 8;
-            // if (y_idx_0 < dRows)
-            // {
-            atomicAdd(&y_d[y_idx_0], __low2half(c_frag[0]));
-            // }
-            // if (y_idx_1 < dRows)
-            // {
-            atomicAdd(&y_d[y_idx_1], __low2half(c_frag[1]));
-            // }
+            int b_row = i; // Since i ranges from 0 to 3
+            int x_idx = sparse_AToX_idx[b_row];
+            frag_b[i] = __ldg(&x_d[x_idx]);
+        }
+        mma_m8n8k4_fp16_v2(acc, A, frag_b);
+    }
+    __syncwarp();
+    // 以下代码应当完成四个线程的acc[0]寄存器之和，并由线程0 1 2 3 16 17 18 19写入对应位置，这四个线程分别是
+    // 0 4 8 12 线程
+    // 1 5 9 13 线程
+    // 2 6 10 14 线程
+    // 3 7 11 15
+    // 16 20 24 28
+    // 17 21 25 29
+    // 18 22 26 30
+    // 19 23 27 31
+    // 然而kernel的执行会卡住，请帮我解决
+
+    half sum = acc[0];
+    sum += __shfl_down_sync(0xffffffff, sum, 8);
+    sum += __shfl_down_sync(0xffffffff, sum, 4);
+
+    // Write the result to y_d
+    if (mmaIndex == 0)
+    {
+        int a_row = (laneId % 4) + ((laneId < 16) ? 0 : 4);
+        int y_idx = rowStart + a_row;
+        if (y_idx < dRows)
+        {
+            atomicAdd(&y_d[y_idx], sum);
         }
     }
 }
+*/
+__global__ void tcspmv_kernel_fp16(
+    const half *__restrict__ x_d,
+    half *__restrict__ y_d,
+    const int *__restrict__ chunkPtr,
+    const int *__restrict__ fragPtr,
+    const uint32_t *__restrict__ fragBit,
+    const half *__restrict__ tcVal,
+    const int *__restrict__ sparse_AToX_index,
+    int dRows,
+    int dCols)
+{
+    // __shared__ half x_shm[SHM_SIZE];
+    // int num_elements = SHM_SIZE;
+    // int num_threads = blockDim.x;
+    // int elements_per_thread = (num_elements + num_threads - 1) / num_threads;
 
-void tcspmv_fp16(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array<uint64_t, 4>> fragBit,
-                 std::vector<half> tcVal, int *sparse_AToX_index, half *X_val,
+    // // Load data into shared memory
+    // for (int i = 0; i < elements_per_thread; ++i)
+    // {
+    //     int idx = threadIdx.x + i * num_threads;
+    //     if (idx < num_elements)
+    //     {
+    //         x_shm[idx] = x_d[idx];
+    //     }
+    // }
+    // __syncthreads();
+
+    int warpId = threadIdx.x / 32;
+    int laneId = threadIdx.x & 31;
+    int mmaIndex = (laneId < 16) ? laneId / 4 : (laneId - 16) / 4;
+
+    int rowChunkIndex = blockIdx.x * 16 + warpId * 4 + mmaIndex;
+
+    int tcFragStart = chunkPtr[rowChunkIndex];
+    int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+    int numTcFragsInChunk = tcFragEnd - tcFragStart;
+    if (numTcFragsInChunk == 0)
+    {
+        return;
+    }
+    int mmaRowStart = rowChunkIndex * fragM;
+
+    half frag_a[4];
+    half frag_b[4];
+    half sum = __half(0);
+    int a_row = (laneId & 3) + ((laneId < 16) ? 0 : 4);
+
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+    {
+        half acc[8] = {__half(0), __half(0), __half(0), __half(0),
+                       __half(0), __half(0), __half(0), __half(0)};
+
+        uint32_t bitmap = fragBit[tcFragIdx];
+        const half *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
+// load A
+#pragma unroll
+        for (int i = 0; i < 4; ++i)
+        {
+            int a_col = i; // Since i ranges from 0 to 3
+            int a_bitPos = a_row * fragK + a_col;
+            int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
+            int bit = (bitmap >> a_bitPos) & 1;
+            frag_a[i] = bit ? tcValPtr[a_valIdx] : __half(0);
+        }
+        // load B
+        const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
+#pragma unroll
+        for (int i = 0; i < 4; ++i)
+        {
+            int b_row = i; // Since i ranges from 0 to 3
+            int x_idx = sparse_AToX_idx[b_row];
+            // frag_b[i] = (x_idx < SHM_SIZE) ? x_shm[x_idx] : __ldg(&x_d[x_idx]);
+            frag_b[i] = __ldg(&x_d[x_idx]);
+        }
+        uint32_t const *A = reinterpret_cast<uint32_t const *>(&frag_a[0]);
+        uint32_t const *B = reinterpret_cast<uint32_t const *>(&frag_b[0]);
+        uint32_t *C = reinterpret_cast<uint32_t *>(&acc[0]);
+        asm volatile(
+            "mma.sync.aligned.m8n8k4.row.col.f16.f16.f16.f16"
+            " { %0, %1, %2, %3 }, "
+            " { %4, %5 }, "
+            " { %6, %7 }, "
+            " { %0, %1, %2, %3 };"
+            : "+r"(C[0]), "+r"(C[1]), "+r"(C[2]), "+r"(C[3]) : "r"(A[0]), "r"(A[1]), "r"(B[0]), "r"(B[1]));
+
+        sum += acc[0];
+    }
+    // Write the result to y_d
+    int y_idx = mmaRowStart + a_row;
+    if (y_idx < dRows)
+    {
+        store_half_to_global(y_d + y_idx, sum);
+    }
+}
+
+void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+                 std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                  half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
 {
-    int chunkNum = (rowA + fragM - 1) / fragM;
+    int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
     half *d_tcVal, *d_X_val, *d_Y_val;
-    int *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
-    uint64_t *d_fragBit;
+    indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
+    uint32_t *d_fragBit;
 
-    // Allocate and copy tcVal to device
+    //  tcVal
     CUDA_CHECK_ERROR(cudaMalloc(&d_tcVal, tcVal.size() * sizeof(half)));
     CUDA_CHECK_ERROR(cudaMemcpy(d_tcVal, tcVal.data(), tcVal.size() * sizeof(half), cudaMemcpyHostToDevice));
 
-    // Allocate and copy fragPtr to device
+    //  fragPtr
     CUDA_CHECK_ERROR(cudaMalloc(&d_fragPtr, fragPtr.size() * sizeof(int)));
     CUDA_CHECK_ERROR(cudaMemcpy(d_fragPtr, fragPtr.data(), fragPtr.size() * sizeof(int), cudaMemcpyHostToDevice));
 
-    // Allocate and copy fragBit to device
-    size_t fragBitSize = fragBit.size() * sizeof(std::array<uint64_t, 4>);
-    CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBitSize));
-    CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBitSize, cudaMemcpyHostToDevice));
+    //  fragBit
+    CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBit.size() * sizeof(uint32_t)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBit.size() * sizeof(uint32_t), cudaMemcpyHostToDevice));
 
-    // Allocate and copy chunkPtr to device
-    CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(int) * (chunkNum + 1)));
-    CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(int) * (chunkNum + 1), cudaMemcpyHostToDevice));
+    //  chunkPtr
+    CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(indT) * (chunkNum + 1)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice));
 
-    // Allocate and copy sparse_AToX_index to device
-    CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(int) * (totalTcFrags * fragK)));
-    CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(int) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
+    //  sparse_AToX_index
+    CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
 
-    // Allocate and copy X_val to device
+    //  X_val
     CUDA_CHECK_ERROR(cudaMalloc(&d_X_val, sizeof(half) * colA));
     CUDA_CHECK_ERROR(cudaMemcpy(d_X_val, X_val, sizeof(half) * colA, cudaMemcpyHostToDevice));
 
-    // Allocate and initialize Y_val to 0 on the device
+    //  Y_val
+    CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(half) * rowA));
+    CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(half) * rowA));
+
+    int warpsPerBlock = 4;
+    int chunksPerBlock = warpsPerBlock * 4;
+    int warpSize = 32;
+    int threadsPerBlock = warpsPerBlock * warpSize;
+    int numRowChunks = (rowA + fragM - 1) / fragM;
+    int blocksPerGrid = (numRowChunks + chunksPerBlock - 1) / chunksPerBlock;
+
+    printf("Launching kernel with %d blocks, %d threads per block\n",
+           blocksPerGrid, threadsPerBlock);
+
+    int warp_iter = 100;
+    for (int i = 0; i < warp_iter; ++i)
+    {
+        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
+    }
+    CUDA_CHECK_ERROR(cudaDeviceSynchronize());
+
+    int test_iter = 1000;
+    cuda_time_test_start();
+    for (int i = 0; i < test_iter; ++i)
+    {
+        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
+    }
+    cuda_time_test_end();
+
+    double runtime = (elapsedTime) / test_iter;
+    printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
+
+    CUDA_CHECK_ERROR(cudaGetLastError());
+
+    CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(half) * rowA, cudaMemcpyDeviceToHost));
+
+    CUDA_CHECK_ERROR(cudaFree(d_tcVal));
+    CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
+    CUDA_CHECK_ERROR(cudaFree(d_fragBit));
+    CUDA_CHECK_ERROR(cudaFree(d_chunkPtr));
+    CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
+    CUDA_CHECK_ERROR(cudaFree(d_X_val));
+    CUDA_CHECK_ERROR(cudaFree(d_Y_val));
+}
+/*
+void tcspmv_fp16_(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
+                  half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
+{
+    int chunkNum = ceil((double)rowA / (double)fragM);
+    int totalTcFrags = chunkPtr[chunkNum];
+    half *d_tcVal, *d_X_val, *d_Y_val;
+    indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
+    uint32_t *d_fragBit;
+
+    // cudaMemcpyToSymbol(x_const, X_val, CONST_SIZE * sizeof(half));
+
+    //  tcVal
+    CUDA_CHECK_ERROR(cudaMalloc(&d_tcVal, tcVal.size() * sizeof(half)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_tcVal, tcVal.data(), tcVal.size() * sizeof(half), cudaMemcpyHostToDevice));
+
+    //  fragPtr
+    CUDA_CHECK_ERROR(cudaMalloc(&d_fragPtr, fragPtr.size() * sizeof(int)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_fragPtr, fragPtr.data(), fragPtr.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+    //  fragBit
+    CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBit.size() * sizeof(uint32_t)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBit.size() * sizeof(uint32_t), cudaMemcpyHostToDevice));
+
+    //  chunkPtr
+    CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(indT) * (chunkNum + 1)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice));
+
+    //  sparse_AToX_index
+    CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK)));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
+
+    //  X_val
+    CUDA_CHECK_ERROR(cudaMalloc(&d_X_val, sizeof(half) * colA));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_X_val, X_val, sizeof(half) * colA, cudaMemcpyHostToDevice));
+
+    //  Y_val
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(half) * rowA));
     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(half) * rowA));
 
@@ -235,7 +380,6 @@ void tcspmv_fp16(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
 
     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(half) * rowA, cudaMemcpyDeviceToHost));
 
-    // 释放设备内存
     CUDA_CHECK_ERROR(cudaFree(d_tcVal));
     CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
     CUDA_CHECK_ERROR(cudaFree(d_fragBit));
@@ -244,3 +388,4 @@ void tcspmv_fp16(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
 }
+*/

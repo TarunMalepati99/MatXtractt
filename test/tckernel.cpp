@@ -609,11 +609,14 @@ int main(int argc, char **argv)
     infile.read(reinterpret_cast<char*>(&fragPtr_size), sizeof(size_t));
     std::vector<int> fragPtr(fragPtr_size);
     infile.read(reinterpret_cast<char*>(fragPtr.data()), sizeof(int) * fragPtr_size);
+/*
 #ifdef fp64
+*/
     size_t fragBit_size;
     infile.read(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
     std::vector<uint32_t> fragBit(fragBit_size);
     infile.read(reinterpret_cast<char*>(fragBit.data()), sizeof(uint32_t) * fragBit_size);
+/*
 #else
     // 读取 fragBit
     size_t fragBit_size;
@@ -621,6 +624,7 @@ int main(int argc, char **argv)
     std::vector<std::array<uint64_t, 4>> fragBit(fragBit_size);
     infile.read(reinterpret_cast<char*>(fragBit.data()), sizeof(uint64_t) * 4 * fragBit_size);
 #endif
+*/
     // 读取 tcVal
     size_t tcVal_size;
     infile.read(reinterpret_cast<char*>(&tcVal_size), sizeof(size_t));
@@ -640,7 +644,7 @@ int main(int argc, char **argv)
     printf("---TC_nnz_ratio = %lf---\n",((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
 
   
-    std::cout << "Number of chunks: " << chunkNum << std::endl;
+    // std::cout << "Number of chunks: " << chunkNum << std::endl;
 
 
 

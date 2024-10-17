@@ -52,8 +52,11 @@ const int fragN = 8;
 #else
 #define valT half
 #define VAL_CUDA_R_TYPE CUDA_R_16F
-const int fragM = 16;
-const int fragK = 16;
+// const int fragM = 16;
+// const int fragK = 16;
+// const int fragN = 8;
+const int fragM = 8;
+const int fragK = 4;
 const int fragN = 8;
 #endif
 
@@ -213,7 +216,7 @@ inline void initVec(valT *vec, int length)
 {
     for (int i = 0; i < length; ++i)
     {
-        vec[i] = (i % 29);
+        vec[i] = (i % 15);
     }
 }
 

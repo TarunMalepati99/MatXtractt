@@ -248,8 +248,8 @@ void ecrPreprocess(
     // printf("block_counter:%d \n", block_counter);
 }
 
-void generateFormat_fp64(
-    const double *vals,               // Input: Non-zero values in CSR format
+void generateFormat(
+    const valT *vals,               // Input: Non-zero values in CSR format
     const int *rowPtr,              // Input: Row pointers in CSR format
     const int *ecrId,               // Input: Adjusted column indices after empty column removal
     int dRows,                      // Input: Number of rows
@@ -257,7 +257,7 @@ void generateFormat_fp64(
     int *chunkPtr,                  // Input: Offsets of tcFrags for each rowChunk
     std::vector<int> &fragPtr,      // Output: Fragment pointer array
     std::vector<uint32_t> &fragBit, // Output: fragBit array for each tcFrag
-    std::vector<double> &tcVal        // Output: Non-zero values in tcFrags
+    std::vector<valT> &tcVal        // Output: Non-zero values in tcFrags
 )
 {
     int numRowChunks = ceil((double)dRows / (double)fragM);
@@ -271,7 +271,7 @@ void generateFormat_fp64(
     fragBit.resize(totalTcFrags, 0);
 
     // Temporary data structures for values in tcFrags
-    std::vector<std::vector<std::vector<double>>> valueGrids;    // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<valT>>> valueGrids;    // [tcFrag][row][col]
     std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
 
     for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
@@ -285,7 +285,7 @@ void generateFormat_fp64(
             continue;
         }
         // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
-        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<double>>(fragM, std::vector<double>(fragK, 0.0)));
+        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<valT>>(fragM, std::vector<valT>(fragK, 0.0)));
         hasValueGrids.assign(numTcFragsInChunk, std::vector<std::vector<bool>>(fragM, std::vector<bool>(fragK, false)));
 
         // Process each row in the rowChunk
@@ -1194,14 +1194,16 @@ int main(int argc, char **argv)
     /// Outputs
     std::vector<int> fragPtr;
     std::vector<valT> tcVal;
-#ifdef fp64
+// #ifdef fp64
     std::vector<uint32_t> fragBit;
-    generateFormat_fp64(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+    generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+/*
 #else
     // std::vector<std::array<uint64_t, 2>> fragBit;
     std::vector<std::array<uint64_t, 4>> fragBit;
-    generateFormat_half_(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+    generateFormat_half(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
 #endif
+*/
     
 #ifdef fp64
     std::string outfile_name = std::string(filename) + "_preprocessed.dat";
@@ -1232,15 +1234,19 @@ int main(int argc, char **argv)
     outfile.write(reinterpret_cast<char*>(fragPtr.data()), sizeof(int) * fragPtr_size);
 
     // 保存 fragBit
+/*
 #ifdef fp64
+*/
     size_t fragBit_size = fragBit.size();
     outfile.write(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
     outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint32_t) * fragBit_size);
+/*
 #else
     size_t fragBit_size = fragBit.size();
     outfile.write(reinterpret_cast<char*>(&fragBit_size), sizeof(size_t));
     outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint64_t) * 4 * fragBit_size);
 #endif
+*/
     // 保存 tcVal
     size_t tcVal_size = tcVal.size();
     outfile.write(reinterpret_cast<char*>(&tcVal_size), sizeof(size_t));

@@ -292,8 +292,8 @@ void ecrPreprocess(
     // printf("block_counter:%d \n", block_counter);
 }
 
-void generateFormat_fp64(
-    const double *vals,               // Input: Non-zero values in CSR format
+void generateFormat(
+    const valT *vals,               // Input: Non-zero values in CSR format
     const int *rowPtr,              // Input: Row pointers in CSR format
     const int *ecrId,               // Input: Adjusted column indices after empty column removal
     int dRows,                      // Input: Number of rows
@@ -301,7 +301,7 @@ void generateFormat_fp64(
     int *chunkPtr,                  // Input: Offsets of tcFrags for each rowChunk
     std::vector<int> &fragPtr,      // Output: Fragment pointer array
     std::vector<uint32_t> &fragBit, // Output: fragBit array for each tcFrag
-    std::vector<double> &tcVal        // Output: Non-zero values in tcFrags
+    std::vector<valT> &tcVal        // Output: Non-zero values in tcFrags
 )
 {
     int numRowChunks = ceil((double)dRows / (double)fragM);
@@ -315,7 +315,7 @@ void generateFormat_fp64(
     fragBit.resize(totalTcFrags, 0);
 
     // Temporary data structures for values in tcFrags
-    std::vector<std::vector<std::vector<double>>> valueGrids;    // [tcFrag][row][col]
+    std::vector<std::vector<std::vector<valT>>> valueGrids;    // [tcFrag][row][col]
     std::vector<std::vector<std::vector<bool>>> hasValueGrids; // [tcFrag][row][col]
 
     for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
@@ -329,7 +329,7 @@ void generateFormat_fp64(
             continue;
         }
         // Initialize valueGrids and hasValueGrids for the tcFrags in this rowChunk
-        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<double>>(fragM, std::vector<double>(fragK, 0.0)));
+        valueGrids.assign(numTcFragsInChunk, std::vector<std::vector<valT>>(fragM, std::vector<valT>(fragK, 0.0)));
         hasValueGrids.assign(numTcFragsInChunk, std::vector<std::vector<bool>>(fragM, std::vector<bool>(fragK, false)));
 
         // Process each row in the rowChunk
@@ -424,13 +424,13 @@ void generateFormat_fp64(
     }
 }
 
-void tcspmv_serial_fp64(
-    const double *x_d,
-    double *y_d,
+void tcspmv_serial(
+    const valT *x_d,
+    valT *y_d,
     const int *chunkPtr,
     const std::vector<int> &fragPtr,
     const std::vector<uint32_t> &fragBit,
-    const std::vector<double> &tcVal,
+    const std::vector<valT> &tcVal,
     const int *sparse_AToX_index,
     int dRows,
     int dCols,
@@ -463,7 +463,7 @@ void tcspmv_serial_fp64(
             int valEndIdx = fragPtr[tcFragIdx + 1];
             int tcValNnz = valEndIdx - valStartIdx;
 
-            const double *tcValPtr = &tcVal[valStartIdx];
+            const valT *tcValPtr = &tcVal[valStartIdx];
 
             // 获取该 Tc 碎片对应的 x 的索引
             const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK]; // 大小为 fragK
@@ -488,7 +488,7 @@ void tcspmv_serial_fp64(
                     if (bit)
                     {
                         // 碎片中位置 (m, k) 有非零元素
-                        double a_value = tcValPtr[valIdx];
+                        valT a_value = tcValPtr[valIdx];
                         valIdx++; // 移动到 tcValPtr 中的下一个非零值
 
                         int x_idx = x_indices[k];
@@ -498,7 +498,7 @@ void tcspmv_serial_fp64(
                             std::cerr << "Invalid x index: " << x_idx << std::endl;
                             continue;
                         }
-                        double x_value = x_d[x_idx];
+                        valT x_value = x_d[x_idx];
 
                         // 进行乘积并累加到 y_d 中
                         y_d[rowIdx] += a_value * x_value;
@@ -509,7 +509,7 @@ void tcspmv_serial_fp64(
         }
     }
 }
-
+/*
 void generateFormat_half(
     const half *vals,                              // Input: Non-zero values in CSR format
     const int *rowPtr,                             // Input: Row pointers in CSR format
@@ -716,9 +716,9 @@ void tcspmv_serial_half(
         }
     }
 }
+*/
 
-
-void generateFormat_half_(
+void generateFormat_half(
     const half *vals,                              // Input: Non-zero values in CSR format
     const int *rowPtr,                             // Input: Row pointers in CSR format
     const int *ecrId,                              // Input: Adjusted column indices after empty column removal
@@ -850,7 +850,7 @@ void generateFormat_half_(
 }
 
 
-void tcspmv_serial_half_(
+void tcspmv_serial_half(
     const half *x_d,                                     // Input vector x
     half *y_d,                                           // Output vector y
     const int *chunkPtr,                                 // Offsets of tcFrags for each rowChunk
@@ -1238,14 +1238,16 @@ int main(int argc, char **argv)
     /// Outputs
     std::vector<int> fragPtr;
     std::vector<valT> tcVal;
-#ifdef fp64
+// #ifdef fp64
     std::vector<uint32_t> fragBit;
-    generateFormat_fp64(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+    generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+/*
 #else
     // std::vector<std::array<uint64_t, 2>> fragBit;
     std::vector<std::array<uint64_t, 4>> fragBit;
-    generateFormat_half_(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+    generateFormat_half(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
 #endif
+*/
     /***************************************************************
      *         check the Sparsity-TCU-aware compression            *
      ***************************************************************/
@@ -1255,6 +1257,7 @@ int main(int argc, char **argv)
 
     valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
     valT *tryY_val = (valT *)malloc(sizeof(valT) * dRows);
+    valT *tryY_val1 = (valT *)malloc(sizeof(valT) * dRows);
 
     valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
@@ -1262,6 +1265,8 @@ int main(int argc, char **argv)
     // memset(ourY_val, 0, sizeof(valT) * rowA);
     // memset(Y_val, 0, sizeof(valT) * rowA);
     std::fill(tryY_val, tryY_val + dRows, static_cast<valT>(0.0));
+    std::fill(tryY_val1, tryY_val1 + dRows, static_cast<valT>(0.0));
+
     std::fill(ourY_val, ourY_val + rowA, static_cast<valT>(0.0));
     std::fill(Y_val, Y_val + rowA, static_cast<valT>(0.0));
 
@@ -1290,13 +1295,17 @@ int main(int argc, char **argv)
     // spmv_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
 #ifdef fp64
-    // tcspmv_serial_fp64(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+    // tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #else
-    // tcspmv_serial_half_(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+    tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+
     tcspmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #endif
-    
+
+    int result = eQcheck(tryY_val1, tryY_val, dRows);
+
+
 
     for (int i = 0; i < dRows; i++)
     {
@@ -1306,7 +1315,7 @@ int main(int argc, char **argv)
     // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
-    int result = eQcheck(Y_val, ourY_val, rowA);
+    // int result = eQcheck(Y_val, ourY_val, rowA);
 
     free(sparse_AToX_index);
     free(tryY_val);
