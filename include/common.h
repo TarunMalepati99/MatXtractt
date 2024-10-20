@@ -62,6 +62,10 @@ const int fragN = 8;
 
 #define innzT int64_t
 
+const int SM_NUM = 108;
+const int tail_thresh = SM_NUM * 4; //if thread_block < tail_thresh then simt_spmv
+
+
 #define indT int
 
 #define CUDA_CHECK_ERROR(call)                                            \

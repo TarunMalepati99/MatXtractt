@@ -19,7 +19,7 @@ __device__ __forceinline__ void store_half_to_global(const half *a, half v)
     ushort *v_u = reinterpret_cast<ushort *>(&v);
     asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(a), "h"(*v_u));
 }
-/*
+
 __global__ void tcspmv_kernel_fp16_(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
@@ -34,6 +34,7 @@ __global__ void tcspmv_kernel_fp16_(
     const int warpsPerBlock = 4;
     int warpId = threadIdx.x / 32; // Warp ID within the block
     int laneId = threadIdx.x & 31; // Lane ID within the warp
+    int mmaIndex = (laneId < 16) ? laneId / 4 : (laneId - 16) / 4;
 
     int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
 
@@ -48,23 +49,14 @@ __global__ void tcspmv_kernel_fp16_(
     int rowStart = rowChunkIndex * fragM;
 
     // Initialize the accumulators
-    half acc[8] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f),
-                   __float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
-
-    half frag_a[4] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
-    half frag_b[4] = {__float2half(0.0f), __float2half(0.0f), __float2half(0.0f), __float2half(0.0f)};
-
-    int mmaIndex;
-    if (laneId < 16)
-    {
-        mmaIndex = laneId / 4;
-    }
-    else
-    {
-        mmaIndex = (laneId - 16) / 4;
-    }
+    half frag_a[4];
+    half frag_b[4];
+    half sum = __half(0);
+    int a_row = (laneId & 3) + ((laneId < 16) ? 0 : 4);
     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; tcFragIdx += 4)
     {
+        half acc[8] = {__half(0), __half(0), __half(0), __half(0),
+                       __half(0), __half(0), __half(0), __half(0)};
         int fragIdx = tcFragIdx + mmaIndex; //  对于4-7，20-23来说 等于 tcFragIdx + 1
         if (fragIdx >= tcFragEnd)
         {
@@ -74,33 +66,37 @@ __global__ void tcspmv_kernel_fp16_(
         uint32_t bitmap = fragBit[fragIdx];
         const half *tcValPtr = &tcVal[fragPtr[fragIdx]];
         // load A
+#pragma unroll
         for (int i = 0; i < 4; ++i)
         {
-            int a_row = (laneId % 4) + ((laneId < 16) ? 0 : 4);
             int a_col = i; // Since i ranges from 0 to 3
             int a_bitPos = a_row * fragK + a_col;
             int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
             int bit = (bitmap >> a_bitPos) & 1;
             frag_a[i] = bit ? tcValPtr[a_valIdx] : __float2half(0.0f);
         }
-        // Pack frag_a into A[2]
-        uint32_t A[2];
-        uint32_t *frag_a_uint32 = reinterpret_cast<uint32_t *>(frag_a);
-        A[0] = frag_a_uint32[0];
-        A[1] = frag_a_uint32[1];
-
         // load B
         const int *sparse_AToX_idx = &sparse_AToX_index[fragIdx * fragK];
+#pragma unroll
         for (int i = 0; i < 4; ++i)
         {
             int b_row = i; // Since i ranges from 0 to 3
             int x_idx = sparse_AToX_idx[b_row];
             frag_b[i] = __ldg(&x_d[x_idx]);
         }
-        mma_m8n8k4_fp16_v2(acc, A, frag_b);
+        uint32_t const *A = reinterpret_cast<uint32_t const *>(&frag_a[0]);
+        uint32_t const *B = reinterpret_cast<uint32_t const *>(&frag_b[0]);
+        uint32_t *C = reinterpret_cast<uint32_t *>(&acc[0]);
+        asm volatile(
+            "mma.sync.aligned.m8n8k4.row.col.f16.f16.f16.f16"
+            " { %0, %1, %2, %3 }, "
+            " { %4, %5 }, "
+            " { %6, %7 }, "
+            " { %0, %1, %2, %3 };"
+            : "+r"(C[0]), "+r"(C[1]), "+r"(C[2]), "+r"(C[3]) : "r"(A[0]), "r"(A[1]), "r"(B[0]), "r"(B[1]));
+
+        sum += acc[0];
     }
-    __syncwarp();
-    // 以下代码应当完成四个线程的acc[0]寄存器之和，并由线程0 1 2 3 16 17 18 19写入对应位置，这四个线程分别是
     // 0 4 8 12 线程
     // 1 5 9 13 线程
     // 2 6 10 14 线程
@@ -109,16 +105,13 @@ __global__ void tcspmv_kernel_fp16_(
     // 17 21 25 29
     // 18 22 26 30
     // 19 23 27 31
-    // 然而kernel的执行会卡住，请帮我解决
 
-    half sum = acc[0];
     sum += __shfl_down_sync(0xffffffff, sum, 8);
     sum += __shfl_down_sync(0xffffffff, sum, 4);
 
     // Write the result to y_d
     if (mmaIndex == 0)
     {
-        int a_row = (laneId % 4) + ((laneId < 16) ? 0 : 4);
         int y_idx = rowStart + a_row;
         if (y_idx < dRows)
         {
@@ -126,7 +119,7 @@ __global__ void tcspmv_kernel_fp16_(
         }
     }
 }
-*/
+
 __global__ void tcspmv_kernel_fp16(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
@@ -304,7 +297,7 @@ void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
 }
-/*
+
 void tcspmv_fp16_(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                   std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                   half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
@@ -388,4 +381,3 @@ void tcspmv_fp16_(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
 }
-*/

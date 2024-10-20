@@ -1217,7 +1217,7 @@ int main(int argc, char **argv)
     int totalTcFrags = chunkPtr[chunkNum];
     // printf("\n chunkPtr: %d ", chunkPtr[chunkNum]);
     // printf("!!!TC_sparsity_ratio = %lf\n", (1 - (double)nnzRowD / (double)(chunkPtr[chunkNum] * 4 * 8)));
-    printf("---TC_nnz_ratio = %lf---\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
+    printf("------TC_nnz_ratio = %lf------\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
     int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
     memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
 
@@ -1285,25 +1285,31 @@ int main(int argc, char **argv)
 
     // Peripheral-Sparse Block
     spmv_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
-    printf("Peripheral-Sparse nnz pre row = %f\n", (double)nnzColS / (double)rowA);
+    printf("Peripheral-Sparse nnz per row = %f\n", (double)nnzColS / (double)rowA);
     // Edge-Sparse Block
     spmv_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
-    printf("Edge-Sparse nnz pre row = %f\n", (double)nnzRowS / (double)sRows);
+    printf("Edge-Sparse nnz per row = %f\n", (double)nnzRowS / (double)sRows);
 
     // Core-Dense Block
-    printf("Core-Dense nnz pre row = %f\n", (double)nnzRowD / (double)dRows);
+    printf("------Core-Dense nnz per row = %f------\n", (double)nnzRowD / (double)dRows);
+    printf("------Core-Dense 1st row nnz = %d------\n", csrRowPtr_dd[1] - csrRowPtr_dd[0]);
+    printf("------Core-Dense 2st row nnz = %d------\n", csrRowPtr_dd[2] - csrRowPtr_dd[1]);
+    printf("------Core-Dense 3th row nnz = %d------\n", csrRowPtr_dd[3] - csrRowPtr_dd[2]);
+    printf("------Core-Dense 4th row nnz = %d------\n", csrRowPtr_dd[4] - csrRowPtr_dd[3]);
+    printf("------Core-Dense 5th row nnz = %d------\n", csrRowPtr_dd[5] - csrRowPtr_dd[4]);
+    printf("------Core-Dense last row nnz = %d------\n", csrRowPtr_dd[dRows] - csrRowPtr_dd[dRows - 1]);
     // spmv_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
 #ifdef fp64
-    tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    // tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+    tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #else
     tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
 
     tcspmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #endif
 
-    int result = eQcheck(tryY_val1, tryY_val, dRows);
+    // int result = eQcheck(tryY_val1, tryY_val, dRows);
 
 
 
@@ -1315,7 +1321,7 @@ int main(int argc, char **argv)
     // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
-    // int result = eQcheck(Y_val, ourY_val, rowA);
+    int result = eQcheck(Y_val, ourY_val, rowA);
 
     free(sparse_AToX_index);
     free(tryY_val);

@@ -3,6 +3,11 @@
 #define CONST_SIZE 4096  // 常量内存大小
  __constant__ double x_const[CONST_SIZE];
 
+ __device__ __forceinline__ void store_double_to_global(const double* a, double v)
+{
+    asm volatile("st.global.cs.f64 [%0], %1;" :: "l"(a), "d"(v));
+}
+
 // 重新组织tcVal、fragPtr和sparse_AToX_index的数据布局，使得连续线程访问连续的内存地址
 // 利用CUDA的Warp级别原语（如__shfl_down_sync）在warp内部高效地共享数据，减少同步开销
 
@@ -38,6 +43,7 @@ __global__ void tcspmv_kernel_fp64(
     int a_row = laneId >> 2; // laneId / 4
     int a_col = laneId & 3;  // laneId % 4
     int a_bitPos = a_row * fragK + a_col;
+    // double sum = 0.0;
     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
     {
         uint32_t bitmap = fragBit[tcFragIdx];
@@ -62,6 +68,7 @@ __global__ void tcspmv_kernel_fp64(
             : "d"(a_frag), "d"(b_frag));
         // Compute sum of accumulator elements
         // thr_accum += c_frag[0];
+        
         if (a_col == 0)
         {
             int y_idx = rowStart + a_row;
@@ -71,9 +78,18 @@ __global__ void tcspmv_kernel_fp64(
                 atomicAdd(&y_d[y_idx], c_frag[0]);
             }
         }
+        
+        // sum += c_frag[0];
 
     } // End of tcFrag loop
-    
+    // if (a_col == 0)
+    // {
+    //     int y_idx = rowStart + a_row;
+    //     if (y_idx < dRows)
+    //     {
+    //         store_double_to_global(y_d + y_idx, sum);
+    //     }
+    // }
 }
 
 __global__ void tcspmv_kernel_fp64__(
@@ -224,7 +240,7 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     printf("Launching kernel with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 100;
+    int warp_iter = 0;
     for (int i = 0; i < warp_iter; ++i)
     {
         tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
@@ -233,7 +249,7 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1000;
+    int test_iter = 1;
     gettimeofday(&t1, NULL);
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
