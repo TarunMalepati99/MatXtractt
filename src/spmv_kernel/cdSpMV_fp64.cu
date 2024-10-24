@@ -56,7 +56,8 @@ __device__ __forceinline__ void lbNEC_reduce_oneRow_in_block(const int tid_in_bl
                                                              const I *__restrict__ row_ptr,
                                                              const T *__restrict__ smem, T *__restrict__ y)
 {
-  __shared__ volatile T LDS[THREADS_PER_BLOCK];
+  __shared__ T LDS[THREADS_PER_BLOCK];
+  // __shared__ volatile T LDS[THREADS_PER_BLOCK];
 
   T sum = 0;
   const I reduce_start_idx = max((indT)0, row_ptr[reduceStartRowId] - block_id * NNZ_PER_BLOCK);
@@ -167,7 +168,7 @@ lbNEC_reduce_oneRow_in_vector_L(const int n_reduce_rows_num, const int tid_in_bl
 }
 
 template <indT productNnzPerThread, indT THREADS_PER_BLOCK, typename I, typename T>
-__global__ void necspmv_kernel(T *d_val,
+__global__ void cdspmv_kernel(T *d_val,
                                indT *d_ptr,
                                indT *d_cols,
                                indT rowA,
@@ -312,7 +313,7 @@ __global__ void necspmv_kernel(T *d_val,
   */
 }
 
-void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
+void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
              valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA,
              double *necTime, double *necPre)
 {
@@ -321,23 +322,26 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   struct timeval tpre1;
   struct timeval tpre2;
 
-  double *d_vecY_csr, *d_vecX_csr, *d_val;
+  valT *d_vecY_csr, *d_vecX_csr, *d_val;
   indT *d_indices, *d_ptr;
 
-  cudaMalloc(&d_vecY_csr, sizeof(double) * rowA);
-  cudaMalloc(&d_vecX_csr, sizeof(double) * colA);
-  cudaMalloc(&d_val, sizeof(double) * nnzA);
+  cudaMalloc(&d_vecY_csr, sizeof(valT) * rowA);
+  cudaMalloc(&d_vecX_csr, sizeof(valT) * colA);
+  cudaMalloc(&d_val, sizeof(valT) * nnzA);
   cudaMalloc(&d_indices, sizeof(indT) * nnzA);
   cudaMalloc(&d_ptr, sizeof(indT) * (rowA + 1));
 
-  cudaMemcpy(d_val, csrVal, sizeof(double) * nnzA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_val, csrVal, sizeof(valT) * nnzA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_indices, csrColInd, sizeof(indT) * nnzA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_vecX_csr, X_val, sizeof(double) * colA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_vecY_csr, Y_val, sizeof(double) * rowA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_vecX_csr, X_val, sizeof(valT) * colA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
   // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
-
+#ifdef fp64
   const int productNnzPerThread = 4;
+#else
+  const int productNnzPerThread = 16;
+#endif
   const int THREADS_PER_BLOCK = 128;
 
   const int WORK_BLOCKS = nnzA / (productNnzPerThread * THREADS_PER_BLOCK) + ((nnzA % (productNnzPerThread * THREADS_PER_BLOCK) == 0) ? 0 : 1);
@@ -350,23 +354,20 @@ void necspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   gettimeofday(&tpre1, NULL);
   pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, indT><<<divup<uint32_t>(rowA + 1, 256), 256>>>(d_ptr, rowA, startRowPerBlock);
 
-  // int carveout = 0;
-  // cudaFuncSetAttribute(necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
-
   gettimeofday(&tpre2, NULL);
-  int warmup_time = 10;
-  int execute_time = 100;
+  int warmup_time = 100;
+  int execute_time = 1000;
 
   for (int i = 0; i < warmup_time; ++i)
   {
-    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
 
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
-    necspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, double><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
 
   }
   cudaDeviceSynchronize();

@@ -1,13 +1,22 @@
 #!/bin/bash
 
+
+
+./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/roadNet-TX/roadNet-TX.mtx 
+./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/p2p-Gnutella06/p2p-Gnutella06.mtx
+./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/ca-HepTh/ca-HepTh.mtx
+./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/wiki-Vote/wiki-Vote.mtx
+
+
+
 # Define command to execute
-command="./build/TCSpMVlib_tcperftest"
+command="./build/TCSpMVlib_perf"
 
 # Define data directory
 data_dir="../../data/SF-graph/SNAP/mtx/"
 
 # Log file for command output
-log_file="res.log"
+log_file="res_cd_SNAP_16.log"
 
 # Clear the log file if it already exists
 > "$log_file"
@@ -33,11 +42,3 @@ echo "Log saved to $log_file"
 
 
 
-
-
-
-
-# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/roadNet-TX/roadNet-TX.mtx 
-# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/p2p-Gnutella06/p2p-Gnutella06.mtx
-# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/ca-HepTh/ca-HepTh.mtx
-# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/wiki-Vote/wiki-Vote.mtx

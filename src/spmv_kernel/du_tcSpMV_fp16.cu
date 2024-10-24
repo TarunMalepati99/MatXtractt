@@ -20,6 +20,8 @@ __device__ __forceinline__ void store_half_to_global(const half *a, half v)
     asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(a), "h"(*v_u));
 }
 
+
+
 __global__ void tcspmv_kernel_fp16_(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
@@ -151,6 +153,7 @@ __global__ void tcspmv_kernel_fp16(
     int laneId = threadIdx.x & 31;
     int mmaIndex = (laneId < 16) ? laneId / 4 : (laneId - 16) / 4;
 
+    // int rowChunkIndex = blockIdx.x * 8 + warpId * 4 + mmaIndex;
     int rowChunkIndex = blockIdx.x * 16 + warpId * 4 + mmaIndex;
 
     int tcFragStart = chunkPtr[rowChunkIndex];
@@ -183,6 +186,7 @@ __global__ void tcspmv_kernel_fp16(
             int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
             int bit = (bitmap >> a_bitPos) & 1;
             frag_a[i] = bit ? tcValPtr[a_valIdx] : __half(0);
+            // frag_a[i] = bit ? load_half_from_global(tcValPtr + a_valIdx) : __half(0);
         }
         // load B
         const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
@@ -191,6 +195,7 @@ __global__ void tcspmv_kernel_fp16(
         {
             int b_row = i; // Since i ranges from 0 to 3
             int x_idx = sparse_AToX_idx[b_row];
+            // int x_idx = load_int_from_global(sparse_AToX_idx + b_row);
             // frag_b[i] = (x_idx < SHM_SIZE) ? x_shm[x_idx] : __ldg(&x_d[x_idx]);
             frag_b[i] = __ldg(&x_d[x_idx]);
         }
@@ -211,7 +216,8 @@ __global__ void tcspmv_kernel_fp16(
     int y_idx = mmaRowStart + a_row;
     if (y_idx < dRows)
     {
-        store_half_to_global(y_d + y_idx, sum);
+        ushort *sum_u = reinterpret_cast<ushort *>(&sum);
+        asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx), "h"(*sum_u));
     }
 }
 

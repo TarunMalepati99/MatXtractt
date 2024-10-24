@@ -46,11 +46,13 @@
 #ifdef fp64
 #define valT double
 #define VAL_CUDA_R_TYPE CUDA_R_64F
+#define BUF_CUDA_R_TYPE CUDA_R_64F
 const int fragM = 8;
 const int fragK = 4;
 const int fragN = 8;
 #else
 #define valT half
+#define BUF_CUDA_R_TYPE CUDA_R_32F
 #define VAL_CUDA_R_TYPE CUDA_R_16F
 // const int fragM = 16;
 // const int fragK = 16;
@@ -65,6 +67,7 @@ const int fragN = 8;
 const int SM_NUM = 108;
 const int tail_thresh = SM_NUM * 4; //if thread_block < tail_thresh then simt_spmv
 
+const int WARP_SIZE = 32;
 
 #define indT int
 
@@ -322,14 +325,5 @@ inline void radix_sort(int *arr, int *idx, int len)
     for (int exp = 1; max / exp > 0; exp *= 10)
     {
         count_sort(arr, idx, len, exp);
-    }
-}
-
-inline void radix_sort_asce(int *arr, int *idx, int len)
-{
-    int max = get_max(arr, len);
-    for (int exp = 1; max / exp > 0; exp *= 10)
-    {
-        count_sort_asce(arr, idx, len, exp);
     }
 }

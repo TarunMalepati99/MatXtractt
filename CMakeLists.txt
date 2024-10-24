@@ -64,8 +64,8 @@ file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_spmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
 # file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tcpreprocess.cpp")
-# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tckernel.cpp")
-file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
+file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tckernel.cpp")
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
 
 if(CUDA_TEST_FILES)
     #fp64
