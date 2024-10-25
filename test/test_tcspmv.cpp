@@ -96,6 +96,10 @@ int eQcheck(valT *tmp1, valT *tmp2, int length)
         // Convert __half to float for computation
         float val1 = static_cast<float>(tmp1[i]);
         float val2 = static_cast<float>(tmp2[i]);
+        if (isinf(val1) || isinf(val2))
+        {
+            printf("Inf detected at index (%d), val1(%4.3f), val2(%4.3f)\n", i, val1, val2);
+        }
         if (fabs(val1 - val2) / fmax(fabs(val1), fabs(val2)) > tolerance)
         {
             printf("Error at index (%d), res(%4.3f), our(%4.3f), please check your code!\n", i, val1, val2);
@@ -1341,7 +1345,7 @@ int main(int argc, char **argv)
     tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #else
     // tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    tcspmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #endif
 
 

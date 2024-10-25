@@ -20,9 +20,7 @@ __device__ __forceinline__ void store_half_to_global(const half *a, half v)
     asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(a), "h"(*v_u));
 }
 
-
-
-__global__ void tcspmv_kernel_fp16_(
+__global__ void tcspmv_kernel_fp16_v1(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
     const int *__restrict__ chunkPtr,
@@ -55,15 +53,13 @@ __global__ void tcspmv_kernel_fp16_(
     half frag_b[4];
     half sum = __half(0);
     int a_row = (laneId & 3) + ((laneId < 16) ? 0 : 4);
-    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; tcFragIdx += 4)
+
+    for (int tcFragIdx_warp_start = tcFragStart; tcFragIdx_warp_start < tcFragEnd; tcFragIdx_warp_start += 4)
     {
-        half acc[8] = {__half(0), __half(0), __half(0), __half(0),
-                       __half(0), __half(0), __half(0), __half(0)};
-        int fragIdx = tcFragIdx + mmaIndex; //  对于4-7，20-23来说 等于 tcFragIdx + 1
-        if (fragIdx >= tcFragEnd)
-        {
-            break; // 跳过越界的片段
-        }
+        half acc[8] = {__half(0)};
+
+        int dangfragIdx = tcFragIdx_warp_start + mmaIndex;
+        int fragIdx = dangfragIdx >= tcFragEnd ? (tcFragEnd - 1) : dangfragIdx;//确保其合法内存访问
 
         uint32_t bitmap = fragBit[fragIdx];
         const half *tcValPtr = &tcVal[fragPtr[fragIdx]];
@@ -97,6 +93,10 @@ __global__ void tcspmv_kernel_fp16_(
             " { %0, %1, %2, %3 };"
             : "+r"(C[0]), "+r"(C[1]), "+r"(C[2]), "+r"(C[3]) : "r"(A[0]), "r"(A[1]), "r"(B[0]), "r"(B[1]));
 
+        if (dangfragIdx >= tcFragEnd)
+        {
+            acc[0] = 0;
+        }
         sum += acc[0];
     }
     // 0 4 8 12 线程
@@ -117,12 +117,14 @@ __global__ void tcspmv_kernel_fp16_(
         int y_idx = rowStart + a_row;
         if (y_idx < dRows)
         {
-            atomicAdd(&y_d[y_idx], sum);
+            // atomicAdd(&y_d[y_idx], sum);
+            ushort *sum_u = reinterpret_cast<ushort *>(&sum);
+            asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx), "h"(*sum_u));
         }
     }
 }
 
-__global__ void tcspmv_kernel_fp16(
+__global__ void tcspmv_kernel_fp16_v0(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
     const int *__restrict__ chunkPtr,
@@ -221,7 +223,7 @@ __global__ void tcspmv_kernel_fp16(
     }
 }
 
-void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                  half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
 {
@@ -272,7 +274,7 @@ void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     int warp_iter = 100;
     for (int i = 0; i < warp_iter; ++i)
     {
-        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+        tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
@@ -282,7 +284,7 @@ void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
-        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+        tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
@@ -304,7 +306,7 @@ void tcspmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
 }
 
-void tcspmv_fp16_(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                   std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                   half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
 {
@@ -350,23 +352,23 @@ void tcspmv_fp16_(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching kernel with %d blocks, %d threads per block\n",
+    printf("Launching tcspmv_kernel_fp16_v1 kernel with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 0;
+    int warp_iter = 100;
     for (int i = 0; i < warp_iter; ++i)
     {
-        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+        tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1;
+    int test_iter = 1000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
-        tcspmv_kernel_fp16<<<blocksPerGrid, threadsPerBlock>>>(
+        tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
