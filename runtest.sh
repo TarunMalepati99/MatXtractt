@@ -2,15 +2,15 @@
 
 
 
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/roadNet-TX/roadNet-TX.mtx 
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/p2p-Gnutella06/p2p-Gnutella06.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/ca-HepTh/ca-HepTh.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/wiki-Vote/wiki-Vote.mtx
+# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/roadNet-TX/roadNet-TX.mtx 
+# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/p2p-Gnutella06/p2p-Gnutella06.mtx
+# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/ca-HepTh/ca-HepTh.mtx
+# ./build/TCSpMVlib_tcperftest ../../data/SF-graph/SNAP/mtx/wiki-Vote/wiki-Vote.mtx
 
 
 
 # Define command to execute
-command="./build/TCSpMVlib_perf"
+command="./build/TCSpMVlib_tcperftest"
 
 # Define data directory
 data_dir="../../data/SF-graph/SNAP/mtx/"

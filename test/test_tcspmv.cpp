@@ -24,6 +24,116 @@ typedef struct
     bool isIn;
 } HashTable;
 
+// Function to merge two CSR matrices S and D into A_CD
+void merge2CSR(
+    // Inputs for matrix S
+    int rowA,
+    int sCols,
+    int nnzColS,
+    const valT* csrVal_S,
+    const int* csrRowPtr_S,
+    const int* csrColInd_S,
+
+    // Inputs for matrix D
+    int sRows,
+    int dCols,
+    int nnzRowS,
+    const valT* csrVal_D,
+    const int* csrRowPtr_D,
+    const int* csrColInd_D,
+
+    // Mapping array
+    const int* newArray,
+
+    // Input vectors
+    const valT* x_d,
+    const valT* x_s,
+
+    // Outputs for A_CD
+    valT*& csrVal_CD,
+    int*& csrRowPtr_CD,
+    int*& csrColInd_CD,
+
+    // Output vector x_CD
+    valT*& x_CD
+) {
+    // Define A_CD's dimensions
+    int rowCD = rowA;
+    int colCD = sCols + dCols;
+    int nnzCD = nnzColS + nnzRowS;
+
+    // Step 1: Initialize x_CD as [x_d, x_s]
+    x_CD = (valT*)malloc(colCD * sizeof(valT));
+    for(int j = 0; j < dCols; ++j) x_CD[j] = x_d[j];
+    for(int j = 0; j < sCols; ++j) x_CD[dCols + j] = x_s[j];
+
+    // Step 2: Build csrRowPtr_CD
+    csrRowPtr_CD = (int*)malloc((rowCD + 1) * sizeof(int));
+    // csrRowPtr_CD[0] = 0;
+    // for(int i = 0; i < rowA; ++i) {
+    //     int s_nnz = csrRowPtr_S[i+1] - csrRowPtr_S[i];
+    //     int d_nnz = 0;
+    //     int d_i = newArray[i];
+    //     if (i < sRows && d_i < rowCD) {
+    //         d_nnz = csrRowPtr_D[i+1] - csrRowPtr_D[d_i];
+    //     }
+    //     csrRowPtr_CD[i+1] = csrRowPtr_CD[i] + s_nnz + d_nnz;
+    // }
+    int* row_nnz = (int*)calloc(rowCD, sizeof(int)); // Temporary array for non-zero counts per row
+    for(int i = 0; i < rowA; ++i) {
+        row_nnz[i] += csrRowPtr_S[i+1] - csrRowPtr_S[i];
+    }
+    for(int i = 0; i < sRows; ++i) {
+        int row_in_A_CD = newArray[i];
+        row_nnz[row_in_A_CD] += csrRowPtr_D[i+1] - csrRowPtr_D[i];
+    }
+
+    // Step 2: Convert row_nnz to cumulative row pointer (csrRowPtr_CD)
+    csrRowPtr_CD[0] = 0;
+    for(int i = 0; i < rowCD; ++i) {
+        csrRowPtr_CD[i+1] = csrRowPtr_CD[i] + row_nnz[i];
+    }
+
+    // Optional check: Validate nnzCD
+    if(csrRowPtr_CD[rowCD] != nnzCD) {
+        std::cerr << "Warning: Calculated nnzCD (" << csrRowPtr_CD[rowCD] 
+                  << ") does not match expected nnzCD (" << nnzCD << ").\n";
+    }
+
+    // Step 3: Allocate csrVal_CD and csrColInd_CD
+    csrVal_CD = (valT*)malloc(nnzCD * sizeof(valT));
+    csrColInd_CD = (int*)malloc(nnzCD * sizeof(int));
+
+    // Step 4: Initialize current position for each row
+    int* current_pos = (int*)malloc(rowCD * sizeof(int));
+    for(int i = 0; i < rowCD; ++i) current_pos[i] = csrRowPtr_CD[i];
+
+    // Step 5: Insert S's non-zeros into A_CD
+    for(int i = 0; i < rowA; ++i) {
+        for(int k = csrRowPtr_S[i]; k < csrRowPtr_S[i+1]; ++k) {
+            int dest_pos = current_pos[i];
+            csrVal_CD[dest_pos] = csrVal_S[k];
+            csrColInd_CD[dest_pos] = dCols + csrColInd_S[k]; // Offset S's columns by dCols
+            current_pos[i]++;
+        }
+    }
+
+    // Step 6: Insert D's non-zeros into A_CD using unique mapping from newArray
+    for(int i = 0; i < sRows; ++i) {
+        int row_in_A_CD = newArray[i];
+        for(int k = csrRowPtr_D[i]; k < csrRowPtr_D[i+1]; ++k) {
+            int dest_pos = current_pos[row_in_A_CD];
+            csrVal_CD[dest_pos] = csrVal_D[k];
+            csrColInd_CD[dest_pos] = csrColInd_D[k]; // D's columns are first in A_CD
+            current_pos[row_in_A_CD]++;
+        }
+    }
+
+    // Free temporary arrays
+    free(current_pos);
+    free(row_nnz);
+}
+
 int compare_desc_structure(const void *a, const void *b)
 {
     return ((CountWithIndex *)b)->count - ((CountWithIndex *)a)->count;
@@ -1298,21 +1408,47 @@ int main(int argc, char **argv)
     spmv_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
 
     /*
-    *    Peripheral-Sparse Block: scsrVal, scsrRowPtr, scsrColInd *
+    *    Peripheral-Sparse Block: scsrVal, scsrRowPtr, scsrColInd : rowA, sCols, nnzColS        *
+    *    Edge-Sparse Block: csrVal_ds, csrRowPtr_ds, csrColInd_ds : sRows, dCols, nnzRowS,      *
+    * 
     *    Core-Dense Block: csrVal_dd, csrRowPtr_dd, csrColInd_dd  *
-    *    Edge-Sparse Block: csrVal_ds, csrRowPtr_ds, csrColInd_ds *
-    * 
-    * 
     *    dense  col-segment: dcsrVal, dcsrRowPtr, dcsrColInd      *
     */ 
+
+
     // Peripheral-Sparse Block
-    spmv_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
+    // spmv_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
     printf("Peripheral-Sparse nnz per row = %f\n", (double)nnzColS / (double)rowA);
+
+
     // Edge-Sparse Block
-    spmv_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
+    // spmv_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
     printf("Edge-Sparse nnz per row = %f\n", (double)nnzRowS / (double)sRows);
+    //TODO: Peripheral-Sparse and Edge-Sparse merge
+
+    //colA, rowA, 
+    int nnzCD = nnzColS + nnzRowS;
+    int rowCD = rowA;
+    int colCD = colA;
+
+    valT* csrVal_CD;
+    int* csrRowPtr_CD;
+    int* csrColInd_CD;
+    valT* x_CD;
+
+    // valT *x_CD = (valT *)malloc(sizeof(valT) * colA);
+    merge2CSR(
+        rowA, sCols, nnzColS, scsrVal, scsrRowPtr, scsrColInd,
+        sRows, dCols, nnzRowS, csrVal_ds, csrRowPtr_ds, csrColInd_ds,
+        newArray_,
+        x_d, x_s,
+        csrVal_CD, csrRowPtr_CD, csrColInd_CD,
+        x_CD
+    );
+    spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+
     ////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////DASP
     ////////////////////////////////////////////////////////////////////////////////////////////
 
     // Core-Dense Block
@@ -1373,6 +1509,11 @@ int main(int argc, char **argv)
     free(ecrId);
     free(chunkPtr);
     free(blockPartition);
+
+    free(csrVal_CD);
+    free(csrRowPtr_CD);
+    free(csrColInd_CD);
+    free(x_CD);
 
 
 
