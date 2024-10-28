@@ -1445,7 +1445,10 @@ int main(int argc, char **argv)
         csrVal_CD, csrRowPtr_CD, csrColInd_CD,
         x_CD
     );
-    spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+    // spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+    double necTime1 = 0, necPre1 = 0;
+    cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD, &necTime1, &necPre1);
+    printf("our_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime1, necPre1);
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     /////////////DASP

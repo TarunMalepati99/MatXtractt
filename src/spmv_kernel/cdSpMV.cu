@@ -322,10 +322,11 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   struct timeval tpre1;
   struct timeval tpre2;
 
-  valT *d_vecY_csr, *d_vecX_csr, *d_val;
+  valT *d_vecY_csr, *d_vecY_csr_perf, *d_vecX_csr, *d_val;
   indT *d_indices, *d_ptr;
 
   cudaMalloc(&d_vecY_csr, sizeof(valT) * rowA);
+  cudaMalloc(&d_vecY_csr_perf, sizeof(valT) * rowA);
   cudaMalloc(&d_vecX_csr, sizeof(valT) * colA);
   cudaMalloc(&d_val, sizeof(valT) * nnzA);
   cudaMalloc(&d_indices, sizeof(indT) * nnzA);
@@ -336,6 +337,7 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecX_csr, X_val, sizeof(valT) * colA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_vecY_csr_perf, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
   // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
 #ifdef fp64
   const int productNnzPerThread = 4;
@@ -360,19 +362,21 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   for (int i = 0; i < warmup_time; ++i)
   {
-    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
 
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
-    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
 
   }
   cudaDeviceSynchronize();
-
   gettimeofday(&t2, NULL);
+
+  cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+  cudaDeviceSynchronize();
 
   double pre_time = ((tpre2.tv_sec - tpre1.tv_sec) * 1000.0 + (tpre2.tv_usec - tpre1.tv_usec) / 1000.0) / 1;
   *necPre = pre_time;
@@ -388,6 +392,7 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   // printf("\nrowA = %d, row_long = %d, row_block = %d, row_short1 = %d, common13 = %d, row_short_3 = %d, row_short_4 = %d, row_short_2 = %d\n", rowA, row_long, row_block, short_row_1, common_13, short_row_3, short_row_4, short_row_2);
 
   cudaMemcpy(Y_val, d_vecY_csr, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
+  cudaFree(d_vecY_csr_perf);
   cudaFree(d_vecY_csr);
   cudaFree(d_vecX_csr);
   cudaFree(d_val);

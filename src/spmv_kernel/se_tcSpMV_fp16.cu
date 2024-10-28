@@ -26,11 +26,7 @@
 #define MMA_K 4
 
 
-
-
-
-
-__device__ __forceinline__ valT warpReduceSum(valT sum){
+__device__ __forceinline__ half warpReduceSum(half sum){
     sum += __shfl_down_sync(0xffffffff, sum, 16);
     sum += __shfl_down_sync(0xffffffff, sum, 8);
     sum += __shfl_down_sync(0xffffffff, sum, 4);
@@ -114,7 +110,7 @@ __device__ __forceinline__ void store_half_to_global(const half* a, half v)
     asm volatile("st.global.cs.u16 [%0], %1;" :: "l"(a), "h"(*v_u));
 }
 
-__global__ void longPart_sum(int *dlongA_rpt, valT *dwarp_val, uint32_t *dY_val, int row_long)
+__global__ void longPart_sum(int *dlongA_rpt, half *dwarp_val, uint32_t *dY_val, int row_long)
 {
     int bid = blockIdx.x;
     int tid = threadIdx.x;
@@ -123,13 +119,13 @@ __global__ void longPart_sum(int *dlongA_rpt, valT *dwarp_val, uint32_t *dY_val,
 
     if (global_warpid >= row_long) return;
 
-    valT *valY_half = reinterpret_cast<valT *>(&dY_val[0]);
+    half *valY_half = reinterpret_cast<half *>(&dY_val[0]);
 
     int offset_longA = load_int_from_global(dlongA_rpt + global_warpid);
-    valT *cur_temp_val = dwarp_val + offset_longA;
+    half *cur_temp_val = dwarp_val + offset_longA;
     int len = load_int_from_global(dlongA_rpt + global_warpid + 1) - offset_longA;
 
-    valT thread_val = 0;
+    half thread_val = 0;
     for (int i = laneid; i < len; i += WARP_SIZE)
     {
         thread_val += load_half_from_global(cur_temp_val + i);
@@ -143,7 +139,7 @@ __global__ void longPart_sum(int *dlongA_rpt, valT *dwarp_val, uint32_t *dY_val,
 
 template <int rowloop>  // this parameter must be 1 or 2 or 4
 __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
-                          uint32_t *dlongA_val, int *dlongA_cid, valT *dwarp_val, indT *dlongA_rpt, int row_long,
+                          uint32_t *dlongA_val, int *dlongA_cid, half *dwarp_val, indT *dlongA_rpt, int row_long,
                           uint32_t *dregA_val, int *dregA_cid, indT *dblockA_ptr, int row_block, int blocknum, 
                           uint32_t *dirregA_val, int *dirregA_cid, indT *dirregA_rpt,
                           uint32_t *dshort_val, int *dshort_cid, int short_row_1, int common_13, int short_row_34, int short_row_2,
@@ -161,8 +157,8 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
     int target_idx = laneid < 16 ? (3 & laneid) : (3 & laneid) + 4;
     int new_id = (7 & laneid) < 4 ? (laneid >> 3) * 4 + (3 & laneid) : (laneid >> 3) * 4 + (3 & laneid) + 16;
 
-    valT const *valX_half = reinterpret_cast<valT const *>(&dX_val[0]);
-    valT *valY_half = reinterpret_cast<valT *>(&dY_val[0]);
+    half const *valX_half = reinterpret_cast<half const *>(&dX_val[0]);
+    half *valY_half = reinterpret_cast<half *>(&dY_val[0]);
 
     if (bid < offset_reg)
     {
@@ -170,7 +166,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         int global_warpid = bid * warpNum_long + (tid >> 5);
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
         
         fragC[target_idx] = 0.0;
         
@@ -200,10 +196,10 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         // if (global_warpid >= row_long) return;
 
         // int offset_long = load_int_from_global(dlongA_rpt + global_warpid);
-        // valT *cur_temp_val = dwarp_val + offset_long;
+        // half *cur_temp_val = dwarp_val + offset_long;
         // int len = load_int_from_global(dlongA_rpt + global_warpid + 1) - offset_long;
 
-        // valT thread_val = 0;
+        // half thread_val = 0;
         // for (int i = laneid; i < len; i += WARP_SIZE)
         // {
         //     thread_val += load_half_from_global(cur_temp_val + i);
@@ -220,9 +216,9 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         int warp_local = tid >> 5;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
-        valT *valA_irreg = reinterpret_cast<valT *>(&dirregA_val[0]);
+        half *valA_irreg = reinterpret_cast<half *>(&dirregA_val[0]);
 
         if (rowloop == 1)
         {
@@ -265,7 +261,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
 
         if (rowloop == 2)
         {
-            valT result;
+            half result;
             fragC[target_idx] = 0.0;
 
             int block_idx = bid_reg * 8 + warp_local * 2;
@@ -330,7 +326,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
 
         if (rowloop == 4)
         {
-            valT result;
+            half result;
 
             // i = 0
             fragC[target_idx] = 0.0;
@@ -457,9 +453,9 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         {
             return;
         }
-        valT *valA = reinterpret_cast<valT *>(&cur_val[tid1 >> 1]);
+        half *valA = reinterpret_cast<half *>(&cur_val[tid1 >> 1]);
         int x_idx = load_int_from_global(cur_cid + tid1);
-        valT temp_y = load_half_from_global(valA + (1 & tid1)) * valX_half[x_idx];
+        half temp_y = load_half_from_global(valA + (1 & tid1)) * valX_half[x_idx];
         store_half_to_global(valY_half + row_long + row_block + common_13 * 2 + short_row_34 + short_row_2 + tid1, temp_y);
         // valY_half[row_long + row_block + common_13 * 2 + short_row_34 + short_row_2 + tid1] = valA[tid1 % 2] * valX_half[cur_cid[tid1]];
     }
@@ -471,7 +467,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         int bid13 = bid - offset_short13;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
         #pragma unroll
         for (int i = 0; i < groupNum; i ++)
@@ -520,7 +516,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         int bid34 = bid - offset_short34;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
         #pragma unroll
         for (int j = 0; j < groupNum; j ++)
@@ -552,10 +548,10 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         int bid22 = bid - offset_short22;
 
         uint32_t fragA[2], fragB[2], fragC[4];
-        valT res;
+        half res;
         
-        valT *fragB_half = reinterpret_cast<valT *>(&fragB[0]);
-        valT *fragC_half = reinterpret_cast<valT *>(&fragC[0]);
+        half *fragB_half = reinterpret_cast<half *>(&fragB[0]);
+        half *fragC_half = reinterpret_cast<half *>(&fragC[0]);
         
         #pragma unroll
         for (int i = 0; i < groupNum; i ++)
@@ -603,7 +599,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
 
 template <int rowloop>  // this parameter must be 1 or 2 or 4
 __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
-                          uint32_t *dlongA_val, int *dlongA_cid, valT *dwarp_val, indT *dlongA_rpt, int row_long,
+                          uint32_t *dlongA_val, int *dlongA_cid, half *dwarp_val, indT *dlongA_rpt, int row_long,
                           uint32_t *dregA_val, int *dregA_cid, indT *dblockA_ptr, int row_block, int blocknum, 
                           uint32_t *dirregA_val, int *dirregA_cid, indT *dirregA_rpt,
                           uint32_t *dshort_val, int *dshort_cid, int short_row_1, int common_13, int short_row_34, int short_row_2,
@@ -621,8 +617,8 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
     int target_idx = laneid < 16 ? (3 & laneid) : (3 & laneid) + 4;
     int new_id = (7 & laneid) < 4 ? (laneid >> 3) * 4 + (3 & laneid) : (laneid >> 3) * 4 + (3 & laneid) + 16;
 
-    valT const *valX_half = reinterpret_cast<valT const *>(&dX_val[0]);
-    valT *valY_half = reinterpret_cast<valT *>(&dY_val[0]);
+    half const *valX_half = reinterpret_cast<half const *>(&dX_val[0]);
+    half *valY_half = reinterpret_cast<half *>(&dY_val[0]);
 
     if (bid < offset_reg)
     {
@@ -630,7 +626,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         int global_warpid = bid * warpNum_long + (tid >> 5);
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
         
         fragC[target_idx] = 0.0;
         
@@ -654,10 +650,10 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
 
         // if (global_warpid >= row_long) return;
 
-        // valT *cur_temp_val = dwarp_val + dlongA_rpt[global_warpid];
+        // half *cur_temp_val = dwarp_val + dlongA_rpt[global_warpid];
         // int len = dlongA_rpt[global_warpid + 1] - dlongA_rpt[global_warpid];
 
-        // valT thread_val = 0;
+        // half thread_val = 0;
         // for (int i = laneid; i < len; i += WARP_SIZE)
         // {
         //     thread_val += cur_temp_val[i];
@@ -673,9 +669,9 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         int warp_local = tid >> 5;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
-        valT *valA_irreg = reinterpret_cast<valT *>(&dirregA_val[0]);
+        half *valA_irreg = reinterpret_cast<half *>(&dirregA_val[0]);
 
         if (rowloop == 1)
         {
@@ -716,7 +712,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
 
         if (rowloop == 2)
         {
-            valT result;
+            half result;
             fragC[target_idx] = 0.0;
 
             int block_idx = bid_reg * 8 + warp_local * 2;
@@ -779,7 +775,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
 
         if (rowloop == 4)
         {
-            valT result;
+            half result;
 
             // i = 0
             fragC[target_idx] = 0.0;
@@ -903,7 +899,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         {
             return;
         }
-        valT *valA = reinterpret_cast<valT *>(&cur_val[tid1 >> 1]);
+        half *valA = reinterpret_cast<half *>(&cur_val[tid1 >> 1]);
         valY_half[row_long + row_block + common_13 * 2 + short_row_34 + short_row_2 + tid1] = valA[tid1 % 2] * valX_half[cur_cid[tid1]];
     }
     else if (bid >= offset_short13 && bid < offset_short34)
@@ -913,7 +909,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         int bid13 = bid - offset_short13;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
         #pragma unroll
         for (int i = 0; i < groupNum; i ++)
@@ -954,7 +950,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         int bid34 = bid - offset_short34;
 
         uint32_t fragA[2];
-        valT fragB[4], fragC[8], res;
+        half fragB[4], fragC[8], res;
 
         #pragma unroll
         for (int j = 0; j < groupNum; j ++)
@@ -982,10 +978,10 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         int bid22 = bid - offset_short22;
 
         uint32_t fragA[2], fragB[2], fragC[4];
-        valT res;
+        half res;
         
-        valT *fragB_half = reinterpret_cast<valT *>(&fragB[0]);
-        valT *fragC_half = reinterpret_cast<valT *>(&fragC[0]);
+        half *fragB_half = reinterpret_cast<half *>(&fragB[0]);
+        half *fragC_half = reinterpret_cast<half *>(&fragC[0]);
         
         #pragma unroll
         for (int i = 0; i < groupNum; i ++)
@@ -1024,8 +1020,8 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
 }
 
 // In order version
-void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA, 
-                      valT *X_val, valT *Y_val, int *order_rid, int rowA, int colA, indT nnzA, int NUM, double threshold, int block_longest)
+void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA, 
+                      half *X_val, half *Y_val, int *order_rid, int rowA, int colA, indT nnzA, int NUM, double threshold, int block_longest)
 {
     printf("\n dasp!!!!!!!!!!! \n");
     struct timeval t1, t2, t3, pre_t1, pre_t2;
@@ -1167,15 +1163,15 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     indT fill0_nnz_short34 = threadblock34 * block34_per_threadblock * MMA_M * MMA_K;
     indT fill0_nnz_short22 = threadblock22 * block22_per_threadblock * MMA_M * MMA_K;
     indT fill0_nnz_short = ((short_row_1 + 1) / 2) * 2 + fill0_nnz_short13 + fill0_nnz_short34 + fill0_nnz_short22;
-    valT *short_val = (valT *)malloc(sizeof(valT) * fill0_nnz_short);
+    half *short_val = (half *)malloc(sizeof(half) * fill0_nnz_short);
     int *short_cid = (int *)malloc(sizeof(int) * fill0_nnz_short);
-    memset(short_val, 0.0, sizeof(valT) * fill0_nnz_short);
+    memset(short_val, 0.0, sizeof(half) * fill0_nnz_short);
     memset(short_cid, 0, sizeof(int) * fill0_nnz_short);
 
     #pragma omp parallel for
     for (int i = 0; i < short_block13; i ++)
     {
-        valT *cur_short_val = short_val + i * MMA_M * MMA_K;
+        half *cur_short_val = short_val + i * MMA_M * MMA_K;
         int *cur_short_cid = short_cid + i * MMA_M * MMA_K;
 
         for (int j = 0; j < BlockSize && i * BlockSize + j < common_13; j ++)
@@ -1196,7 +1192,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     #pragma omp parallel for
     for (int i = 0; i < short_row_3; i ++)
     {
-        valT *cur_short_val = short_val + fill0_nnz_short13 + i * MMA_K;
+        half *cur_short_val = short_val + fill0_nnz_short13 + i * MMA_K;
         int *cur_short_cid = short_cid + fill0_nnz_short13 + i * MMA_K;
         
         int cur_row = short_rid_3[common_13 + i];
@@ -1212,7 +1208,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     #pragma omp parallel for
     for (int i = 0; i < short_row_4; i ++)
     {
-        valT *cur_short_val = short_val + fill0_nnz_short13 + (short_row_3 + i) * MMA_K;
+        half *cur_short_val = short_val + fill0_nnz_short13 + (short_row_3 + i) * MMA_K;
         int *cur_short_cid = short_cid + fill0_nnz_short13 + (short_row_3 + i) * MMA_K;
         
         int cur_row = short_rid_4[i];
@@ -1231,7 +1227,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     #pragma omp parallel for
     for (int i = 0; i < group22; i ++)
     {
-        valT *cur_short_val = short_val + fill0_nnz_short13 + fill0_nnz_short34 + i * 4 * MMA_M * MMA_K;
+        half *cur_short_val = short_val + fill0_nnz_short13 + fill0_nnz_short34 + i * 4 * MMA_M * MMA_K;
         int *cur_short_cid = short_cid + fill0_nnz_short13 + fill0_nnz_short34 + i * 4 * MMA_M * MMA_K;
 
         for (int j = 0; j < (BlockSize * 4 * 2) && (i * BlockSize * 4 * 2 + j) < short_row_2; j ++)
@@ -1299,17 +1295,17 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     int BlockNum_long = (warp_number + warpNum_long - 1) / warpNum_long;
     int fill0_nnz_long = BlockNum_long * warpNum_long * loopNum_long * 4 * MMA_M * MMA_K;
     warp_number = BlockNum_long * warpNum_long;
-    valT *val_by_warp = (valT *)malloc(sizeof(valT) * warp_number);
+    half *val_by_warp = (half *)malloc(sizeof(half) * warp_number);
     int *rid_by_warp = (int *)malloc(sizeof(int) * warp_number);
-    valT *long_val = (valT *)malloc(sizeof(valT) * fill0_nnz_long);
-    memset(long_val, 0.0, sizeof(valT) * fill0_nnz_long);
+    half *long_val = (half *)malloc(sizeof(half) * fill0_nnz_long);
+    memset(long_val, 0.0, sizeof(half) * fill0_nnz_long);
     int *long_cid = (int *)malloc(sizeof(int) * fill0_nnz_long);
     memset(long_cid, 0, sizeof(int) * fill0_nnz_long);
 
     #pragma omp parallel for
     for (int i = 0; i < row_long; i ++)
     {
-        valT *cur_val = long_val + long_rpt_new[i] * loopNum_long * 4 * MMA_M * MMA_K;
+        half *cur_val = long_val + long_rpt_new[i] * loopNum_long * 4 * MMA_M * MMA_K;
         int *cur_cid = long_cid + long_rpt_new[i] * loopNum_long * 4 * MMA_M * MMA_K;
         int real_rid = long_rid[i];
         if (csrRowPtrA[real_rid + 1] - csrRowPtrA[real_rid] != long_rpt[i + 1] - long_rpt[i]) printf("error!\n");
@@ -1379,7 +1375,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
 
     // get the row-block part data---irregular part
     indT fill0_nnz_irreg = ((nnz_irreg + 1) / 2) * 2;
-    valT *irreg_val = (valT *)malloc(sizeof(valT) * fill0_nnz_irreg);
+    half *irreg_val = (half *)malloc(sizeof(half) * fill0_nnz_irreg);
     int *irreg_cid = (int *)malloc(sizeof(int) * nnz_irreg);
     #pragma omp parallel for
     for (int i = 0; i < row_block; i ++)
@@ -1395,7 +1391,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     }
 
     // get the row_block part data---regular part
-    valT *reg_val = (valT *)malloc(sizeof(valT) * fill0_nnz_reg);
+    half *reg_val = (half *)malloc(sizeof(half) * fill0_nnz_reg);
     int *reg_cid = (int *)malloc(sizeof(int) * fill0_nnz_reg);
     
     #pragma omp parallel for
@@ -1438,9 +1434,9 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
 
         }
 
-        valT *temp_val = (valT *)malloc(sizeof(valT) * nnz_block);
+        half *temp_val = (half *)malloc(sizeof(half) * nnz_block);
         int *temp_cid = (int *)malloc(sizeof(int) * nnz_block);
-        valT *cur_val = reg_val + blockPtr[bid];
+        half *cur_val = reg_val + blockPtr[bid];
         int *cur_cid = reg_cid + blockPtr[bid];
 
         for (int i = 0; i < nnz_block; i ++)
@@ -1449,7 +1445,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
             temp_val[new_id] = cur_val[i];
             temp_cid[new_id] = cur_cid[i];
         }
-        memcpy(cur_val, temp_val, sizeof(valT) * nnz_block);
+        memcpy(cur_val, temp_val, sizeof(half) * nnz_block);
         memcpy(cur_cid, temp_cid, sizeof(int) * nnz_block);
         free(temp_val);
         free(temp_cid);
@@ -1461,17 +1457,17 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     long fill0_nnz = fill0_nnz_short + fill0_nnz_long + nnz_irreg + fill0_nnz_reg;
     double rate_fill0 = (double)(fill0_nnz - nnzA) / nnzA;
     
-    long long int data_X = (rowA + colA) * sizeof(valT) + \
-                           fill0_nnz_long * (sizeof(valT) + sizeof(int)) + warp_number * sizeof(valT) + (row_long + 1) * sizeof(int) + \
-                           fill0_nnz_short * (sizeof(valT) + sizeof(int)) + \
-                           fill0_nnz_reg * (sizeof(valT) + sizeof(int)) + (blocknum + 1) * sizeof(indT) + \
-                           fill0_nnz_irreg * (sizeof(valT) + sizeof(int)) + (row_block + 1) * sizeof(indT);
+    long long int data_X = (rowA + colA) * sizeof(half) + \
+                           fill0_nnz_long * (sizeof(half) + sizeof(int)) + warp_number * sizeof(half) + (row_long + 1) * sizeof(int) + \
+                           fill0_nnz_short * (sizeof(half) + sizeof(int)) + \
+                           fill0_nnz_reg * (sizeof(half) + sizeof(int)) + (blocknum + 1) * sizeof(indT) + \
+                           fill0_nnz_irreg * (sizeof(half) + sizeof(int)) + (row_block + 1) * sizeof(indT);
     
-    long long int data_X2 = (rowA + nnzA) * sizeof(valT) + \
-                            fill0_nnz_long * (sizeof(valT) + sizeof(int)) + warp_number * sizeof(valT) + (row_long + 1) * sizeof(int) + \
-                            fill0_nnz_short * (sizeof(valT) + sizeof(int)) + \
-                            fill0_nnz_reg * (sizeof(valT) + sizeof(int)) + (blocknum + 1) * sizeof(indT) + \
-                            fill0_nnz_irreg * (sizeof(valT) + sizeof(int)) + (row_block + 1) * sizeof(indT);
+    long long int data_X2 = (rowA + nnzA) * sizeof(half) + \
+                            fill0_nnz_long * (sizeof(half) + sizeof(int)) + warp_number * sizeof(half) + (row_long + 1) * sizeof(int) + \
+                            fill0_nnz_short * (sizeof(half) + sizeof(int)) + \
+                            fill0_nnz_reg * (sizeof(half) + sizeof(int)) + (blocknum + 1) * sizeof(indT) + \
+                            fill0_nnz_irreg * (sizeof(half) + sizeof(int)) + (row_block + 1) * sizeof(indT);
     
     int BlockNum = (blocknum + rowloop * 4 - 1) / (rowloop * 4);
 
@@ -1494,7 +1490,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
 
     // init cuda data of long part
     uint32_t *dlong_val;
-    valT *dval_by_warp;
+    half *dval_by_warp;
     indT *dlong_ptr_warp;
     int *dlong_cid; 
     int *drid_by_warp;
@@ -1509,38 +1505,38 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     indT *dblock_ptr, *dirreg_rpt;
     int *dreg_cid, *dirreg_cid;
 
-    cudaMalloc((void **)&dX_val, sizeof(valT) * (((colA + 1) / 2) * 2));
-    cudaMalloc((void **)&dY_val, sizeof(valT) * (((rowA + 1) / 2) * 2));
-    cudaMemcpy(dX_val, X_val, sizeof(valT) * (((colA + 1) / 2) * 2), cudaMemcpyHostToDevice);
-    cudaMemset(dY_val, 0.0, sizeof(valT) * (((rowA + 1) / 2) * 2));
+    cudaMalloc((void **)&dX_val, sizeof(half) * (((colA + 1) / 2) * 2));
+    cudaMalloc((void **)&dY_val, sizeof(half) * (((rowA + 1) / 2) * 2));
+    cudaMemcpy(dX_val, X_val, sizeof(half) * (((colA + 1) / 2) * 2), cudaMemcpyHostToDevice);
+    cudaMemset(dY_val, 0.0, sizeof(half) * (((rowA + 1) / 2) * 2));
 
-    // cudaMalloc((void **)&dlong_val, sizeof(valT) * fill0_nnz_long); 
-    cudaMalloc((void **)&dlong_val, sizeof(valT) * fill0_nnz_long); 
+    // cudaMalloc((void **)&dlong_val, sizeof(half) * fill0_nnz_long); 
+    cudaMalloc((void **)&dlong_val, sizeof(half) * fill0_nnz_long); 
     cudaMalloc((void **)&dlong_cid, sizeof(int) * fill0_nnz_long);
     cudaMalloc((void **)&drid_by_warp, sizeof(int) * warp_number);
-    cudaMalloc((void **)&dval_by_warp, sizeof(valT) * warp_number);
+    cudaMalloc((void **)&dval_by_warp, sizeof(half) * warp_number);
     cudaMalloc((void **)&dlong_ptr_warp, sizeof(indT) * (row_long + 1));
-    cudaMemcpy(dlong_val, long_val, sizeof(valT) * fill0_nnz_long, cudaMemcpyHostToDevice);
+    cudaMemcpy(dlong_val, long_val, sizeof(half) * fill0_nnz_long, cudaMemcpyHostToDevice);
     cudaMemcpy(dlong_cid, long_cid, sizeof(int) * fill0_nnz_long, cudaMemcpyHostToDevice);
     cudaMemcpy(drid_by_warp, rid_by_warp, sizeof(int) * warp_number, cudaMemcpyHostToDevice);
     cudaMemcpy(dlong_ptr_warp, long_rpt_new, sizeof(indT) * (row_long + 1), cudaMemcpyHostToDevice);
 
-    cudaMalloc((void **)&dshort_val, sizeof(valT) * fill0_nnz_short);
+    cudaMalloc((void **)&dshort_val, sizeof(half) * fill0_nnz_short);
     cudaMalloc((void **)&dshort_cid, sizeof(int) * fill0_nnz_short);
-    cudaMemcpy(dshort_val, short_val, sizeof(valT) * fill0_nnz_short, cudaMemcpyHostToDevice);
+    cudaMemcpy(dshort_val, short_val, sizeof(half) * fill0_nnz_short, cudaMemcpyHostToDevice);
     cudaMemcpy(dshort_cid, short_cid, sizeof(int) * fill0_nnz_short, cudaMemcpyHostToDevice);
 
-    cudaMalloc((void **)&dreg_val, sizeof(valT) * fill0_nnz_reg);
+    cudaMalloc((void **)&dreg_val, sizeof(half) * fill0_nnz_reg);
     cudaMalloc((void **)&dreg_cid, sizeof(int) * fill0_nnz_reg);
     cudaMalloc((void **)&dblock_ptr, sizeof(indT) * (blocknum + 1));
-    cudaMemcpy(dreg_val, reg_val, sizeof(valT) * fill0_nnz_reg, cudaMemcpyHostToDevice);
+    cudaMemcpy(dreg_val, reg_val, sizeof(half) * fill0_nnz_reg, cudaMemcpyHostToDevice);
     cudaMemcpy(dreg_cid, reg_cid, sizeof(int) * fill0_nnz_reg, cudaMemcpyHostToDevice);
     cudaMemcpy(dblock_ptr, blockPtr, sizeof(indT) * (blocknum + 1), cudaMemcpyHostToDevice);
 
-    cudaMalloc((void **)&dirreg_val, sizeof(valT) * fill0_nnz_irreg);
+    cudaMalloc((void **)&dirreg_val, sizeof(half) * fill0_nnz_irreg);
     cudaMalloc((void **)&dirreg_rpt, sizeof(indT) * (row_block + 1));
     cudaMalloc((void **)&dirreg_cid, sizeof(int) * nnz_irreg);
-    cudaMemcpy(dirreg_val, irreg_val, sizeof(valT) * fill0_nnz_irreg, cudaMemcpyHostToDevice);
+    cudaMemcpy(dirreg_val, irreg_val, sizeof(half) * fill0_nnz_irreg, cudaMemcpyHostToDevice);
     cudaMemcpy(dirreg_rpt, irreg_rpt, sizeof(indT) * (row_block + 1), cudaMemcpyHostToDevice);
     cudaMemcpy(dirreg_cid, irreg_cid, sizeof(int) * nnz_irreg, cudaMemcpyHostToDevice); 
     
@@ -1732,7 +1728,7 @@ void se_tcspmv_fp16(valT *csrValA, indT *csrRowPtrA, int *csrColIdxA,
 
     // printf("\nrowA = %d, row_long = %d, row_block = %d, row_short1 = %d, common13 = %d, row_short_3 = %d, row_short_4 = %d, row_short_2 = %d\n", rowA, row_long, row_block, short_row_1, common_13, short_row_3, short_row_4, short_row_2);
 
-    cudaMemcpy(Y_val, dY_val, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y_val, dY_val, sizeof(half) * rowA, cudaMemcpyDeviceToHost);
 
     cudaFree(dX_val);
     cudaFree(dY_val);
