@@ -85,6 +85,12 @@ const int WARP_SIZE = 32;
 static cudaEvent_t start, stop;
 static float elapsedTime;
 
+template <typename T>
+__host__ __device__ __forceinline__ T divup(T a, T b)
+{
+  return (a + b - 1) / b;
+}
+
 static void cuda_time_test_start()
 {
     cudaEventCreate(&start);

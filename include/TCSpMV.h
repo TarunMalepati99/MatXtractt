@@ -8,6 +8,9 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
             std::vector<double> tcVal, indT *sparse_AToX_index, valT *X_val,
             valT *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre);
 
+void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit, std::vector<double> tcVal, indT *sparse_AToX_index, double *tcX, double *tcY, int tcRow, int tcCol,
+                 double *csrVal, indT *csrRowPtr, indT *csrColInd, double *cdX, double *cdY, int cdRow, int cdCol, indT cdnnzA);
+
             
 #else
 void tcspmv_fp16_v0(int *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,

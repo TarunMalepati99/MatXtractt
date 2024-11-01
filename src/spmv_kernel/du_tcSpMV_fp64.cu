@@ -1,4 +1,6 @@
 #include "common.h"
+#include "fuse_kernel.h"
+
 #define SHM_SIZE 128  // Shared memory size in doubles (8 KB)
 #define CONST_SIZE 4096  // 常量内存大小
  __constant__ double x_const[CONST_SIZE];

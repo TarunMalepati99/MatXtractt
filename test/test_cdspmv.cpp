@@ -180,9 +180,7 @@ int main(int argc, char **argv)
     cdspmv(filename, csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA, &necTime, &necPre);
     // spmv_fp64_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
 
-    int iter = (int)((necPre - cu_pre) / (cu_time - necTime));
-
-    printf("our_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime, necPre);
+    printf("nec_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime, necPre);
     printf("cusparse_perf: %8.4lf ms, cusparse_pre:%8.4lf ms\n", cu_time, cu_pre);
     // printf("\n iterate= %d\n", iter);
 

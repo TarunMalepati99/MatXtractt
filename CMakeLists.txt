@@ -4,10 +4,18 @@ project(TCSpMVProj CXX C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CPP_STANDARD 11)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80) 
+
+if(POLICY CMP0077)#确保 option() 命令尊重已存在的变量
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
+
+set(CUDA_SEPARABLE_COMPILATION ON)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true) #启用分离编译模式
 
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" OFF) # 添加 fp64 选项
+option(USE_FP64 "Enable fp64 support" ON) # 添加 fp64 选项
+
 
 if(ENABLE_CUDA_MEMCHECK)
     message(STATUS "cuda-memcheck is enabled")

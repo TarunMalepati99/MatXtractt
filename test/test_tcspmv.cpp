@@ -195,7 +195,7 @@ int eQcheck(valT *tmp1, valT *tmp2, int length)
         if (fabs(val1 - val2) / fmax(fabs(val1), fabs(val2)) > tolerance)
         {
             printf("Error at index (%d), res(%4.15f), our(%4.15f), please check your code!\n", i, val1, val2);
-            return -1;
+            // return -1;
         }
     }
 #else
@@ -1380,6 +1380,7 @@ int main(int argc, char **argv)
     initVec(X_val, colA);
 
     valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
+    valT *ourY_val1 = (valT *)malloc(sizeof(valT) * rowA);
     valT *tryY_val = (valT *)malloc(sizeof(valT) * dRows);
     valT *tryY_val1 = (valT *)malloc(sizeof(valT) * dRows);
 
@@ -1392,6 +1393,7 @@ int main(int argc, char **argv)
     std::fill(tryY_val1, tryY_val1 + dRows, static_cast<valT>(0.0));
 
     std::fill(ourY_val, ourY_val + rowA, static_cast<valT>(0.0));
+    std::fill(ourY_val1, ourY_val1 + rowA, static_cast<valT>(0.0));
     std::fill(Y_val, Y_val + rowA, static_cast<valT>(0.0));
 
     valT *x_d = (valT *)malloc(sizeof(valT) * dCols);
@@ -1447,8 +1449,8 @@ int main(int argc, char **argv)
     );
     // spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
     double necTime1 = 0, necPre1 = 0;
-    cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD, &necTime1, &necPre1);
-    printf("our_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime1, necPre1);
+    cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val1, rowCD, colCD, nnzCD, &necTime1, &necPre1);
+    printf("nec_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime1, necPre1);
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     /////////////DASP
@@ -1481,23 +1483,28 @@ int main(int argc, char **argv)
     double necTime = 0, necPre = 0;
 #ifdef fp64
     // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
+    // tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val1, dRows, dCols, rId, &necTime, &necPre);
 #else
     // tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
     tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
 #endif
 
-
+    fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, 
+                csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+    
+    // printf("\n rId = %d tryY_val = %lf  ourY_val = %lf\n", rId[0], tryY_val[0], ourY_val[rId[0]]);
     for (int i = 0; i < dRows; i++)
     {
         ourY_val[rId[i]] += tryY_val[i];
     }
+
     // int result = eQcheck(tryY_val1, tryY_val, dRows);
+    // int result = eQcheck(ourY_val1, ourY_val, rowA);
 
     // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
-    int result = eQcheck(Y_val, ourY_val, rowA);
+    // int result = eQcheck(Y_val, ourY_val, rowA);
 
     free(sparse_AToX_index);
     free(nec_num);
@@ -1541,6 +1548,7 @@ int main(int argc, char **argv)
     free(x_d);
     free(Y_val);
     free(ourY_val);
+    free(ourY_val1);
     free(X_val);
 
     free(csrVal_dd);

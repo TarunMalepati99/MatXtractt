@@ -16,7 +16,7 @@ command="./build/TCSpMVlib_tcperftest"
 data_dir="../../data/SF-graph/SNAP/mtx/"
 
 # Log file for command output
-log_file="res_cd_SNAP_16.log"
+log_file="res_cd_SNAP_sep.log"
 
 # Clear the log file if it already exists
 > "$log_file"

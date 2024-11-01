@@ -1,12 +1,8 @@
 #include "common.h"
-
+#include "fuse_kernel.h"
 // typedef int indT;
 
-template <typename T>
-__host__ __device__ __forceinline__ T divup(T a, T b)
-{
-  return (a + b - 1) / b;
-}
+
 
 template <int BREAK_STRIDE, typename I>
 __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr,
