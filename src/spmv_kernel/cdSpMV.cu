@@ -2,8 +2,6 @@
 #include "fuse_kernel.h"
 // typedef int indT;
 
-
-
 template <int BREAK_STRIDE, typename I>
 __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr,
                                      const I m,
@@ -165,12 +163,12 @@ lbNEC_reduce_oneRow_in_vector_L(const int n_reduce_rows_num, const int tid_in_bl
 
 template <indT productNnzPerThread, indT THREADS_PER_BLOCK, typename I, typename T>
 __global__ void cdspmv_kernel(T *d_val,
-                               indT *d_ptr,
-                               indT *d_cols,
-                               indT rowA,
-                               T *d_vector,
-                               T *d_out,
-                               I *__restrict__ startRowPerBlock)
+                              indT *d_ptr,
+                              indT *d_cols,
+                              indT rowA,
+                              T *d_vector,
+                              T *d_out,
+                              I *__restrict__ startRowPerBlock)
 {
   const int tid_in_block = threadIdx.x;
   const int NNZ_PER_BLOCK = THREADS_PER_BLOCK * productNnzPerThread;
@@ -309,9 +307,202 @@ __global__ void cdspmv_kernel(T *d_val,
   */
 }
 
+template <indT productNnzPerThread, indT THREADS_PER_BLOCK, typename I, typename T>
+__global__ void cdspmv_kernel_ptb(T *d_val,
+                                  indT *d_ptr,
+                                  indT *d_cols,
+                                  indT rowA,
+                                  T *d_vector,
+                                  T *d_out,
+                                  I *__restrict__ startRowPerBlock,
+                                  int original_block_num,
+                                  int issued_block_num)
+{
+  for (int bid_in_grid = blockIdx.x; bid_in_grid < original_block_num; bid_in_grid += issued_block_num)
+  {
+    // if (bid_in_grid >= original_block_num) {
+    //     return;
+    // }
+    if (bid_in_grid >= original_block_num)
+      break;
+
+    const int tid_in_block = threadIdx.x;
+    const int NNZ_PER_BLOCK = THREADS_PER_BLOCK * productNnzPerThread;
+    __shared__ T middle_s[NNZ_PER_BLOCK];
+    // for (int i = tid_in_block; i < NNZ_PER_BLOCK; i += THREADS_PER_BLOCK) {
+    //     middle_s[i] = 0.0;
+    // }
+    // __syncthreads();
+    const I lastElemId = d_ptr[rowA];
+
+    int blockNnzStart = NNZ_PER_BLOCK * bid_in_grid;
+
+    // product and stream in Shared Memory
+#pragma unroll
+    for (int round = 0; round < productNnzPerThread; round++)
+    {
+      const I sIdx = tid_in_block + round * THREADS_PER_BLOCK;
+      const I gIdx = min(blockNnzStart + sIdx, lastElemId - 1);
+      middle_s[sIdx] = d_val[gIdx] * d_vector[d_cols[gIdx]];
+    }
+    __syncthreads();
+
+    const I reduceStartRowId = min(startRowPerBlock[bid_in_grid], rowA);
+    I reduceEndRowId = min(startRowPerBlock[bid_in_grid + 1], rowA);
+    reduceEndRowId = (reduceEndRowId == 0) ? rowA : reduceEndRowId;
+    if (d_ptr[reduceEndRowId] % NNZ_PER_BLOCK != 0 || reduceEndRowId == reduceStartRowId)
+    {
+      reduceEndRowId = min(reduceEndRowId + 1, rowA);
+    }
+    // online workload balance reduction
+    const I n_reduce_rows_num = reduceEndRowId - reduceStartRowId;
+
+    // when threads = 128
+    if (n_reduce_rows_num > 64)
+    {
+      lbNEC_reduce_oneRow_in_thread<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                            reduceStartRowId, reduceEndRowId,
+                                                                            d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num == 1)
+    {
+      lbNEC_reduce_oneRow_in_block<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                           reduceStartRowId, reduceEndRowId,
+                                                                           d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num == 2)
+    {
+      lbNEC_reduce_oneRow_in_vector_L<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                                  reduceStartRowId, reduceEndRowId,
+                                                                                  d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 4)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                                reduceStartRowId, reduceEndRowId,
+                                                                                d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 8)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                                reduceStartRowId, reduceEndRowId,
+                                                                                d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 16)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                               reduceStartRowId, reduceEndRowId,
+                                                                               d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 32)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                               reduceStartRowId, reduceEndRowId,
+                                                                               d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 64)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                               reduceStartRowId, reduceEndRowId,
+                                                                               d_ptr, middle_s, d_out);
+    }
+
+    /*
+    // 线程256
+    if (n_reduce_rows_num > 128)
+    {
+      lbNEC_reduce_oneRow_in_thread<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                 reduceStartRowId, reduceEndRowId,
+                                                                 d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num == 1)
+    {
+
+      lbNEC_reduce_oneRow_in_block<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                  reduceStartRowId, reduceEndRowId,
+                                                                  d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num == 2)
+    {
+      lbNEC_reduce_oneRow_in_vector_L<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 128>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                           reduceStartRowId, reduceEndRowId,
+                                                                           d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 4)
+    {
+      lbNEC_reduce_oneRow_in_vector_L<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                          reduceStartRowId, reduceEndRowId,
+                                                                          d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 8)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                        reduceStartRowId, reduceEndRowId,
+                                                                        d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 16)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                        reduceStartRowId, reduceEndRowId,
+                                                                        d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 32)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                       reduceStartRowId, reduceEndRowId,
+                                                                       d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 64)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                       reduceStartRowId, reduceEndRowId,
+                                                                       d_ptr, middle_s, d_out);
+    }
+    else if (n_reduce_rows_num <= 128)
+    {
+      lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                       reduceStartRowId, reduceEndRowId,
+                                                                       d_ptr, middle_s, d_out);
+    }
+    */
+  }
+}
+
+template <indT THREADS_PER_VECTOR, typename I, typename T>
+__global__ void cdspmv_kernel_vec(T *d_val,
+                                  indT *d_ptr,
+                                  indT *d_cols,
+                                  indT rowA,
+                                  T *d_vector,
+                                  T *d_out)
+{
+  const int thread_id = 256 * blockIdx.x + threadIdx.x;
+  const int thread_lane = threadIdx.x & (THREADS_PER_VECTOR - 1);
+  const int row_id = thread_id / THREADS_PER_VECTOR;
+
+  if (row_id < rowA)
+  {
+    const int row_start = d_ptr[row_id]; // same as: row_start = Ap[row];
+    const int row_end = d_ptr[row_id + 1];
+
+    // initialize local sum
+    T sum = 0;
+
+    // accumulate local sums
+    for (int jj = row_start + thread_lane; jj < row_end; jj += THREADS_PER_VECTOR)
+      sum += d_val[jj] * d_vector[d_cols[jj]];
+
+    sum = warpReduceSum<THREADS_PER_VECTOR>(sum);
+    if (thread_lane == 0)
+    {
+      d_out[row_id] = sum;
+    }
+  }
+}
+
 void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-             valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA,
-             double *necTime, double *necPre)
+            valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA,
+            double *necTime, double *necPre)
 {
   struct timeval t1;
   struct timeval t2;
@@ -353,25 +544,139 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, indT><<<divup<uint32_t>(rowA + 1, 256), 256>>>(d_ptr, rowA, startRowPerBlock);
 
   gettimeofday(&tpre2, NULL);
+
+  double mean_col_num = (double)(nnzA + rowA) / (double)rowA;
+
   int warmup_time = 100;
-  int execute_time = 1000;
+  int execute_time = 3000;
 
   for (int i = 0; i < warmup_time; ++i)
   {
-    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
-
+    // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
+    if (mean_col_num <= 2)
+    {
+      const int THREADS_PER_VECTOR = 2;
+      const unsigned int VECTORS_PER_BLOCK = 128;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 2 && mean_col_num <= 4)
+    {
+      const int THREADS_PER_VECTOR = 4;
+      const unsigned int VECTORS_PER_BLOCK = 64;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 4 && mean_col_num <= 8)
+    {
+      const int THREADS_PER_VECTOR = 8;
+      const unsigned int VECTORS_PER_BLOCK = 32;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 8 && mean_col_num <= 16)
+    {
+      const int THREADS_PER_VECTOR = 16;
+      const unsigned int VECTORS_PER_BLOCK = 16;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 16)
+    {
+      const int THREADS_PER_VECTOR = 32;
+      const unsigned int VECTORS_PER_BLOCK = 8;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
-    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
-
+    // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
+    if (mean_col_num <= 2)
+    {
+      const int THREADS_PER_VECTOR = 2;
+      const unsigned int VECTORS_PER_BLOCK = 128;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 2 && mean_col_num <= 4)
+    {
+      const int THREADS_PER_VECTOR = 4;
+      const unsigned int VECTORS_PER_BLOCK = 64;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 4 && mean_col_num <= 8)
+    {
+      const int THREADS_PER_VECTOR = 8;
+      const unsigned int VECTORS_PER_BLOCK = 32;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 8 && mean_col_num <= 16)
+    {
+      const int THREADS_PER_VECTOR = 16;
+      const unsigned int VECTORS_PER_BLOCK = 16;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
+    else if (mean_col_num > 16)
+    {
+      const int THREADS_PER_VECTOR = 32;
+      const unsigned int VECTORS_PER_BLOCK = 8;
+      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    }
   }
   cudaDeviceSynchronize();
   gettimeofday(&t2, NULL);
+  // int original_block_num = WORK_BLOCKS;
+  // printf("\n original_block_num = %d \n", original_block_num);
+  // int new_WORK_BLOCKS = 297;
+  // cdspmv_kernel_ptb<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(new_WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock, original_block_num, new_WORK_BLOCKS);
 
-  cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+  // printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
+  //        WORK_BLOCKS, THREADS_PER_BLOCK);
+  // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+
+  if (mean_col_num <= 2)
+  {
+    const int THREADS_PER_VECTOR = 2;
+    const unsigned int VECTORS_PER_BLOCK = 128;
+    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  }
+  else if (mean_col_num > 2 && mean_col_num <= 4)
+  {
+    const int THREADS_PER_VECTOR = 4;
+    const unsigned int VECTORS_PER_BLOCK = 64;
+    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  }
+  else if (mean_col_num > 4 && mean_col_num <= 8)
+  {
+    const int THREADS_PER_VECTOR = 8;
+    const unsigned int VECTORS_PER_BLOCK = 32;
+    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  }
+  else if (mean_col_num > 8 && mean_col_num <= 16)
+  {
+    const int THREADS_PER_VECTOR = 16;
+    const unsigned int VECTORS_PER_BLOCK = 16;
+    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  }
+  else if (mean_col_num > 16)
+  {
+    const int THREADS_PER_VECTOR = 32;
+    const unsigned int VECTORS_PER_BLOCK = 8;
+    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  }
+
   cudaDeviceSynchronize();
 
   double pre_time = ((tpre2.tv_sec - tpre1.tv_sec) * 1000.0 + (tpre2.tv_usec - tpre1.tv_usec) / 1000.0) / 1;

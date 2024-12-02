@@ -7,9 +7,44 @@
 #include "csr2csc.h"
 #include "TCSpMV.h"
 
-// const float colProp = 0.82;
-const float rowProp = 0.62;
-const float colProp = 0.8;
+// const float rowProp = 0.1;
+// const float colProp = 0.125;
+
+// const float rowProp = 0.15;
+// const float colProp = 0.1875;
+
+// const float rowProp = 0.2;
+// const float colProp = 0.25;
+
+// const float rowProp = 0.25;
+// const float colProp = 0.3125;
+
+
+// const float rowProp = 0.3 ;
+// const float colProp = 0.375;
+
+// const float rowProp = 0.35 ;
+// const float colProp = 0.4375;
+
+// const float rowProp = 0.4 ;
+// const float colProp = 0.5;
+
+// const float rowProp = 0.45;
+// const float colProp = 0.5625;
+
+// const float rowProp = 0.5 ;
+// const float colProp = 0.625;
+
+// const float rowProp = 0.55;
+// const float colProp = 0.6875;
+
+// const float rowProp = 0.6 ;
+// const float colProp = 0.75;
+
+// const float rowProp = 0.7 ;
+// const float colProp = 0.875;
+
+
 
 bool isDenseTC = 0;
 typedef struct
@@ -240,9 +275,9 @@ void spmv_serial(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         for (indT j = 0; j < n_one_line; j++)
         {
             indT v_idx = csrColInd[j + ptr_start];
-            t += csrVal[j + ptr_start] * X_val[v_idx];
+            t = t + csrVal[j + ptr_start] * X_val[v_idx];
         }
-        Y_val[i] += t;
+        Y_val[i] = Y_val[i] + t;
     }
 }
 
@@ -259,7 +294,7 @@ void spmv_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
         for (indT j = col_start; j < col_end; j++)
         {
             indT v_idx = cscRowInd[j];
-            Y_val[v_idx] += cscVal[j] * X_val[i];
+            Y_val[v_idx] = Y_val[v_idx] + cscVal[j] * X_val[i];
         }
         // printf(" i = %d ------ \n", i);
     }
@@ -277,9 +312,9 @@ void spmv_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         for (indT j = 0; j < n_one_line; j++)
         {
             indT v_idx = csrColInd[j + ptr_start];
-            t += csrVal[j + ptr_start] * X_val[v_idx];
+            t = t + csrVal[j + ptr_start] * X_val[v_idx];
         }
-        Y_val[row_order[i]] += t;
+        Y_val[row_order[i]] = Y_val[row_order[i]] + t;
         // if(i == 0) printf("!!!!!!!  %d  %f\n", row_order[i], Y_val[row_order[i]]);
     }
 }
@@ -297,9 +332,9 @@ void spmv_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         for (indT j = 0; j < n_one_line; j++)
         {
             indT v_idx = use_x_id[windowId][ecrId[j + ptr_start]];
-            t += csrVal[j + ptr_start] * X_val[v_idx];
+            t = t + csrVal[j + ptr_start] * X_val[v_idx];
         }
-        Y_val[row_order[i]] += t;
+        Y_val[row_order[i]] = Y_val[row_order[i]] + t;
     }
 }
 
@@ -615,7 +650,7 @@ void tcspmv_serial(
                         valT x_value = x_d[x_idx];
 
                         // 进行乘积并累加到 y_d 中
-                        y_d[rowIdx] += a_value * x_value;
+                        y_d[rowIdx] = y_d[rowIdx] + a_value * x_value;
                     }
                     // 否则该位置为零，跳过
                 }
@@ -1032,7 +1067,7 @@ void tcspmv_serial_half(
                             continue;
                         }
                         half x_value = x_d[x_idx];
-                        y_d[rowIdx] += a_value * x_value;
+                        y_d[rowIdx] = y_d[rowIdx] + a_value * x_value;
                     }
                 }
             }
@@ -1070,6 +1105,11 @@ int main(int argc, char **argv)
     /***************************************************************
      *                  1.1split to two csc format                 *
      ***************************************************************/
+    for (float rowProp = 0.1f; rowProp <= 0.7f; rowProp += 0.05f) {
+        float colProp = rowProp / 0.8f;
+        std::cout << "---------------------------------------------------------------------------: " << rowProp << std::endl;
+        std::cout << "rowProp: " << rowProp << std::endl;
+        std::cout << "colProp: " << colProp << std::endl;
 
     csr2csc(csrVal, csrRowPtr, csrColInd, rowA, colA, nnzA,
             &cscVal, &cscColPtr, &cscRowInd);
@@ -1094,7 +1134,7 @@ int main(int argc, char **argv)
             break;
         }
     }
-    printf("col_nnz_ratio = %f\n", (float)nnzColD / (float)nnzA);
+    // printf("col_nnz_ratio = %f\n", (float)nnzColD / (float)nnzA);
     printf("cols_ratio = %f \n", (float)dCols / (float)colA);
 
     int nnzColS = nnzA - nnzColD;
@@ -1225,7 +1265,7 @@ int main(int argc, char **argv)
             break;
         }
     }
-    printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
+    // printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
     printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
     printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
     int *rId = (int *)malloc(sizeof(int) * dRows);
@@ -1420,12 +1460,12 @@ int main(int argc, char **argv)
 
     // Peripheral-Sparse Block
     // spmv_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, ourY_val, rowA, sCols, nnzColS);
-    printf("Peripheral-Sparse nnz per row = %f\n", (double)nnzColS / (double)rowA);
+    // printf("Peripheral-Sparse nnz per row = %f\n", (double)nnzColS / (double)rowA);
 
 
     // Edge-Sparse Block
     // spmv_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, ourY_val, sRows, dCols, nnzRowS, newArray_);
-    printf("Edge-Sparse nnz per row = %f\n", (double)nnzRowS / (double)sRows);
+    // printf("Edge-Sparse nnz per row = %f\n", (double)nnzRowS / (double)sRows);
     //TODO: Peripheral-Sparse and Edge-Sparse merge
 
     //colA, rowA, 
@@ -1450,7 +1490,7 @@ int main(int argc, char **argv)
     // spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
     double necTime1 = 0, necPre1 = 0;
     cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val1, rowCD, colCD, nnzCD, &necTime1, &necPre1);
-    printf("nec_perf:    %8.4lf ms, our_pre:%8.4lf ms\n", necTime1, necPre1);
+    printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", necTime1, necPre1);
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     /////////////DASP
@@ -1472,30 +1512,41 @@ int main(int argc, char **argv)
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
-    printf("------Core-Dense nnz per row = %f------\n", (double)nnzRowD / (double)dRows);
-    printf("------Core-Dense 1st row nnz = %d------\n", csrRowPtr_dd[1] - csrRowPtr_dd[0]);
-    printf("------Core-Dense 2st row nnz = %d------\n", csrRowPtr_dd[2] - csrRowPtr_dd[1]);
-    printf("------Core-Dense 3th row nnz = %d------\n", csrRowPtr_dd[3] - csrRowPtr_dd[2]);
-    printf("------Core-Dense 4th row nnz = %d------\n", csrRowPtr_dd[4] - csrRowPtr_dd[3]);
-    printf("------Core-Dense 5th row nnz = %d------\n", csrRowPtr_dd[5] - csrRowPtr_dd[4]);
-    printf("------Core-Dense last row nnz = %d------\n", csrRowPtr_dd[dRows] - csrRowPtr_dd[dRows - 1]);
+    // printf("------Core-Dense nnz per row = %f------\n", (double)nnzRowD / (double)dRows);
+    // printf("------Core-Dense 1st row nnz = %d------\n", csrRowPtr_dd[1] - csrRowPtr_dd[0]);
+    // printf("------Core-Dense 2st row nnz = %d------\n", csrRowPtr_dd[2] - csrRowPtr_dd[1]);
+    // printf("------Core-Dense 3th row nnz = %d------\n", csrRowPtr_dd[3] - csrRowPtr_dd[2]);
+    // printf("------Core-Dense 4th row nnz = %d------\n", csrRowPtr_dd[4] - csrRowPtr_dd[3]);
+    // printf("------Core-Dense 5th row nnz = %d------\n", csrRowPtr_dd[5] - csrRowPtr_dd[4]);
+    // printf("------Core-Dense last row nnz = %d------\n", csrRowPtr_dd[dRows] - csrRowPtr_dd[dRows - 1]);
+
+
+
     // spmv_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
     double necTime = 0, necPre = 0;
 #ifdef fp64
     // tcspmv_serial(x_d, tryY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    // tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val1, dRows, dCols, rId, &necTime, &necPre);
-#else
-    // tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-    tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, rId, &necTime, &necPre);
-#endif
+
+    tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val1, dRows, dCols, rId, &necTime, &necPre);
 
     fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, 
                 csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+#else
+    // tcspmv_serial(x_d, tryY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+    tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val1, dRows, dCols, rId, &necTime, &necPre);
+    
+    fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, tryY_val, dRows, dCols, 
+                csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, ourY_val, rowCD, colCD, nnzCD);
+#endif
     
     // printf("\n rId = %d tryY_val = %lf  ourY_val = %lf\n", rId[0], tryY_val[0], ourY_val[rId[0]]);
+    // for (int i = 0; i < dRows; i++)
+    // {
+    //     ourY_val1[rId[i]] = ourY_val1[rId[i]] + tryY_val1[i];
+    // }
     for (int i = 0; i < dRows; i++)
     {
-        ourY_val[rId[i]] += tryY_val[i];
+        ourY_val[rId[i]] = ourY_val[rId[i]] + tryY_val[i];
     }
 
     // int result = eQcheck(tryY_val1, tryY_val, dRows);
@@ -1504,6 +1555,7 @@ int main(int argc, char **argv)
     // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, ourY_val, rowA, dCols, nnzColD);
     // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, ourY_val, dRows, dCols, nnzRowD, rId);
 
+    // int result_ = eQcheck(Y_val, ourY_val1, rowA);
     // int result = eQcheck(Y_val, ourY_val, rowA);
 
     free(sparse_AToX_index);
@@ -1531,9 +1583,6 @@ int main(int argc, char **argv)
     free(bitmap);
     // free(colHash);
     free(descColId);
-    free(csrColInd);
-    free(csrRowPtr);
-    free(csrVal);
     free(cscColPtr);
     free(cscRowInd);
     free(cscVal);
@@ -1568,6 +1617,11 @@ int main(int argc, char **argv)
     free(newArray_);
     free(bitmap_);
     free(descRowId);
+    }
+
+    free(csrColInd);
+    free(csrRowPtr);
+    free(csrVal);
     
 
     return 0;

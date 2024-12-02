@@ -1,12 +1,12 @@
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/arabic-2005/arabic-2005.mtx 
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/uk-2005/uk-2005.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/uk-2002/uk-2002.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/webbase-2001/webbase-2001.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/sk-2005/sk-2005.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/it-2004/it-2004.mtx
-./build/TCSpMVlib_tcperftest ../../data/SF-graph/GAP/mtx/GAP-web/GAP-web.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/arabic-2005/arabic-2005.mtx 
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/uk-2005/uk-2005.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/uk-2002/uk-2002.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/webbase-2001/webbase-2001.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/sk-2005/sk-2005.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/LAW/mtx/it-2004/it-2004.mtx
+#./build/TCSpMVlib_tcperftest ../../data/SF-graph/GAP/mtx/GAP-web/GAP-web.mtx
 
-
+./build/TCSpMVlib_tcperftest ../../data/mtx/arabic-2005/arabic-2005.mtx
 
 
 # ./build/TCSpMVlib_perf ../../data/SF-graph/LAW/mtx/arabic-2005/arabic-2005.mtx 

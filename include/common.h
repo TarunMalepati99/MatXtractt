@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <fstream>
 #include <filesystem>
+#include <array>
+#include <cstddef> // for size_t
 // 其他可能需要的头文件
 
 #include <cuda.h>
@@ -227,10 +229,12 @@ inline void quick_sort_key_idx(int *key, int *len, int length)
 
 inline void initVec(valT *vec, int length)
 {
+
     for (int i = 0; i < length; ++i)
     {
-        vec[i] = (i % 15);
+        vec[i] = static_cast<valT>(static_cast<float>(i % 15));
     }
+
 }
 
 #ifdef f64

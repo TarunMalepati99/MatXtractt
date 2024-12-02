@@ -291,7 +291,7 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
-    printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
+    printf("\n tcspmv_kernel_fp16_v0 = %g ms\n", runtime);
 
     CUDA_CHECK_ERROR(cudaGetLastError());
 
@@ -364,7 +364,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1000;
+    int test_iter = 3000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
@@ -375,7 +375,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
-    printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
+    printf("\n tcspmv_kernel_fp16_v1 = %g ms\n", runtime);
 
     CUDA_CHECK_ERROR(cudaGetLastError());
 

@@ -239,10 +239,10 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching kernel with %d blocks, %d threads per block\n",
+    printf("Launching tcspmv_kernel_fp64 with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 0;
+    int warp_iter = 100;
     for (int i = 0; i < warp_iter; ++i)
     {
         tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
@@ -251,7 +251,7 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1;
+    int test_iter = 3000;
     gettimeofday(&t1, NULL);
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
@@ -263,7 +263,7 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
-    printf("\n SpMV CUDA kernel runtime = %g ms\n", runtime);
+    printf("\n tcspmv_kernel_fp64 runtime = %g ms\n", runtime);
     gettimeofday(&t2, NULL);
     CUDA_CHECK_ERROR(cudaGetLastError());
 

@@ -1,6 +1,9 @@
 #include "common.h"
 #include "fuse_kernel.h"
+
+
 const int PRONNZT = 4;
+
 cudaStream_t stream_tc, stream_cd;
 
 template <int BREAK_STRIDE, typename I>
@@ -162,6 +165,7 @@ lbNEC_reduce_oneRow_in_vector_L(const int n_reduce_rows_num, const int tid_in_bl
   }
 }
 
+//TODO: 两个impl上做文章
 __device__ __forceinline__ void tcspmv_kernel_fp64_impl(
     const double *__restrict__ x_d,
     double *__restrict__ y_d,
@@ -555,7 +559,7 @@ __global__ void fospmv_kernel_fp64_mix(double *tcX, double *tcY, indT *chunkPtr,
     const int bid_in_grid = blockIdx.x;
     const int productNnzPerThread = 4;
     const int NNZ_PER_BLOCK = 128 * productNnzPerThread;
-    __shared__ valT middle_s[NNZ_PER_BLOCK];
+    __shared__ double middle_s[NNZ_PER_BLOCK];
     const indT lastElemId = csrRowPtr[cdRow];
 
     int blockNnzStart = NNZ_PER_BLOCK * bid_in_grid;
@@ -584,49 +588,49 @@ __global__ void fospmv_kernel_fp64_mix(double *tcX, double *tcY, indT *chunkPtr,
     // when threads = 128
     if (n_reduce_rows_num > 64)
     {
-      lbNEC_reduce_oneRow_in_thread<indT, valT, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_thread<indT, double, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
                                                                     reduceStartRowId, reduceEndRowId,
                                                                     csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num == 1)
     {
-      lbNEC_reduce_oneRow_in_block<indT, valT, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_block<indT, double, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
                                                                    reduceStartRowId, reduceEndRowId,
                                                                    csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num == 2)
     {
-      lbNEC_reduce_oneRow_in_vector_L<indT, valT, NNZ_PER_BLOCK, 128, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector_L<indT, double, NNZ_PER_BLOCK, 128, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                           reduceStartRowId, reduceEndRowId,
                                                                           csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 4)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                         reduceStartRowId, reduceEndRowId,
                                                                         csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 8)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                         reduceStartRowId, reduceEndRowId,
                                                                         csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 16)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 32)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 64)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
@@ -711,7 +715,7 @@ __global__ void fospmv_kernel_fp64_sep(double *tcX, double *tcY, indT *chunkPtr,
     const int tid_in_block = threadIdx.x;
     const int productNnzPerThread = 4;
     const int NNZ_PER_BLOCK = 128 * productNnzPerThread;
-    __shared__ valT middle_s[NNZ_PER_BLOCK];
+    __shared__ double middle_s[NNZ_PER_BLOCK];
     const indT lastElemId = csrRowPtr[cdRow];
 
     int blockNnzStart = NNZ_PER_BLOCK * bid_in_grid;
@@ -740,49 +744,49 @@ __global__ void fospmv_kernel_fp64_sep(double *tcX, double *tcY, indT *chunkPtr,
     // when threads = 128
     if (n_reduce_rows_num > 64)
     {
-      lbNEC_reduce_oneRow_in_thread<indT, valT, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_thread<indT, double, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
                                                                     reduceStartRowId, reduceEndRowId,
                                                                     csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num == 1)
     {
-      lbNEC_reduce_oneRow_in_block<indT, valT, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_block<indT, double, NNZ_PER_BLOCK, 128>(tid_in_block, bid_in_grid,
                                                                    reduceStartRowId, reduceEndRowId,
                                                                    csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num == 2)
     {
-      lbNEC_reduce_oneRow_in_vector_L<indT, valT, NNZ_PER_BLOCK, 128, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector_L<indT, double, NNZ_PER_BLOCK, 128, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                           reduceStartRowId, reduceEndRowId,
                                                                           csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 4)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                         reduceStartRowId, reduceEndRowId,
                                                                         csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 8)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                         reduceStartRowId, reduceEndRowId,
                                                                         csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 16)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 32)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
     else if (n_reduce_rows_num <= 64)
     {
-      lbNEC_reduce_oneRow_in_vector<indT, valT, NNZ_PER_BLOCK, 128, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+      lbNEC_reduce_oneRow_in_vector<indT, double, NNZ_PER_BLOCK, 128, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
                                                                        reduceStartRowId, reduceEndRowId,
                                                                        csrRowPtr, middle_s, cdY);
     }
@@ -817,13 +821,18 @@ void fospmv_kernel_fp64_stream(double *tcX, double *tcY, indT *chunkPtr, indT *f
       tcX, tcY, chunkPtr, fragPtr, fragBit, tcVal,
       sparse_AToX_index, tcRow, tcCol);
 
-  cdspmv_kernel111<PRONNZT, thread_num_cd, indT, valT><<<block_num_cd, thread_num_cd, 0, stream_cd>>>(
+  cdspmv_kernel111<PRONNZT, thread_num_cd, indT, double><<<block_num_cd, thread_num_cd, 0, stream_cd>>>(
       csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, startRowPerBlock);
 
   // cudaStreamSynchronize(stream_tc); // 默认流已全局同步
   // cudaStreamSynchronize(stream_cd);
 
 }
+
+
+#include "ptb_impl_fp64.h"
+
+#include "ptb_impl_fp16.h"
 
 void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit, std::vector<double> tcVal, indT *sparse_AToX_index, double *tcX, double *tcY, int tcRow, int tcCol,
                  double *csrVal, indT *csrRowPtr, indT *csrColInd, double *cdX, double *cdY, int cdRow, int cdCol, indT cdnnzA)
@@ -886,12 +895,12 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   const int thread_num_tc = warpsPerBlock * warpSize;
   const int numRowChunks = (tcRow + fragM - 1) / fragM;
   const int block_num_tc = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
-  printf("Launching kernel with %d blocks, %d threads per block\n",
-         block_num_tc, thread_num_tc);
+  // printf("Launching kernel with %d blocks, %d threads per block\n",
+  //        block_num_tc, thread_num_tc);
 
   // cd thread grid
   const int productNnzPerThread = PRONNZT;
-  const int thread_num_cd = 128;
+  const int thread_num_cd = 256;
   const int block_num_cd = cdnnzA / (productNnzPerThread * thread_num_cd) + ((cdnnzA % (productNnzPerThread * thread_num_cd) == 0) ? 0 : 1);
 
   // cd preprocess
@@ -901,26 +910,41 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   CUDA_CHECK_ERROR(cudaMemset(startRowPerBlock, 0, sizeof(indT) * startRowPerBlock_len));
   pre_startRowPerBlock<productNnzPerThread * thread_num_cd, indT><<<divup<uint32_t>(cdRow + 1, 256), 256>>>(d_ptr, cdRow, startRowPerBlock);
 
-  int sep_grid, sep_block;
-  sep_grid = block_num_tc + block_num_cd;
-  sep_block = thread_num_cd > thread_num_tc ? thread_num_cd : thread_num_tc;
+  // int sep_grid, sep_block;
+  // sep_grid = block_num_tc + block_num_cd;
+  // sep_block = thread_num_cd > thread_num_tc ? thread_num_cd : thread_num_tc;
 
-  int mix_grid, mix_block;
-  mix_grid = (block_num_tc > block_num_cd) ? block_num_tc : block_num_cd;
-  mix_block = thread_num_tc + thread_num_cd;
+  // int mix_grid, mix_block;
+  // mix_grid = (block_num_tc > block_num_cd) ? block_num_tc : block_num_cd;
+  // mix_block = thread_num_tc + thread_num_cd;
 
-  printf("Launching fospmv_kernel_fp64_sep with %d blocks, %d threads per block\n",
-         sep_grid, sep_block);
+  int ptb_grid, ptb_block;
+  ptb_grid = (block_num_tc > block_num_cd) ? block_num_cd : block_num_tc;
+  // ptb_grid = 2048;
+  // ptb_block = thread_num_tc * 2 + thread_num_cd;
+  ptb_block = thread_num_tc * 1 + thread_num_cd;
+  int origin_block_num_cd = block_num_cd;
+  int origin_block_num_tc = block_num_tc;
+
+  double mean_col_num = (double)(cdnnzA + cdRow) / (double) cdRow;
+
+  printf("Launching PTB fospmv_kernel_fp64 with %d blocks, %d threads per block\n",
+         ptb_grid, ptb_block);
   cudaStream_t stream_tc, stream_cd;
   cudaStreamCreate(&stream_tc);
   cudaStreamCreate(&stream_cd);
-  int warp_iter = 100;
+  int warp_iter = 0;
   for (int i = 0; i < warp_iter; ++i)
   {
-    fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
+    fospmv_kernel_fp64_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
         d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
-        block_num_tc, block_num_cd, stream_tc, stream_cd);
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
+
+    // fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
+    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     block_num_tc, block_num_cd, stream_tc, stream_cd);
 
     // fospmv_kernel_fp64_sep1<thread_num_tc, thread_num_cd><<<sep_grid, sep_block>>>(
     //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
@@ -934,14 +958,20 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   }
   CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-  int test_iter = 1000;
+  int test_iter = 1;
   cuda_time_test_start();
   for (int i = 0; i < test_iter; ++i)
   {
-    fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
+
+    fospmv_kernel_fp64_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
         d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
-        block_num_tc, block_num_cd, stream_tc, stream_cd);
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
+
+    // fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
+    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     block_num_tc, block_num_cd, stream_tc, stream_cd);
 
     // fospmv_kernel_fp64_sep1<thread_num_tc, thread_num_cd><<<sep_grid, sep_block>>>(
     //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
@@ -982,5 +1012,136 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   CUDA_CHECK_ERROR(cudaFree(d_indices));
   CUDA_CHECK_ERROR(cudaFree(d_ptr));
   CUDA_CHECK_ERROR(cudaFree(startRowPerBlock));
+}
+
+void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit, std::vector<half> tcVal, indT *sparse_AToX_index, half *tcX, half *tcY, int tcRow, int tcCol,
+                 half *csrVal, indT *csrRowPtr, indT *csrColInd, half *cdX, half *cdY, int cdRow, int cdCol, indT cdnnzA)
+{
+  int chunkNum = ceil((double)tcRow / (double)fragM);
+  int totalTcFrags = chunkPtr[chunkNum];
+  half *d_tcVal, *d_tcX, *d_tcY;
+  indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
+  uint32_t *d_fragBit;
+
+  //  tcVal
+  CUDA_CHECK_ERROR(cudaMalloc(&d_tcVal, tcVal.size() * sizeof(half)));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_tcVal, tcVal.data(), tcVal.size() * sizeof(half), cudaMemcpyHostToDevice));
+
+  //  fragPtr
+  CUDA_CHECK_ERROR(cudaMalloc(&d_fragPtr, fragPtr.size() * sizeof(int)));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_fragPtr, fragPtr.data(), fragPtr.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+  //  fragBit
+  CUDA_CHECK_ERROR(cudaMalloc(&d_fragBit, fragBit.size() * sizeof(uint32_t)));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_fragBit, fragBit.data(), fragBit.size() * sizeof(uint32_t), cudaMemcpyHostToDevice));
+
+  //  chunkPtr
+  CUDA_CHECK_ERROR(cudaMalloc(&d_chunkPtr, sizeof(indT) * (chunkNum + 1)));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_chunkPtr, chunkPtr, sizeof(indT) * (chunkNum + 1), cudaMemcpyHostToDevice));
+
+  //  sparse_AToX_index
+  CUDA_CHECK_ERROR(cudaMalloc(&d_sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK)));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_sparse_AToX_index, sparse_AToX_index, sizeof(indT) * (totalTcFrags * fragK), cudaMemcpyHostToDevice));
+
+  //  tcX
+  CUDA_CHECK_ERROR(cudaMalloc(&d_tcX, sizeof(half) * tcCol));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_tcX, tcX, sizeof(half) * tcCol, cudaMemcpyHostToDevice));
+
+  //  tcY
+  CUDA_CHECK_ERROR(cudaMalloc(&d_tcY, sizeof(half) * tcRow));
+  CUDA_CHECK_ERROR(cudaMemset(d_tcY, 0, sizeof(half) * tcRow));
+
+  half *d_cdY, *d_cdY_perf, *d_cdX, *d_val;
+  indT *d_indices, *d_ptr;
+
+  CUDA_CHECK_ERROR(cudaMalloc(&d_cdY, sizeof(half) * cdRow));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_cdY_perf, sizeof(half) * cdRow));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_cdX, sizeof(half) * cdCol));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_val, sizeof(half) * cdnnzA));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_indices, sizeof(indT) * cdnnzA));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_ptr, sizeof(indT) * (cdRow + 1)));
+
+  CUDA_CHECK_ERROR(cudaMemcpy(d_val, csrVal, sizeof(half) * cdnnzA, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_indices, csrColInd, sizeof(indT) * cdnnzA, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (cdRow + 1), cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_cdX, cdX, sizeof(half) * cdCol, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_cdY, cdY, sizeof(half) * cdRow, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERROR(cudaMemcpy(d_cdY_perf, cdY, sizeof(half) * cdRow, cudaMemcpyHostToDevice));
+  cudaMemset(d_cdY, 0.0, sizeof(half) * cdRow);
+
+  // tc thread grid
+  const int warpsPerBlock = 4;
+  const int warpSize = 32;
+  const int thread_num_tc = warpsPerBlock * warpSize;
+  const int numRowChunks = (tcRow + fragM - 1) / fragM;
+  const int block_num_tc = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
+  // printf("Launching kernel with %d blocks, %d threads per block\n",
+  //        block_num_tc, thread_num_tc);
+
+  // cd thread grid
+  const int productNnzPerThread = PRONNZT;
+  const int thread_num_cd = 256;
+  const int block_num_cd = cdnnzA / (productNnzPerThread * thread_num_cd) + ((cdnnzA % (productNnzPerThread * thread_num_cd) == 0) ? 0 : 1);
+
+
+  int ptb_grid, ptb_block;
+  ptb_grid = (block_num_tc > block_num_cd) ? block_num_cd : block_num_tc;
+  // ptb_grid = 2048;
+  // ptb_block = thread_num_tc * 2 + thread_num_cd;
+  ptb_block = thread_num_tc * 1 + thread_num_cd;
+  int origin_block_num_cd = block_num_cd;
+  int origin_block_num_tc = block_num_tc;
+
+  double mean_col_num = (double)(cdnnzA + cdRow) / (double) cdRow;
+
+  printf("Launching PTB fospmv_kernel_fp16 with %d blocks, %d threads per block\n",
+         ptb_grid, ptb_block);
+
+  int warp_iter = 100;
+  for (int i = 0; i < warp_iter; ++i)
+  {
+    fospmv_kernel_fp16_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
+        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
+  }
+  CUDA_CHECK_ERROR(cudaDeviceSynchronize());
+
+  int test_iter = 3000;
+  cuda_time_test_start();
+  for (int i = 0; i < test_iter; ++i)
+  {
+
+    fospmv_kernel_fp16_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
+        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
+  }
+  cuda_time_test_end();
+
+  double runtime = (elapsedTime) / test_iter;
+  printf("\n Fused one SpMV CUDA kernel runtime = %g ms\n", runtime);
+
+  CUDA_CHECK_ERROR(cudaGetLastError());
+
+  CUDA_CHECK_ERROR(cudaMemcpy(tcY, d_tcY, sizeof(half) * tcRow, cudaMemcpyDeviceToHost));
+  CUDA_CHECK_ERROR(cudaMemcpy(cdY, d_cdY, sizeof(half) * cdRow, cudaMemcpyDeviceToHost));
+
+  CUDA_CHECK_ERROR(cudaDeviceSynchronize());
+
+  CUDA_CHECK_ERROR(cudaFree(d_tcVal));
+  CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
+  CUDA_CHECK_ERROR(cudaFree(d_fragBit));
+  CUDA_CHECK_ERROR(cudaFree(d_chunkPtr));
+  CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
+  CUDA_CHECK_ERROR(cudaFree(d_tcX));
+  CUDA_CHECK_ERROR(cudaFree(d_tcY));
+
+  CUDA_CHECK_ERROR(cudaFree(d_cdY_perf));
+  CUDA_CHECK_ERROR(cudaFree(d_cdY));
+  CUDA_CHECK_ERROR(cudaFree(d_cdX));
+  CUDA_CHECK_ERROR(cudaFree(d_val));
+  CUDA_CHECK_ERROR(cudaFree(d_indices));
+  CUDA_CHECK_ERROR(cudaFree(d_ptr));
 }
 
