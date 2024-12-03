@@ -5,16 +5,15 @@ project(TCSpMVProj CXX C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CPP_STANDARD 11)
 
-if(POLICY CMP0077)#确保 option() 命令尊重已存在的变量
+if(POLICY CMP0077)
     cmake_policy(SET CMP0077 NEW)
 endif()
 
 
 set(CUDA_SEPARABLE_COMPILATION ON)
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true) #启用分离编译模式
-
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true)
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" ON) # 添加 fp64 选项
+option(USE_FP64 "Enable fp64 support" OFF)
 
 
 if(ENABLE_CUDA_MEMCHECK)
@@ -27,7 +26,7 @@ endif()
 
 if(USE_FP64)
     message(STATUS "FP64 is enabled")
-    add_definitions(-Dfp64)  # 向编译器传递 fp64 预处理宏
+    add_definitions(-Dfp64)
 else()
     message(STATUS "FP64 is disabled")
 endif()
@@ -43,7 +42,6 @@ include_directories( ${PROJECT_SOURCE_DIR}/include)
 find_package(CUDA REQUIRED)
 find_library(CUSPARSE_LIBRARY NAMES libcusparse.so PATHS "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib")
 
-# 检查 cuSPARSE 是否被找到
 if(CUDA_FOUND AND CUSPARSE_LIBRARY)
     message(STATUS "CUDA found: ${CUDA_VERSION}")
     message(STATUS "cuSPARSE library found: ${CUSPARSE_LIBRARY}")
@@ -51,7 +49,6 @@ else()
     message(FATAL_ERROR "CUDA or cuSPARSE not found!")
 endif()
 
-# 打印 CUDA 库的路径
 message(STATUS "CUDA libraries: ${CUDA_LIBRARIES}")
 message(STATUS "CUDA include dirs: ${CUDA_INCLUDE_DIRS}")
 
@@ -62,7 +59,6 @@ set(CUDA_TEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/test)
 set(CUDA_UTILITIES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utilities) 
 
 
-# cusparse 包含在cuda_utilities_lib库中了
 file(GLOB cuda_utilities "${CUDA_UTILITIES_PATH}/*.cpp")
 add_library(cuda_utilities_lib STATIC ${cuda_utilities})
 target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})

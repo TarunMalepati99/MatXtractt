@@ -552,83 +552,83 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   for (int i = 0; i < warmup_time; ++i)
   {
-    // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
-    if (mean_col_num <= 2)
-    {
-      const int THREADS_PER_VECTOR = 2;
-      const unsigned int VECTORS_PER_BLOCK = 128;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 2 && mean_col_num <= 4)
-    {
-      const int THREADS_PER_VECTOR = 4;
-      const unsigned int VECTORS_PER_BLOCK = 64;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 4 && mean_col_num <= 8)
-    {
-      const int THREADS_PER_VECTOR = 8;
-      const unsigned int VECTORS_PER_BLOCK = 32;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 8 && mean_col_num <= 16)
-    {
-      const int THREADS_PER_VECTOR = 16;
-      const unsigned int VECTORS_PER_BLOCK = 16;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 16)
-    {
-      const int THREADS_PER_VECTOR = 32;
-      const unsigned int VECTORS_PER_BLOCK = 8;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
+    // if (mean_col_num <= 2)
+    // {
+    //   const int THREADS_PER_VECTOR = 2;
+    //   const unsigned int VECTORS_PER_BLOCK = 128;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 2 && mean_col_num <= 4)
+    // {
+    //   const int THREADS_PER_VECTOR = 4;
+    //   const unsigned int VECTORS_PER_BLOCK = 64;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 4 && mean_col_num <= 8)
+    // {
+    //   const int THREADS_PER_VECTOR = 8;
+    //   const unsigned int VECTORS_PER_BLOCK = 32;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 8 && mean_col_num <= 16)
+    // {
+    //   const int THREADS_PER_VECTOR = 16;
+    //   const unsigned int VECTORS_PER_BLOCK = 16;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 16)
+    // {
+    //   const int THREADS_PER_VECTOR = 32;
+    //   const unsigned int VECTORS_PER_BLOCK = 8;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
   for (int i = 0; i < execute_time; ++i)
   {
-    // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
-    if (mean_col_num <= 2)
-    {
-      const int THREADS_PER_VECTOR = 2;
-      const unsigned int VECTORS_PER_BLOCK = 128;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 2 && mean_col_num <= 4)
-    {
-      const int THREADS_PER_VECTOR = 4;
-      const unsigned int VECTORS_PER_BLOCK = 64;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 4 && mean_col_num <= 8)
-    {
-      const int THREADS_PER_VECTOR = 8;
-      const unsigned int VECTORS_PER_BLOCK = 32;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 8 && mean_col_num <= 16)
-    {
-      const int THREADS_PER_VECTOR = 16;
-      const unsigned int VECTORS_PER_BLOCK = 16;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
-    else if (mean_col_num > 16)
-    {
-      const int THREADS_PER_VECTOR = 32;
-      const unsigned int VECTORS_PER_BLOCK = 8;
-      const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-      cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-    }
+    cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock);
+    // if (mean_col_num <= 2)
+    // {
+    //   const int THREADS_PER_VECTOR = 2;
+    //   const unsigned int VECTORS_PER_BLOCK = 128;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 2 && mean_col_num <= 4)
+    // {
+    //   const int THREADS_PER_VECTOR = 4;
+    //   const unsigned int VECTORS_PER_BLOCK = 64;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 4 && mean_col_num <= 8)
+    // {
+    //   const int THREADS_PER_VECTOR = 8;
+    //   const unsigned int VECTORS_PER_BLOCK = 32;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 8 && mean_col_num <= 16)
+    // {
+    //   const int THREADS_PER_VECTOR = 16;
+    //   const unsigned int VECTORS_PER_BLOCK = 16;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
+    // else if (mean_col_num > 16)
+    // {
+    //   const int THREADS_PER_VECTOR = 32;
+    //   const unsigned int VECTORS_PER_BLOCK = 8;
+    //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+    //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+    // }
   }
   cudaDeviceSynchronize();
   gettimeofday(&t2, NULL);
@@ -639,43 +639,44 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   // printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
   //        WORK_BLOCKS, THREADS_PER_BLOCK);
-  // cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+  
+  cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
 
-  if (mean_col_num <= 2)
-  {
-    const int THREADS_PER_VECTOR = 2;
-    const unsigned int VECTORS_PER_BLOCK = 128;
-    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-  }
-  else if (mean_col_num > 2 && mean_col_num <= 4)
-  {
-    const int THREADS_PER_VECTOR = 4;
-    const unsigned int VECTORS_PER_BLOCK = 64;
-    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-  }
-  else if (mean_col_num > 4 && mean_col_num <= 8)
-  {
-    const int THREADS_PER_VECTOR = 8;
-    const unsigned int VECTORS_PER_BLOCK = 32;
-    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-  }
-  else if (mean_col_num > 8 && mean_col_num <= 16)
-  {
-    const int THREADS_PER_VECTOR = 16;
-    const unsigned int VECTORS_PER_BLOCK = 16;
-    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-  }
-  else if (mean_col_num > 16)
-  {
-    const int THREADS_PER_VECTOR = 32;
-    const unsigned int VECTORS_PER_BLOCK = 8;
-    const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-    cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
-  }
+  // if (mean_col_num <= 2)
+  // {
+  //   const int THREADS_PER_VECTOR = 2;
+  //   const unsigned int VECTORS_PER_BLOCK = 128;
+  //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+  //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  // }
+  // else if (mean_col_num > 2 && mean_col_num <= 4)
+  // {
+  //   const int THREADS_PER_VECTOR = 4;
+  //   const unsigned int VECTORS_PER_BLOCK = 64;
+  //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+  //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  // }
+  // else if (mean_col_num > 4 && mean_col_num <= 8)
+  // {
+  //   const int THREADS_PER_VECTOR = 8;
+  //   const unsigned int VECTORS_PER_BLOCK = 32;
+  //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+  //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  // }
+  // else if (mean_col_num > 8 && mean_col_num <= 16)
+  // {
+  //   const int THREADS_PER_VECTOR = 16;
+  //   const unsigned int VECTORS_PER_BLOCK = 16;
+  //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+  //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  // }
+  // else if (mean_col_num > 16)
+  // {
+  //   const int THREADS_PER_VECTOR = 32;
+  //   const unsigned int VECTORS_PER_BLOCK = 8;
+  //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+  //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
+  // }
 
   cudaDeviceSynchronize();
 

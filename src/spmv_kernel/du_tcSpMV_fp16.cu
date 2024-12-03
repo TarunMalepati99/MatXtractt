@@ -229,7 +229,7 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
-    half *d_tcVal, *d_X_val, *d_Y_val;
+    half *d_tcVal, *d_X_val, *d_Y_val, *d_Y_val_perf;
     indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
     uint32_t *d_fragBit;
 
@@ -261,6 +261,9 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(half) * rowA));
     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(half) * rowA));
 
+    CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val_perf, sizeof(half) * rowA));
+    CUDA_CHECK_ERROR(cudaMemset(d_Y_val_perf, 0, sizeof(half) * rowA));
+
     int warpsPerBlock = 4;
     int chunksPerBlock = warpsPerBlock * 4;
     int warpSize = 32;
@@ -275,23 +278,27 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     for (int i = 0; i < warp_iter; ++i)
     {
         tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1000;
+    int test_iter = 3000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
         tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
     printf("\n tcspmv_kernel_fp16_v0 = %g ms\n", runtime);
+
+    tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
 
     CUDA_CHECK_ERROR(cudaGetLastError());
 
@@ -304,6 +311,7 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
+    CUDA_CHECK_ERROR(cudaFree(d_Y_val_perf));
 }
 
 void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
@@ -312,7 +320,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
-    half *d_tcVal, *d_X_val, *d_Y_val;
+    half *d_tcVal, *d_X_val, *d_Y_val, *d_Y_val_perf;
     indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
     uint32_t *d_fragBit;
 
@@ -346,6 +354,9 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(half) * rowA));
     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(half) * rowA));
 
+    CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val_perf, sizeof(half) * rowA));
+    CUDA_CHECK_ERROR(cudaMemset(d_Y_val_perf, 0, sizeof(half) * rowA));
+
     int warpsPerBlock = 4;
     int warpSize = 32;
     int threadsPerBlock = warpsPerBlock * warpSize;
@@ -359,7 +370,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     for (int i = 0; i < warp_iter; ++i)
     {
         tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
@@ -369,13 +380,17 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     for (int i = 0; i < test_iter; ++i)
     {
         tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
     printf("\n tcspmv_kernel_fp16_v1 = %g ms\n", runtime);
+
+    tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
 
     CUDA_CHECK_ERROR(cudaGetLastError());
 
@@ -388,4 +403,5 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
+    CUDA_CHECK_ERROR(cudaFree(d_Y_val_perf));
 }

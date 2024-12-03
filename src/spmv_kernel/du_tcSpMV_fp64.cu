@@ -194,12 +194,9 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
             std::vector<double> tcVal, indT *sparse_AToX_index, double *X_val,
             double *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
 {
-    struct timeval t1;
-    struct timeval t2;
-
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
-    double *d_tcVal, *d_X_val, *d_Y_val;
+    double *d_tcVal, *d_X_val, *d_Y_val, *d_Y_val_perf;
     indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
     uint32_t *d_fragBit;
    
@@ -233,6 +230,9 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(double) * rowA));
     CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(double) * rowA));
 
+    CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val_perf, sizeof(double) * rowA));
+    CUDA_CHECK_ERROR(cudaMemset(d_Y_val_perf, 0, sizeof(double) * rowA));
+
     int warpsPerBlock = 4;
     int warpSize = 32;
     int threadsPerBlock = warpsPerBlock * warpSize;
@@ -246,25 +246,28 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     for (int i = 0; i < warp_iter; ++i)
     {
         tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
     int test_iter = 3000;
-    gettimeofday(&t1, NULL);
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
         tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
     }
     cuda_time_test_end();
 
+
     double runtime = (elapsedTime) / test_iter;
     printf("\n tcspmv_kernel_fp64 runtime = %g ms\n", runtime);
-    gettimeofday(&t2, NULL);
+    tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
+            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+            d_sparse_AToX_index, rowA, colA);
+
     CUDA_CHECK_ERROR(cudaGetLastError());
 
     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(double) * rowA, cudaMemcpyDeviceToHost));
@@ -276,4 +279,5 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
     CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
     CUDA_CHECK_ERROR(cudaFree(d_X_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
+    CUDA_CHECK_ERROR(cudaFree(d_Y_val_perf));
 }

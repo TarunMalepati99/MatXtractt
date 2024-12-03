@@ -839,7 +839,7 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
 {
   int chunkNum = ceil((double)tcRow / (double)fragM);
   int totalTcFrags = chunkPtr[chunkNum];
-  double *d_tcVal, *d_tcX, *d_tcY;
+  double *d_tcVal, *d_tcX, *d_tcY, *d_tcY_perf;
   indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
   uint32_t *d_fragBit;
 
@@ -870,6 +870,8 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   //  tcY
   CUDA_CHECK_ERROR(cudaMalloc(&d_tcY, sizeof(double) * tcRow));
   CUDA_CHECK_ERROR(cudaMemset(d_tcY, 0, sizeof(double) * tcRow));
+  CUDA_CHECK_ERROR(cudaMalloc(&d_tcY_perf, sizeof(double) * tcRow));
+  CUDA_CHECK_ERROR(cudaMemset(d_tcY_perf, 0, sizeof(double) * tcRow));
 
   double *d_cdY, *d_cdY_perf, *d_cdX, *d_val;
   indT *d_indices, *d_ptr;
@@ -933,54 +935,54 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   cudaStream_t stream_tc, stream_cd;
   cudaStreamCreate(&stream_tc);
   cudaStreamCreate(&stream_cd);
-  int warp_iter = 0;
+  int warp_iter = 100;
   for (int i = 0; i < warp_iter; ++i)
   {
     fospmv_kernel_fp64_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
-        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock, mean_col_num,
+        d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock, mean_col_num,
         origin_block_num_tc, origin_block_num_cd, ptb_grid);
 
     // fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd, stream_tc, stream_cd);
 
     // fospmv_kernel_fp64_sep1<thread_num_tc, thread_num_cd><<<sep_grid, sep_block>>>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd);
 
     // fospmv_kernel_fp64_mix<thread_num_tc, thread_num_cd><<<mix_grid, mix_block>>>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd);
   }
   CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-  int test_iter = 1;
+  int test_iter = 3000;
   cuda_time_test_start();
   for (int i = 0; i < test_iter; ++i)
   {
 
     fospmv_kernel_fp64_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
-        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock, mean_col_num,
+        d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock, mean_col_num,
         origin_block_num_tc, origin_block_num_cd, ptb_grid);
 
     // fospmv_kernel_fp64_stream<thread_num_tc, thread_num_cd>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd, stream_tc, stream_cd);
 
     // fospmv_kernel_fp64_sep1<thread_num_tc, thread_num_cd><<<sep_grid, sep_block>>>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd);
 
     // fospmv_kernel_fp64_mix<thread_num_tc, thread_num_cd><<<mix_grid, mix_block>>>(
-    //     d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock,
+    //     d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+    //     d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, startRowPerBlock,
     //     block_num_tc, block_num_cd);
   }
   cuda_time_test_end();
@@ -989,6 +991,11 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   cudaStreamDestroy(stream_cd);
   double runtime = (elapsedTime) / test_iter;
   printf("\n Fused one SpMV CUDA kernel runtime = %g ms\n", runtime);
+
+  fospmv_kernel_fp64_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
+        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, startRowPerBlock, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
 
   CUDA_CHECK_ERROR(cudaGetLastError());
 
@@ -1004,6 +1011,7 @@ void fospmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
   CUDA_CHECK_ERROR(cudaFree(d_tcX));
   CUDA_CHECK_ERROR(cudaFree(d_tcY));
+  CUDA_CHECK_ERROR(cudaFree(d_tcY_perf));
 
   CUDA_CHECK_ERROR(cudaFree(d_cdY_perf));
   CUDA_CHECK_ERROR(cudaFree(d_cdY));
@@ -1019,7 +1027,7 @@ void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
 {
   int chunkNum = ceil((double)tcRow / (double)fragM);
   int totalTcFrags = chunkPtr[chunkNum];
-  half *d_tcVal, *d_tcX, *d_tcY;
+  half *d_tcVal, *d_tcX, *d_tcY, *d_tcY_perf;
   indT *d_sparse_AToX_index, *d_chunkPtr, *d_fragPtr;
   uint32_t *d_fragBit;
 
@@ -1050,6 +1058,9 @@ void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   //  tcY
   CUDA_CHECK_ERROR(cudaMalloc(&d_tcY, sizeof(half) * tcRow));
   CUDA_CHECK_ERROR(cudaMemset(d_tcY, 0, sizeof(half) * tcRow));
+
+  CUDA_CHECK_ERROR(cudaMalloc(&d_tcY_perf, sizeof(half) * tcRow));
+  CUDA_CHECK_ERROR(cudaMemset(d_tcY_perf, 0, sizeof(half) * tcRow));
 
   half *d_cdY, *d_cdY_perf, *d_cdX, *d_val;
   indT *d_indices, *d_ptr;
@@ -1101,8 +1112,8 @@ void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   for (int i = 0; i < warp_iter; ++i)
   {
     fospmv_kernel_fp16_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
-        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, mean_col_num,
+        d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, mean_col_num,
         origin_block_num_tc, origin_block_num_cd, ptb_grid);
   }
   CUDA_CHECK_ERROR(cudaDeviceSynchronize());
@@ -1113,14 +1124,19 @@ void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   {
 
     fospmv_kernel_fp16_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
-        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
-        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, mean_col_num,
+        d_tcX, d_tcY_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY_perf, mean_col_num,
         origin_block_num_tc, origin_block_num_cd, ptb_grid);
   }
   cuda_time_test_end();
 
   double runtime = (elapsedTime) / test_iter;
   printf("\n Fused one SpMV CUDA kernel runtime = %g ms\n", runtime);
+
+  fospmv_kernel_fp16_ptb<thread_num_tc, thread_num_cd><<<ptb_grid, ptb_block>>>(
+        d_tcX, d_tcY, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal, d_sparse_AToX_index, tcRow, tcCol,
+        d_val, d_ptr, d_indices, cdRow, d_cdX, d_cdY, mean_col_num,
+        origin_block_num_tc, origin_block_num_cd, ptb_grid);
 
   CUDA_CHECK_ERROR(cudaGetLastError());
 
@@ -1136,6 +1152,7 @@ void fospmv_fp16(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
   CUDA_CHECK_ERROR(cudaFree(d_sparse_AToX_index));
   CUDA_CHECK_ERROR(cudaFree(d_tcX));
   CUDA_CHECK_ERROR(cudaFree(d_tcY));
+  CUDA_CHECK_ERROR(cudaFree(d_tcY_perf));
 
   CUDA_CHECK_ERROR(cudaFree(d_cdY_perf));
   CUDA_CHECK_ERROR(cudaFree(d_cdY));
