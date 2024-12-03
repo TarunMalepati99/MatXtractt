@@ -910,9 +910,9 @@ int main(int argc, char **argv)
         initVec(X_val, colA);
 
         valT *coldY_val = (valT *)malloc(sizeof(valT) * rowA);
-        valT *coldY_val1 = (valT *)malloc(sizeof(valT) * rowA);
+        valT *coldY_val_solo = (valT *)malloc(sizeof(valT) * rowA);
         valT *hotY_val = (valT *)malloc(sizeof(valT) * dRows);
-        valT *hotY_val1 = (valT *)malloc(sizeof(valT) * dRows);
+        valT *hotY_val_solo = (valT *)malloc(sizeof(valT) * dRows);
 
         valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
@@ -920,10 +920,10 @@ int main(int argc, char **argv)
         // memset(coldY_val, 0, sizeof(valT) * rowA);
         // memset(Y_val, 0, sizeof(valT) * rowA);
         std::fill(hotY_val, hotY_val + dRows, static_cast<valT>(0.0));
-        std::fill(hotY_val1, hotY_val1 + dRows, static_cast<valT>(0.0));
+        std::fill(hotY_val_solo, hotY_val_solo + dRows, static_cast<valT>(0.0));
 
         std::fill(coldY_val, coldY_val + rowA, static_cast<valT>(0.0));
-        std::fill(coldY_val1, coldY_val1 + rowA, static_cast<valT>(0.0));
+        std::fill(coldY_val_solo, coldY_val_solo + rowA, static_cast<valT>(0.0));
         std::fill(Y_val, Y_val + rowA, static_cast<valT>(0.0));
 
         valT *x_d = (valT *)malloc(sizeof(valT) * dCols);
@@ -980,7 +980,7 @@ int main(int argc, char **argv)
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////cuda core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
-        cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val1, rowCD, colCD, nnzCD, &necTime1, &necPre1);
+        cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &necTime1, &necPre1);
         printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", necTime1, necPre1);
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////DASP
@@ -1014,13 +1014,13 @@ int main(int argc, char **argv)
 #ifdef fp64
         // tcspmv_serial(x_d, hotY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
 
-        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val1, dRows, dCols, rId, &necTime, &necPre);
+        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &necTime, &necPre);
 
         fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
                     csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #else
-        // tcspmv_serial(x_d, hotY_val1, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val1, dRows, dCols, rId, &necTime, &necPre);
+        // tcspmv_serial(x_d, hotY_val_solo, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &necTime, &necPre);
 
         fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
                     csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
@@ -1028,20 +1028,20 @@ int main(int argc, char **argv)
 
         // for (int i = 0; i < dRows; i++)
         // {
-        //     coldY_val1[rId[i]] = coldY_val1[rId[i]] + hotY_val1[i];
+        //     coldY_val_solo[rId[i]] = coldY_val_solo[rId[i]] + hotY_val_solo[i];
         // }
         for (int i = 0; i < dRows; i++)
         {
             coldY_val[rId[i]] += hotY_val[i];
         }
 
-        // int result = eQcheck(hotY_val1, hotY_val, dRows);
-        // int result = eQcheck(coldY_val1, coldY_val, rowA);
+        // int result = eQcheck(hotY_val_solo, hotY_val, dRows);
+        // int result = eQcheck(coldY_val_solo, coldY_val, rowA);
 
         // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, coldY_val, rowA, dCols, nnzColD);
         // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId);
 
-        // int result_ = eQcheck(Y_val, coldY_val1, rowA);
+        // int result_ = eQcheck(Y_val, coldY_val_solo, rowA);
         int result = eQcheck(Y_val, coldY_val, rowA);
 
         free(sparse_AToX_index);
@@ -1081,7 +1081,7 @@ int main(int argc, char **argv)
         free(x_d);
         free(Y_val);
         free(coldY_val);
-        free(coldY_val1);
+        free(coldY_val_solo);
         free(X_val);
 
         free(csrVal_dd);
