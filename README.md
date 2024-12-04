@@ -34,13 +34,13 @@ This repository provides a **Sparse Matrix-Vector Multiplication (SpMV)** comput
 - The default configuration uses FP16 precision (`OFF`).
 
 ### Running the Program
-Once built, execute the program as follows:
+- Once built, execute the program as follows:
     ```bash
     ./build/<executable_name> <path_to_graph.mtx>
 - Replace <`executable_name`> with the generated executable file name.
 - Replace <`path_to_graph.mtx`> with the path to your sparse matrix file in `.mtx` format.
 
 ### Example
-For a sparse matrix file located at `/path/to/graph.mtx`:
+- For a sparse matrix file located at `/path/to/graph.mtx`:
     ```bash
     ./build/spmv /path/to/graph.mtx

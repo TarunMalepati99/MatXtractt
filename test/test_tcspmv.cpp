@@ -388,6 +388,89 @@ void ecrPreprocess(
         free(neighbor_window);
     }
 }
+void ecrPreprocess_opt(
+    int *csrColInd,
+    int *csrRowPtr,
+    int rowA,
+    int colA,
+    int fragSize_h,
+    int fragSize_w,
+    int *blockPartition,
+    int *ecrId, // output
+    int **use_x_id,
+    int *nec_num)
+{
+    int block_counter = 0;
+
+    int max_window_size = 0;
+    for (int i = 0; i < rowA; i += fragSize_h)
+    {
+        int end = (i + fragSize_h > rowA) ? rowA : (i + fragSize_h);
+        max_window_size = std::max(max_window_size, csrRowPtr[end] - csrRowPtr[i]);
+    }
+    int *neighbor_window = (int *)malloc(max_window_size * sizeof(int));
+    if (neighbor_window == nullptr)
+    {
+        fprintf(stderr, "Memory allocation failed for neighbor_window\n");
+        exit(EXIT_FAILURE);
+    }
+    #pragma omp parallel for reduction(+ : block_counter)
+    for (int iter = 0; iter < rowA; iter += fragSize_h)
+    {
+        int windowId = iter / fragSize_h;
+        int block_start = csrRowPtr[iter];
+        int iter_plus = iter + fragSize_h;
+        int block_end = csrRowPtr[(iter_plus > rowA) ? rowA : iter_plus];
+        int num_window_nnzs = block_end - block_start;
+
+        if (num_window_nnzs <= 0)
+        {
+            blockPartition[windowId] = 0;
+            continue;
+        }
+
+        std::memcpy(neighbor_window, &csrColInd[block_start], num_window_nnzs * sizeof(int));
+        std::sort(neighbor_window, neighbor_window + num_window_nnzs);
+        auto end_it = std::unique(neighbor_window, neighbor_window + num_window_nnzs);
+        int unique_size = end_it - neighbor_window;
+
+        std::unordered_map<int, int> clean_edges2col;
+        for (int i = 0; i < unique_size; ++i)
+        {
+            clean_edges2col[neighbor_window[i]] = i;
+        }
+
+        use_x_id[windowId] = (int *)malloc(unique_size * sizeof(int));
+        if (use_x_id[windowId] == nullptr)
+        {
+            fprintf(stderr, "Memory allocation failed for use_x_id[windowId]\n");
+            exit(EXIT_FAILURE);
+        }
+        std::copy(neighbor_window, neighbor_window + unique_size, use_x_id[windowId]);
+        nec_num[windowId] = unique_size;
+
+        blockPartition[windowId] = (unique_size + fragSize_w - 1) / fragSize_w;
+        block_counter += blockPartition[windowId];
+
+        for (int e_index = block_start; e_index < block_end; e_index++)
+        {
+            int eid = csrColInd[e_index];
+            auto it = clean_edges2col.find(eid);
+            if (it != clean_edges2col.end())
+            {
+                ecrId[e_index] = it->second;
+            }
+            else
+            {
+                ecrId[e_index] = -1;
+                fprintf(stderr, "Element ID not found in clean_edges2col map\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    free(neighbor_window);
+}
 
 void generateFormat(
     const valT *vals,               // Input: Non-zero values in CSR format
@@ -520,6 +603,7 @@ void generateFormat(
     }
 }
 
+
 void tcspmv_serial(
     const valT *x_d,
     valT *y_d,
@@ -608,7 +692,7 @@ int main(int argc, char **argv)
 
     char *filename;
     filename = argv[1];
-    printf("\n===%s===\n\n", filename);
+    printf("\n Processing the %s graph\n\n", filename);
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
@@ -619,10 +703,15 @@ int main(int argc, char **argv)
     /***************************************************************
      *                  1.1split to two csc format                 *
      ***************************************************************/
-    for (float rowProp = 0.1f; rowProp <= 0.7f; rowProp += 0.05f)
+    // printf("\n------Sparsity-aware Compression START------\n");
+    float rowProp = 0.6f;
+    // for (float rowProp = 0.1f; rowProp <= 0.7f; rowProp += 0.05f)
     {
         float colProp = rowProp / 0.8f;
-        std::cout << "---------------------------------------------------------------------------: " << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "                     Compression Info                    " << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
+
         std::cout << "rowProp: " << rowProp << std::endl;
         std::cout << "colProp: " << colProp << std::endl;
 
@@ -854,6 +943,7 @@ int main(int argc, char **argv)
                 sr_ptr++;
             }
         }
+        // printf("\n------Sparsity-aware Compression END------\n");
 
         /***************************************************************
          *                     2.TCU-aware Compression                 *
@@ -867,8 +957,16 @@ int main(int argc, char **argv)
         memset(blockPartition, 0, sizeof(int) * (chunkNum + 1));
         int **use_x_id = (int **)malloc((chunkNum + 1) * sizeof(int *));
         int *nec_num = (int *)malloc((chunkNum + 1) * sizeof(int));
-
+        // struct timeval t1, t2;
+        // gettimeofday(&t1, NULL);
         ecrPreprocess(csrColInd_dd, csrRowPtr_dd, dRows, dCols, fragM, fragK, blockPartition, ecrId, use_x_id, nec_num);
+        // gettimeofday(&t2, NULL);
+        // double ecrPreprocessT = (t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0;
+        // std::cout << "ecrPreprocess execution time: " << ecrPreprocessT << " ms" << std::endl;
+
+
+
+        // printf("\n------ecrPreprocess END------\n");
 
         int *chunkPtr = (int *)malloc(sizeof(int) * (chunkNum + 1));
         memset(chunkPtr, 0, sizeof(int) * (chunkNum + 1));
@@ -895,15 +993,28 @@ int main(int argc, char **argv)
                 sparse_AToX[j] = use_x[j];
             }
         }
+        // printf("\n------sparse_AToX END------\n");
 
         /// Outputs
         std::vector<int> fragPtr;
         std::vector<valT> tcVal;
         // #ifdef fp64
         std::vector<uint32_t> fragBit;
+        // printf("\n------generateFormat START------\n");
+        // struct timeval t3, t4;
+        // gettimeofday(&t3, NULL);
         generateFormat(csrVal_dd, csrRowPtr_dd, ecrId, dRows, dCols, chunkPtr, fragPtr, fragBit, tcVal);
+        // gettimeofday(&t4, NULL);
+        // double generateFormatT = (t4.tv_sec - t3.tv_sec) * 1000.0 + (t4.tv_usec - t3.tv_usec) / 1000.0;
+        // std::cout << "generateFormat execution time: " << generateFormatT << " ms" << std::endl;
+        // printf("\n------generateFormat END------\n");
+
+
+        std::cout << "---------------------------------------------------------" << std::endl;
+        std::cout << "                     Performance Info                    " << std::endl;
+        std::cout << "---------------------------------------------------------" << std::endl;
         /***************************************************************
-         *         check the Sparsity-TCU-aware compression            *
+         *                              TEST                           *
          ***************************************************************/
 
         valT *X_val = (valT *)malloc(sizeof(valT) * colA);
@@ -976,12 +1087,13 @@ int main(int argc, char **argv)
             csrVal_CD, csrRowPtr_CD, csrColInd_CD,
             x_CD);
         // spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
-        double necTime1 = 0, necPre1 = 0;
+        double cdTime1 = 0, necPre1 = 0;
+        double tcTime = 0;
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////cuda core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
-        cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &necTime1, &necPre1);
-        printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", necTime1, necPre1);
+        cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime1, &necPre1);
+        printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime1, necPre1);
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////DASP
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1010,30 +1122,30 @@ int main(int argc, char **argv)
         // printf("------Core-Dense last row nnz = %d------\n", csrRowPtr_dd[dRows] - csrRowPtr_dd[dRows - 1]);
 
         // spmv_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
-        double necTime = 0, necPre = 0;
+        double cdTime = 0, necPre = 0;
 #ifdef fp64
         // tcspmv_serial(x_d, hotY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
 
-        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &necTime, &necPre);
+        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
 
-        fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
-                    csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
+        // fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
+        //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #else
         // tcspmv_serial(x_d, hotY_val_solo, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &necTime, &necPre);
+        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
 
-        fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
-                    csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
+        // fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
+        //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #endif
 
-        // for (int i = 0; i < dRows; i++)
-        // {
-        //     coldY_val_solo[rId[i]] = coldY_val_solo[rId[i]] + hotY_val_solo[i];
-        // }
         for (int i = 0; i < dRows; i++)
         {
-            coldY_val[rId[i]] += hotY_val[i];
+            coldY_val_solo[rId[i]] += hotY_val_solo[i];
         }
+        // for (int i = 0; i < dRows; i++)
+        // {
+        //     coldY_val[rId[i]] += hotY_val[i];
+        // }
 
         // int result = eQcheck(hotY_val_solo, hotY_val, dRows);
         // int result = eQcheck(coldY_val_solo, coldY_val, rowA);
@@ -1041,8 +1153,9 @@ int main(int argc, char **argv)
         // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, coldY_val, rowA, dCols, nnzColD);
         // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId);
 
-        // int result_ = eQcheck(Y_val, coldY_val_solo, rowA);
-        int result = eQcheck(Y_val, coldY_val, rowA);
+        int result_ = eQcheck(Y_val, coldY_val_solo, rowA);
+        // int result = eQcheck(Y_val, coldY_val, rowA);
+        printf("THE FINAL TIME = %lf\n", tcTime + cdTime1);
 
         free(sparse_AToX_index);
         free(nec_num);

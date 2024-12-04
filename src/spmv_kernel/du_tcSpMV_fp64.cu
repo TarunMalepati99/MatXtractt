@@ -192,7 +192,7 @@ __global__ void tcspmv_kernel_fp64__(
 
 void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
             std::vector<double> tcVal, indT *sparse_AToX_index, double *X_val,
-            double *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
+            double *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
@@ -263,7 +263,8 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
 
 
     double runtime = (elapsedTime) / test_iter;
-    printf("\n tcspmv_kernel_fp64 runtime = %g ms\n", runtime);
+    printf("tcspmv_kernel_fp64: %g ms\n", runtime);
+    *tcTime = runtime;
     tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);

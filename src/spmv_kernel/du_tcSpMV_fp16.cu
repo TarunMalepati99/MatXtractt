@@ -225,7 +225,7 @@ __global__ void tcspmv_kernel_fp16_v0(
 
 void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
-                 half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
+                 half *Y_val, int rowA, int colA, int *row_order, double *cdTime, double *necPre)
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
@@ -316,7 +316,7 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
 
 void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                   std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
-                  half *Y_val, int rowA, int colA, int *row_order, double *necTime, double *necPre)
+                  half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
@@ -386,7 +386,8 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
-    printf("\n tcspmv_kernel_fp16_v1 = %g ms\n", runtime);
+    printf("tcspmv_kernel_fp16_v1: %g ms\n", runtime);
+    *tcTime = runtime;
 
     tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,

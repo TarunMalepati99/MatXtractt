@@ -547,6 +547,9 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   double mean_col_num = (double)(nnzA + rowA) / (double)rowA;
 
+  printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
+           WORK_BLOCKS, THREADS_PER_BLOCK);
+
   int warmup_time = 100;
   int execute_time = 3000;
 

@@ -125,7 +125,7 @@ __device__ __forceinline__ void cdspmv_kernel_ptb_shared(
         }
         // online workload balance reduction
         const I n_reduce_rows_num = reduceEndRowId - reduceStartRowId;
-
+/*
         // when threads = 128
         if (n_reduce_rows_num > 64)
         {
@@ -175,9 +175,65 @@ __device__ __forceinline__ void cdspmv_kernel_ptb_shared(
                                                                                      reduceStartRowId, reduceEndRowId,
                                                                                      d_ptr, middle_s, d_out);
         }
+*/
+        // 线程256
+        if (n_reduce_rows_num > 128)
+        {
+        lbNEC_reduce_oneRow_in_thread<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                    reduceStartRowId, reduceEndRowId,
+                                                                    d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num == 1)
+        {
+
+        lbNEC_reduce_oneRow_in_block<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK>(tid_in_block, bid_in_grid,
+                                                                    reduceStartRowId, reduceEndRowId,
+                                                                    d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num == 2)
+        {
+        lbNEC_reduce_oneRow_in_vector_L<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 128>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                            reduceStartRowId, reduceEndRowId,
+                                                                            d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 4)
+        {
+        lbNEC_reduce_oneRow_in_vector_L<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 64>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                            reduceStartRowId, reduceEndRowId,
+                                                                            d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 8)
+        {
+        lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 32>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                            reduceStartRowId, reduceEndRowId,
+                                                                            d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 16)
+        {
+        lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 16>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                            reduceStartRowId, reduceEndRowId,
+                                                                            d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 32)
+        {
+        lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 8>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                        reduceStartRowId, reduceEndRowId,
+                                                                        d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 64)
+        {
+        lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 4>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                        reduceStartRowId, reduceEndRowId,
+                                                                        d_ptr, middle_s, d_out);
+        }
+        else if (n_reduce_rows_num <= 128)
+        {
+        lbNEC_reduce_oneRow_in_vector<I, T, NNZ_PER_BLOCK, THREADS_PER_BLOCK, 2>(n_reduce_rows_num, tid_in_block, bid_in_grid,
+                                                                        reduceStartRowId, reduceEndRowId,
+                                                                        d_ptr, middle_s, d_out);
+        }
     }
 }
-
 
 template <unsigned int threads_per_row>
 __device__ __forceinline__ float warpReduceSum111(float sum)
@@ -210,8 +266,8 @@ __device__ __forceinline__ void cdspmv_kernel_ptb(
     {
         const int thread_id = 256 * bid_in_grid + tid_in_block;
         const int thread_lane = tid_in_block & (THREADS_PER_VECTOR - 1);
-        const int row_id =  thread_id / THREADS_PER_VECTOR;
-    
+        const int row_id = thread_id / THREADS_PER_VECTOR;
+
         if (row_id < rowA)
         {
             const int row_start = d_ptr[row_id]; // same as: row_start = Ap[row];
@@ -233,7 +289,6 @@ __device__ __forceinline__ void cdspmv_kernel_ptb(
     }
 }
 
-
 template <indT thread_num_tc, indT thread_num_cd>
 __global__ void fospmv_kernel_fp64_ptb(double *tcX, double *tcY, indT *chunkPtr, indT *fragPtr, uint32_t *fragBit, double *tcVal, indT *sparse_AToX_index, int tcRow, int tcCol,
                                        double *csrVal, indT *csrRowPtr, indT *csrColInd, int cdRow, double *cdX, double *cdY, indT *startRowPerBlock, indT mean_col_num,
@@ -245,50 +300,44 @@ __global__ void fospmv_kernel_fp64_ptb(double *tcX, double *tcY, indT *chunkPtr,
         tcspmv_kernel_fp64_ptb(tcX, tcY, chunkPtr, fragPtr, fragBit, tcVal,
                                sparse_AToX_index, tcRow, tcCol, original_block_num_tc, issued_block_num, tid_in_block);
     }
-    // else if (threadIdx.x < thread_num_tc * 2)
-    // {
-    //     const int tid_in_block = threadIdx.x - thread_num_tc;
-    //     tcspmv_kernel_fp64_ptb(tcX, tcY, chunkPtr, fragPtr, fragBit, tcVal,
-    //                            sparse_AToX_index, tcRow, tcCol, original_block_num_tc, issued_block_num, tid_in_block);
-    // }
     else if (threadIdx.x < thread_num_tc * 1 + thread_num_cd)
     {
         const int tid_in_block = threadIdx.x - thread_num_tc * 1;
-        if (mean_col_num <= 2)
-        {
-            const int THREADS_PER_VECTOR = 2;
-            const unsigned int VECTORS_PER_BLOCK = 128;
-            const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-            cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
-        }
-        else if (mean_col_num > 2 && mean_col_num <= 4)
-        {
-            const int THREADS_PER_VECTOR = 4;
-            const unsigned int VECTORS_PER_BLOCK = 64;
-            const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-            cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
-        }
-        else if (mean_col_num > 4 && mean_col_num <= 8)
-        {
-            const int THREADS_PER_VECTOR = 8;
-            const unsigned int VECTORS_PER_BLOCK = 32;
-            const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-            cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
-        }
-        else if (mean_col_num > 8 && mean_col_num <= 16)
-        {
-            const int THREADS_PER_VECTOR = 16;
-            const unsigned int VECTORS_PER_BLOCK = 16;
-            const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-            cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
-        }
-        else if (mean_col_num > 16)
-        {
-            const int THREADS_PER_VECTOR = 32;
-            const unsigned int VECTORS_PER_BLOCK = 8;
-            const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
-            cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
-        }
-        // cdspmv_kernel_ptb_shared<PRONNZT, thread_num_cd, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, startRowPerBlock, original_block_num_cd, issued_block_num, tid_in_block);
+        // if (mean_col_num <= 2)
+        // {
+        //     const int THREADS_PER_VECTOR = 2;
+        //     const unsigned int VECTORS_PER_BLOCK = 128;
+        //     const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+        //     cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
+        // }
+        // else if (mean_col_num > 2 && mean_col_num <= 4)
+        // {
+        //     const int THREADS_PER_VECTOR = 4;
+        //     const unsigned int VECTORS_PER_BLOCK = 64;
+        //     const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+        //     cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
+        // }
+        // else if (mean_col_num > 4 && mean_col_num <= 8)
+        // {
+        //     const int THREADS_PER_VECTOR = 8;
+        //     const unsigned int VECTORS_PER_BLOCK = 32;
+        //     const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+        //     cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
+        // }
+        // else if (mean_col_num > 8 && mean_col_num <= 16)
+        // {
+        //     const int THREADS_PER_VECTOR = 16;
+        //     const unsigned int VECTORS_PER_BLOCK = 16;
+        //     const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+        //     cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
+        // }
+        // else if (mean_col_num > 16)
+        // {
+        //     const int THREADS_PER_VECTOR = 32;
+        //     const unsigned int VECTORS_PER_BLOCK = 8;
+        //     const unsigned int NUM_BLOCKS = static_cast<unsigned int>((cdRow + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
+        //     cdspmv_kernel_ptb<THREADS_PER_VECTOR, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, NUM_BLOCKS, issued_block_num, tid_in_block);
+        // }
+        cdspmv_kernel_ptb_shared<PRONNZT, thread_num_cd, indT, double>(csrVal, csrRowPtr, csrColInd, cdRow, cdX, cdY, startRowPerBlock, original_block_num_cd, issued_block_num, tid_in_block);
     }
 }
