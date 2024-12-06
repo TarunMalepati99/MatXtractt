@@ -976,7 +976,7 @@ int main(int argc, char **argv)
         }
         int totalTcFrags = chunkPtr[chunkNum];
 
-        printf("------TC_nnz_ratio = %lf------\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
+        printf("TC_nnz_ratio = %lf\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
         int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
         memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
 
@@ -1094,22 +1094,8 @@ int main(int argc, char **argv)
         ////////////////////////////////////////////////////////////////////////////////////////////
         cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime1, &necPre1);
         printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime1, necPre1);
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////DASP
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // Core-Dense Block
-        // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId); TODO: DASP on it
-        /*
-        int NUM = 4;
-        int block_longest = 256;
-        double threshold = 0.75;
-        int *new_order = (int *)malloc(sizeof(int) * rowA);
-        se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
-        for (int i = 0; i < dRows; i++)
-        {
-            coldY_val[rId[new_order[i]]] += hotY_val[i];
-        }
-        */
+        
+        
         ////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1125,23 +1111,55 @@ int main(int argc, char **argv)
         double cdTime = 0, necPre = 0;
 #ifdef fp64
         // tcspmv_serial(x_d, hotY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-
+        
+        
         tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
+        
 
         // fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
         //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #else
         // tcspmv_serial(x_d, hotY_val_solo, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+        
+        /*
         tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
+        */
 
         // fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
         //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #endif
-
+        /*
         for (int i = 0; i < dRows; i++)
         {
             coldY_val_solo[rId[i]] += hotY_val_solo[i];
         }
+        */
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////DASP Start
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Core-Dense Block
+        // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId); TODO: DASP on it
+        
+        int NUM = 4;
+        int block_longest = 256;
+        double threshold = 0.75;
+        int *new_order = (int *)malloc(sizeof(int) * rowA);
+#ifdef fp64
+        se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
+#else
+        se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
+#endif
+        for (int i = 0; i < dRows; i++)
+        {
+            coldY_val_solo[rId[new_order[i]]] += hotY_val_solo[i];
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////DASP End
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        
+        
+
         // for (int i = 0; i < dRows; i++)
         // {
         //     coldY_val[rId[i]] += hotY_val[i];
@@ -1177,6 +1195,9 @@ int main(int argc, char **argv)
         free(x_CD);
 
         free(hotY_val);
+        free(hotY_val_solo);
+        free(coldY_val);
+        free(coldY_val_solo);
         free(bitmap);
         // free(colHash);
         free(descColId);
@@ -1193,8 +1214,6 @@ int main(int argc, char **argv)
         free(x_s);
         free(x_d);
         free(Y_val);
-        free(coldY_val);
-        free(coldY_val_solo);
         free(X_val);
 
         free(csrVal_dd);

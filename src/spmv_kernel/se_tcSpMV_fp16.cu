@@ -24,7 +24,7 @@
 #define MMA_N 8
 #define MMA_K 4
 
-__device__ __forceinline__ half warpReduceSum(half sum)
+__device__ __forceinline__ half warpReduceSum_all_fp16(half sum)
 {
     sum += __shfl_down_sync(0xffffffff, sum, 16);
     sum += __shfl_down_sync(0xffffffff, sum, 8);
@@ -33,6 +33,7 @@ __device__ __forceinline__ half warpReduceSum(half sum)
     sum += __shfl_down_sync(0xffffffff, sum, 1);
     return sum;
 }
+
 
 __device__ __forceinline__ void mma_m8n8k4_fp16(half *acc, half *frag_a, half *frag_b)
 {
@@ -123,7 +124,7 @@ __global__ void longPart_sum(int *dlongA_rpt, half *dwarp_val, uint32_t *dY_val,
     {
         thread_val += load_half_from_global(cur_temp_val + i);
     }
-    thread_val = warpReduceSum(thread_val);
+    thread_val = warpReduceSum_all_fp16(thread_val);
 
     if (laneid == 0)
         store_half_to_global(valY_half + global_warpid, thread_val);
@@ -180,7 +181,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
             mma_m8n8k4_fp16_v2(fragC, fragA, fragB);
         }
         res = fragC[target_idx];
-        res = warpReduceSum(res);
+        res = warpReduceSum_all_fp16(res);
 
         if (laneid == 0)
             store_half_to_global(dwarp_val + global_warpid, res);
@@ -196,7 +197,7 @@ __global__ void dasp_spmv2(uint32_t *dX_val, uint32_t *dY_val,
         // {
         //     thread_val += load_half_from_global(cur_temp_val + i);
         // }
-        // thread_val = warpReduceSum(thread_val);
+        // thread_val = warpReduceSum_all_fp16(thread_val);
 
         // if (laneid == 0)
         //     store_half_to_global(valY_half + global_warpid, thread_val);
@@ -640,7 +641,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
             mma_m8n8k4_fp16_v2(fragC, fragA, fragB);
         }
         res = fragC[target_idx];
-        res = warpReduceSum(res);
+        res = warpReduceSum_all_fp16(res);
 
         if (laneid == 0)
             dwarp_val[global_warpid] = res;
@@ -655,7 +656,7 @@ __global__ void dasp_spmv(uint32_t *dX_val, uint32_t *dY_val,
         // {
         //     thread_val += cur_temp_val[i];
         // }
-        // thread_val = warpReduceSum(thread_val);
+        // thread_val = warpReduceSum_all_fp16(thread_val);
 
         // if (laneid == 0) valY_half[global_warpid] = thread_val;
     }
@@ -1030,9 +1031,10 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
 
     // three parts: short row (1 & 3 & 2 & 4), long row, row-block (regular（origin & fill0） & irregular)
     gettimeofday(&pre_t1, NULL);
-    indT nnz_short, nnz_long, origin_nnz_reg, fill0_nnz_reg, nnz_irreg;
-    int row_long = 0, row_block = 0, row_zero = 0;
 
+    [[maybe_unused]] indT nnz_short, nnz_long, origin_nnz_reg, fill0_nnz_reg, nnz_irreg;
+    int row_long = 0, row_block = 0, row_zero = 0;
+    // UNUSED(origin_nnz_reg);
     // get the short part data
     // (short_val, short_cid)
     int short_row_1 = 0, short_row_3 = 0, short_row_2 = 0, short_row_4 = 0;

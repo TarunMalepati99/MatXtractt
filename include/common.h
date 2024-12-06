@@ -110,6 +110,8 @@ static void cuda_time_test_end()
     cudaEventDestroy(stop);
 }
 
+
+
 #define GET_BIT_REST(x) ((unsigned int)(x << 2) >> 2)
 
 #define SET_16_BIT(dst, src, index)   \
@@ -237,18 +239,7 @@ inline void initVec(valT *vec, int length)
 
 }
 
-#ifdef f64
-__device__ __forceinline__ void mma_m8n8k4(valT *acc, valT &frag_a, valT &frag_b)
-{
-    asm volatile(
-        "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64"
-        " { %0, %1 }, "
-        " { %2 }, "
-        " { %3 }, "
-        " { %0, %1 };"
-        : "+d"(acc[0]), "+d"(acc[1]) : "d"(frag_a), "d"(frag_b));
-}
-#endif
+
 
 inline int get_max(int *arr, int len)
 {
@@ -337,3 +328,5 @@ inline void radix_sort(int *arr, int *idx, int len)
         count_sort(arr, idx, len, exp);
     }
 }
+#define UNUSED(x) do { (void)(x); } while (0)
+
