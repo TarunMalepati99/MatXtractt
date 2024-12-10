@@ -1,12 +1,14 @@
-# Define command to execute
-command="./build/TCSpMVlib_tcperftest"
+#!/bin/bash
+
+cd "$(dirname "$0")"
+command="../build/TCSpMVlib_tcperftest"
 
 # Define data directory
-data_dir="../../data/mtx/"
+data_dir="../../../data/mtx/"
 
 # Define output files
-csv_file="results.csv"
-error_log="error.log"
+csv_file="./res/results_n.csv"
+error_log="./res/error_n.log"
 
 # Initialize CSV file with header row
 echo "Matrix Name,TC_nnz_ratio,SpMV_X (ms),tcspmv_kernel_fp64 (ms),Launching Blocks" > "$csv_file"
@@ -14,11 +16,24 @@ echo "Matrix Name,TC_nnz_ratio,SpMV_X (ms),tcspmv_kernel_fp64 (ms),Launching Blo
 # Clear error log file if it already exists
 > "$error_log"
 
+# Flag to indicate whether to start processing
+start_from_n=false
+
 # Loop through each subdirectory in the data directory
 for dir in "$data_dir"/*/; do
   # Get the matrix name from the directory name
   matrix_name=$(basename "$dir")
-  
+
+  # Check if the matrix name starts with 'n' or a subsequent letter
+  if [[ $matrix_name =~ ^[n-z] ]]; then
+    start_from_n=true
+  fi
+
+  # Skip until we reach the desired starting point
+  if [[ "$start_from_n" == false ]]; then
+    continue
+  fi
+
   # Construct the full path to the .mtx file
   mtx_file="$dir/$matrix_name.mtx"
   

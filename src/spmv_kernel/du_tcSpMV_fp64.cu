@@ -228,10 +228,11 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
 
     //  Y_val
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val, sizeof(double) * rowA));
-    CUDA_CHECK_ERROR(cudaMemset(d_Y_val, 0, sizeof(double) * rowA));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_Y_val, Y_val, sizeof(double) * rowA, cudaMemcpyHostToDevice));
+
 
     CUDA_CHECK_ERROR(cudaMalloc(&d_Y_val_perf, sizeof(double) * rowA));
-    CUDA_CHECK_ERROR(cudaMemset(d_Y_val_perf, 0, sizeof(double) * rowA));
+    CUDA_CHECK_ERROR(cudaMemcpy(d_Y_val_perf, Y_val, sizeof(double) * rowA, cudaMemcpyHostToDevice));
 
     int warpsPerBlock = 4;
     int warpSize = 32;

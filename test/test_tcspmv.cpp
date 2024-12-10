@@ -183,7 +183,7 @@ int eQcheck(valT *tmp1, valT *tmp2, int length)
         if (fabs(val1 - val2) / fmax(fabs(val1), fabs(val2)) > tolerance)
         {
             printf("Error at index (%d), res(%4.15f), our(%4.15f), please check your code!\n", i, val1, val2);
-            // return -1;
+            return -1;
         }
     }
 #else
@@ -704,7 +704,7 @@ int main(int argc, char **argv)
      *                  1.1split to two csc format                 *
      ***************************************************************/
     // printf("\n------Sparsity-aware Compression START------\n");
-    float rowProp = 0.6f;
+    float rowProp = 0.5f;
     // for (float rowProp = 0.1f; rowProp <= 0.7f; rowProp += 0.05f)
     {
         float colProp = rowProp / 0.8f;
@@ -1023,15 +1023,16 @@ int main(int argc, char **argv)
         valT *coldY_val = (valT *)malloc(sizeof(valT) * rowA);
         valT *coldY_val_solo = (valT *)malloc(sizeof(valT) * rowA);
         valT *hotY_val = (valT *)malloc(sizeof(valT) * dRows);
-        valT *hotY_val_solo = (valT *)malloc(sizeof(valT) * dRows);
-
+        valT *hotY_val_solo_du = (valT *)malloc(sizeof(valT) * dRows);
+        valT *hotY_val_solo_se = (valT *)malloc(sizeof(valT) * dRows);
         valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
 
         // memset(hotY_val, 0.0, sizeof(valT) * dRows);
         // memset(coldY_val, 0, sizeof(valT) * rowA);
         // memset(Y_val, 0, sizeof(valT) * rowA);
         std::fill(hotY_val, hotY_val + dRows, static_cast<valT>(0.0));
-        std::fill(hotY_val_solo, hotY_val_solo + dRows, static_cast<valT>(0.0));
+        std::fill(hotY_val_solo_du, hotY_val_solo_du + dRows, static_cast<valT>(0.0));
+        std::fill(hotY_val_solo_se, hotY_val_solo_se + dRows, static_cast<valT>(0.0));
 
         std::fill(coldY_val, coldY_val + rowA, static_cast<valT>(0.0));
         std::fill(coldY_val_solo, coldY_val_solo + rowA, static_cast<valT>(0.0));
@@ -1111,30 +1112,23 @@ int main(int argc, char **argv)
         double cdTime = 0, necPre = 0;
 #ifdef fp64
         // tcspmv_serial(x_d, hotY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-        
-        
-        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
+        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime);
         
 
         // fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
         //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #else
-        // tcspmv_serial(x_d, hotY_val_solo, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+        // tcspmv_serial(x_d, hotY_val_solo_du, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
         
         /*
-        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo, dRows, dCols, rId, &tcTime);
+        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime);
         */
 
         // fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
         //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
 #endif
-        /*
-        for (int i = 0; i < dRows; i++)
-        {
-            coldY_val_solo[rId[i]] += hotY_val_solo[i];
-        }
-        */
-
+        
+        
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////DASP Start
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1146,32 +1140,36 @@ int main(int argc, char **argv)
         double threshold = 0.75;
         int *new_order = (int *)malloc(sizeof(int) * rowA);
 #ifdef fp64
-        se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
+        se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
 #else
-        se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
+        se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest);
+        
 #endif
+        cudaDeviceSynchronize();
+        
         for (int i = 0; i < dRows; i++)
         {
-            coldY_val_solo[rId[new_order[i]]] += hotY_val_solo[i];
+            coldY_val_solo[rId[new_order[i]]] += hotY_val_solo_se[i];
         }
+        
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////DASP End
         ////////////////////////////////////////////////////////////////////////////////////////////
         
-        
-
         // for (int i = 0; i < dRows; i++)
         // {
-        //     coldY_val[rId[i]] += hotY_val[i];
+        //     coldY_val_solo[rId[i]] += hotY_val_solo_du[i];
         // }
+        
 
-        // int result = eQcheck(hotY_val_solo, hotY_val, dRows);
+        // int result = eQcheck(hotY_val_solo_du, hotY_val, dRows);
         // int result = eQcheck(coldY_val_solo, coldY_val, rowA);
 
         // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, coldY_val, rowA, dCols, nnzColD);
         // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId);
 
         int result_ = eQcheck(Y_val, coldY_val_solo, rowA);
+        
         // int result = eQcheck(Y_val, coldY_val, rowA);
         printf("THE FINAL TIME = %lf\n", tcTime + cdTime1);
 
@@ -1195,7 +1193,8 @@ int main(int argc, char **argv)
         free(x_CD);
 
         free(hotY_val);
-        free(hotY_val_solo);
+        free(hotY_val_solo_du);
+        free(hotY_val_solo_se);
         free(coldY_val);
         free(coldY_val_solo);
         free(bitmap);
