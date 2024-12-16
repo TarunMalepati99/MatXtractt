@@ -8,10 +8,16 @@ __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr,
                                      I *__restrict__ startRowPerBlock)
 {
   const int global_thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-  if (global_thread_id > m + 1)
+  
+  if (global_thread_id >= m)
     return;
+
+  if (global_thread_id == 0)
+  {
+    startRowPerBlock[0] = 0;
+  }
   int a = row_ptr[global_thread_id];
-  int b = row_ptr[min(global_thread_id + 1, (int)m + 1)];
+  int b = row_ptr[min(global_thread_id + 1, (int)m)];
 
   int blocka = divup<int>(a, BREAK_STRIDE);
   int blockb = (b - 1) / static_cast<int>(BREAK_STRIDE);
@@ -20,6 +26,37 @@ __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr,
     for (; blocka <= blockb; ++blocka)
       startRowPerBlock[blocka] = global_thread_id;
 }
+
+// template <int BREAK_STRIDE, typename I>
+// __global__ void pre_startRowPerBlock(const I *__restrict__ row_ptr, const I m, I *__restrict__ startRowPerBlock)
+// {
+//   const int global_thread_id = threadIdx.x + blockDim.x * blockIdx.x;
+//   const int global_threads_num = blockDim.x * gridDim.x;
+
+//   constexpr I break_stride = BREAK_STRIDE;
+//   if (global_thread_id == 0)
+//   {
+//     startRowPerBlock[0] = 0; // start row of the block 0 and the first round.
+//   }
+
+//   for (int i = global_thread_id; i < m; i += global_threads_num)// 524,288
+//   {
+//     // for first element of row i and row i+1, they belong to different blocks.
+//     if (row_ptr[i] / break_stride != row_ptr[i + 1] / break_stride)
+//     { // fixme: step may be not 1
+//       // record the row id of the first element in the block.
+//       // note: a row can cross multiple blocks.
+//       for (int b = row_ptr[i] / break_stride + 1; b <= row_ptr[i + 1] / break_stride; b++)
+//       {
+//         startRowPerBlock[b] = i;
+//       }
+//       if (row_ptr[i + 1] % break_stride == 0)
+//       {
+//         startRowPerBlock[row_ptr[i + 1] / break_stride] += 1;
+//       }
+//     }
+//   }
+// }
 
 template <typename I, typename T, indT NNZ_PER_BLOCK, indT THREADS_PER_BLOCK>
 __device__ __forceinline__ void lbNEC_reduce_oneRow_in_thread(const int tid_in_block, const int block_id,
@@ -77,7 +114,7 @@ __device__ __forceinline__ void lbNEC_reduce_oneRow_in_block(const int tid_in_bl
 }
 
 template <int VEC_SIZE>
-__device__ __forceinline__ float warpReduceSum(float sum)
+__device__ __forceinline__ valT warpReduceSum(valT sum)
 {
   if (VEC_SIZE >= 32)
     sum += __shfl_down_sync(0xffffffff, sum, 16); // 0-16, 1-17, 2-18, etc.
@@ -170,6 +207,7 @@ __global__ void cdspmv_kernel(T *d_val,
                               T *d_out,
                               I *__restrict__ startRowPerBlock)
 {
+  // printf("555555555555555555555\n");
   const int tid_in_block = threadIdx.x;
   const int NNZ_PER_BLOCK = THREADS_PER_BLOCK * productNnzPerThread;
   __shared__ T middle_s[NNZ_PER_BLOCK];
@@ -479,7 +517,6 @@ __global__ void cdspmv_kernel_vec(T *d_val,
   const int thread_id = 256 * blockIdx.x + threadIdx.x;
   const int thread_lane = threadIdx.x & (THREADS_PER_VECTOR - 1);
   const int row_id = thread_id / THREADS_PER_VECTOR;
-
   if (row_id < rowA)
   {
     const int row_start = d_ptr[row_id]; // same as: row_start = Ap[row];
@@ -517,15 +554,16 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   cudaMalloc(&d_vecX_csr, sizeof(valT) * colA);
   cudaMalloc(&d_val, sizeof(valT) * nnzA);
   cudaMalloc(&d_indices, sizeof(indT) * nnzA);
-  cudaMalloc(&d_ptr, sizeof(indT) * (rowA + 1));
+  cudaMalloc(&d_ptr, sizeof(indT) * (rowA + 2));
 
   cudaMemcpy(d_val, csrVal, sizeof(valT) * nnzA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_indices, csrColInd, sizeof(indT) * nnzA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_ptr, csrRowPtr, sizeof(indT) * (rowA + 2), cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecX_csr, X_val, sizeof(valT) * colA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_vecY_csr_perf, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
-  // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
+  // cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+  // cudaMemcpy(d_vecY_csr_perf, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+  cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
+  cudaMemset(d_vecY_csr_perf, 0.0, sizeof(valT) * rowA);
 #ifdef fp64
   const int productNnzPerThread = 4;
 #else
@@ -538,17 +576,23 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   const indT startRowPerBlock_len = WORK_BLOCKS + 1;
 
   indT *startRowPerBlock;
-  cudaMalloc((void **)&startRowPerBlock, sizeof(indT) * startRowPerBlock_len);
+  cudaMalloc(&startRowPerBlock, sizeof(indT) * startRowPerBlock_len);
   cudaMemset(startRowPerBlock, 0, sizeof(indT) * startRowPerBlock_len);
   gettimeofday(&tpre1, NULL);
-  pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, indT><<<divup<uint32_t>(rowA + 1, 256), 256>>>(d_ptr, rowA, startRowPerBlock);
-
+  pre_startRowPerBlock<productNnzPerThread * THREADS_PER_BLOCK, indT><<<divup<uint32_t>(rowA + 1, 128), 128>>>(d_ptr, rowA, startRowPerBlock);
+  CUDA_CHECK_ERROR(cudaGetLastError());
   gettimeofday(&tpre2, NULL);
+  cudaDeviceSynchronize(); // 确保 pre_startRowPerBlock 执行完成
+  cudaError_t err = cudaGetLastError();
+  if (err != cudaSuccess)
+  {
+    printf("pre_startRowPerBlock kernel launch failed: %s\n", cudaGetErrorString(err));
+  }
 
   double mean_col_num = (double)(nnzA + rowA) / (double)rowA;
 
   printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
-           WORK_BLOCKS, THREADS_PER_BLOCK);
+         WORK_BLOCKS, THREADS_PER_BLOCK);
 
   int warmup_time = 100;
   int execute_time = 3000;
@@ -635,6 +679,7 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   }
   cudaDeviceSynchronize();
   gettimeofday(&t2, NULL);
+
   // int original_block_num = WORK_BLOCKS;
   // printf("\n original_block_num = %d \n", original_block_num);
   // int new_WORK_BLOCKS = 297;
@@ -642,9 +687,9 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   // printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
   //        WORK_BLOCKS, THREADS_PER_BLOCK);
-  
-  cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
 
+  cdspmv_kernel<productNnzPerThread, THREADS_PER_BLOCK, indT, valT><<<(WORK_BLOCKS), (THREADS_PER_BLOCK)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr, startRowPerBlock);
+  // printf("%lf\n", mean_col_num);
   // if (mean_col_num <= 2)
   // {
   //   const int THREADS_PER_VECTOR = 2;
@@ -661,6 +706,7 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   // }
   // else if (mean_col_num > 4 && mean_col_num <= 8)
   // {
+  //   printf("\n ???????? \n ");
   //   const int THREADS_PER_VECTOR = 8;
   //   const unsigned int VECTORS_PER_BLOCK = 32;
   //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
@@ -675,13 +721,14 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
   // }
   // else if (mean_col_num > 16)
   // {
+
   //   const int THREADS_PER_VECTOR = 32;
   //   const unsigned int VECTORS_PER_BLOCK = 8;
   //   const unsigned int NUM_BLOCKS = static_cast<unsigned int>((rowA + (VECTORS_PER_BLOCK - 1)) / VECTORS_PER_BLOCK);
   //   cdspmv_kernel_vec<THREADS_PER_VECTOR, indT, valT><<<(NUM_BLOCKS), (256)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr);
   // }
-
   cudaDeviceSynchronize();
+  CUDA_CHECK_ERROR(cudaGetLastError());
 
   double pre_time = ((tpre2.tv_sec - tpre1.tv_sec) * 1000.0 + (tpre2.tv_usec - tpre1.tv_usec) / 1000.0) / 1;
   *necPre = pre_time;
@@ -696,7 +743,7 @@ void cdspmv(char *filename, valT *csrVal, indT *csrRowPtr, indT *csrColInd,
 
   // printf("\nrowA = %d, row_long = %d, row_block = %d, row_short1 = %d, common13 = %d, row_short_3 = %d, row_short_4 = %d, row_short_2 = %d\n", rowA, row_long, row_block, short_row_1, common_13, short_row_3, short_row_4, short_row_2);
 
-  cudaMemcpy(Y_val, d_vecY_csr, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
+  CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_vecY_csr, sizeof(valT) * rowA, cudaMemcpyDeviceToHost));
   cudaFree(d_vecY_csr_perf);
   cudaFree(d_vecY_csr);
   cudaFree(d_vecX_csr);

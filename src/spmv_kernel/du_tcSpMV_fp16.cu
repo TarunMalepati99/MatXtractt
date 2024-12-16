@@ -225,7 +225,7 @@ __global__ void tcspmv_kernel_fp16_v0(
 
 void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
-                 half *Y_val, int rowA, int colA, int *row_order, double *cdTime, double *necPre)
+                 half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
@@ -295,11 +295,12 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
 
     double runtime = (elapsedTime) / test_iter;
     printf("\n tcspmv_kernel_fp16_v0 = %g ms\n", runtime);
+    *tcTime = runtime;
 
     tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
             d_sparse_AToX_index, rowA, colA);
-
+    
     CUDA_CHECK_ERROR(cudaGetLastError());
 
     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(half) * rowA, cudaMemcpyDeviceToHost));
@@ -363,7 +364,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching tcspmv_kernel_fp16_v1 kernel with %d blocks, %d threads per block\n",
+    printf("Launching tcspmv_kernel_fp16 with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
     int warp_iter = 100;
@@ -386,7 +387,7 @@ void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     cuda_time_test_end();
 
     double runtime = (elapsedTime) / test_iter;
-    printf("tcspmv_kernel_fp16_v1: %g ms\n", runtime);
+    printf("tcspmv_kernel_fp16: %g ms\n", runtime);
     *tcTime = runtime;
 
     tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(

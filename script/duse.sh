@@ -7,11 +7,11 @@ command="../build/TCSpMVlib_tcperftest"
 data_dir="../../../data/mtx/"
 
 # Define output files
-csv_file="./res/results2056.csv"
-error_log="./res/error.log"
+csv_file="./res/results_fp16.csv"
+error_log="./res/errors_fp16.log"
 
 # Initialize CSV file with header row
-echo "Matrix Name,TC_nnz_ratio,SpMV_X (ms),tcspmv_kernel_fp64 (ms),Launching Blocks" > "$csv_file"
+echo "Matrix Name,TC_nnz_ratio,SpMV_X (ms),tcspmv_kernel_fp16 (ms),Launching Blocks" > "$csv_file"
 
 # Clear error log file if it already exists
 > "$error_log"
@@ -32,16 +32,23 @@ for dir in "$data_dir"/*/; do
     # Extract the required values from the output
     tc_nnz_ratio=$(echo "$output" | grep -Po "TC_nnz_ratio\s*=\s*\K[0-9\.]+")
     spmv_x=$(echo "$output" | grep -Po "SpMV_X:\s*\K[0-9\.]+(?=\s*ms)")
-    kernel_fp64=$(echo "$output" | grep -Po "tcspmv_kernel_fp64:\s*\K[0-9\.]+(?=\s*ms)")
-    launching_blocks=$(echo "$output" | grep -Po "Launching tcspmv_kernel_fp64 with\s*\K[0-9]+(?=\s*blocks)")
+    kernel_fp16=$(echo "$output" | grep -Po "tcspmv_kernel_fp16:\s*\K[0-9\.]+(?=\s*ms)")
+    launching_blocks=$(echo "$output" | grep -Po "Launching tcspmv_kernel_fp16 with\s*\K[0-9]+(?=\s*blocks)")
 
     # Check if all required values were extracted
-    if [[ -n "$tc_nnz_ratio" && -n "$spmv_x" && -n "$kernel_fp64" && -n "$launching_blocks" ]]; then
+    if [[ -n "$tc_nnz_ratio" && -n "$spmv_x" && -n "$kernel_fp16" && -n "$launching_blocks" ]]; then
       # Write the data to the CSV file
-      echo "$matrix_name,$tc_nnz_ratio,$spmv_x,$kernel_fp64,$launching_blocks" >> "$csv_file"
+      echo "$matrix_name,$tc_nnz_ratio,$spmv_x,$kernel_fp16,$launching_blocks" >> "$csv_file"
     else
-      # Log the matrix name to the error log
-      echo "Incomplete data for $matrix_name" >> "$error_log"
+      # Identify missing data fields
+      missing_fields=""
+      [[ -z "$tc_nnz_ratio" ]] && missing_fields+="TC_nnz_ratio "
+      [[ -z "$spmv_x" ]] && missing_fields+="SpMV_X "
+      [[ -z "$kernel_fp16" ]] && missing_fields+="tcspmv_kernel_fp16 "
+      [[ -z "$launching_blocks" ]] && missing_fields+="Launching Blocks "
+
+      # Log the matrix name and missing fields to the error log
+      echo "Incomplete data for $matrix_name: Missing $missing_fields" >> "$error_log"
     fi
   else
     # Log missing matrix file to the error log
