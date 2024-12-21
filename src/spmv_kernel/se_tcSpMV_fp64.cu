@@ -498,9 +498,9 @@ __global__ void dasp_spmv2(double *dX_val, double *dY_val,
 
 // In order version
 void se_tcspmv_fp64(double *csrValA, indT *csrRowPtrA, int *csrColIdxA,
-                    double *X_val, double *Y_val, int *order_rid, int rowA, int colA, indT nnzA, int NUM, double threshold, int block_longest)
+                    double *X_val, double *Y_val, int *order_rid, int rowA, 
+                    int colA, indT nnzA, int NUM, double threshold, int block_longest, double *tcTime)
 {
-    printf("\n dasp!!!!!!!!!!! \n");
     struct timeval t1, t2;
 
     // three parts: short row (1 & 3 & 2 & 4), long row, row-block (regular（origin & fill0） & irregular)
@@ -1411,7 +1411,8 @@ void se_tcspmv_fp64(double *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     double dasp_gflops = (double)((long)nnzA * 2) / (dasp_time * 1e6);
     double dasp_bandwidth1 = (double)data_X / (dasp_time * 1e6);
     double dasp_bandwidth2 = (double)data_X2 / (dasp_time * 1e6);
-    printf("SpMV_X:  %8.4lf ms, %8.4lf GFlop/s, %9.4lf GB/s, %9.4lf GB/s\n", dasp_time, dasp_gflops, dasp_bandwidth1, dasp_bandwidth2);
+    // printf("SpMV_X:  %8.4lf ms, %8.4lf GFlop/s, %9.4lf GB/s, %9.4lf GB/s\n", dasp_time, dasp_gflops, dasp_bandwidth1, dasp_bandwidth2);
+    *tcTime = dasp_time;
 
     // printf("\nrowA = %d, row_long = %d, row_block = %d, row_short1 = %d, common13 = %d, row_short_3 = %d, row_short_4 = %d, row_short_2 = %d\n", rowA, row_long, row_block, short_row_1, common_13, short_row_3, short_row_4, short_row_2);
 

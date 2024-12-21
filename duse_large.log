@@ -1,0 +1,2070 @@
+
+ Processing the ../../../data/mtx/com-Orkut/com-Orkut.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.406049 
+rows_ratio = 0.321266 
+TC_nnz_ratio = 0.128622
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 173947 blocks, 128 threads per block
+cdspmv:      1.3669 ms
+Launching tcspmv_kernel_fp64 with 30846 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3072441 elements.
+du_spmv:     13.0379 ms
+se_spmv:      1.6677 ms
+
+
+ THE FINAL TIME = 14.404843 
+
+
+ Processing the ../../../data/mtx/kmer_A2a/kmer_A2a.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.786314 
+rows_ratio = 0.613548 
+TC_nnz_ratio = 0.125095
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 267622 blocks, 128 threads per block
+cdspmv:      6.2718 ms
+Launching tcspmv_kernel_fp64 with 3273435 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 170728175 elements.
+du_spmv:     11.8581 ms
+se_spmv:      7.4571 ms
+
+
+ THE FINAL TIME = 18.129879 
+
+
+ Processing the ../../../data/mtx/vas_stokes_4M/vas_stokes_4M.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.597685 
+rows_ratio = 0.529205 
+TC_nnz_ratio = 0.241840
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 97656 blocks, 128 threads per block
+cdspmv:      0.5103 ms
+Launching tcspmv_kernel_fp64 with 72473 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 4382246 elements.
+du_spmv:      1.3157 ms
+se_spmv:      0.7526 ms
+
+
+ THE FINAL TIME = 1.826043 
+
+
+ Processing the ../../../data/mtx/indochina-2004/indochina-2004.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.024707 
+rows_ratio = 0.177251 
+TC_nnz_ratio = 0.885540
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 144066 blocks, 128 threads per block
+cdspmv:      0.7685 ms
+Launching tcspmv_kernel_fp64 with 41072 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 7414866 elements.
+du_spmv:      1.1336 ms
+se_spmv:      0.9520 ms
+
+
+ THE FINAL TIME = 1.902146 
+
+
+ Processing the ../../../data/mtx/kmer_P1a/kmer_P1a.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.782918 
+rows_ratio = 0.611685 
+TC_nnz_ratio = 0.125128
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 221046 blocks, 128 threads per block
+cdspmv:      5.1475 ms
+Launching tcspmv_kernel_fp64 with 2663760 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 139353211 elements.
+du_spmv:      9.8696 ms
+se_spmv:      6.2667 ms
+
+
+ THE FINAL TIME = 15.017054 
+
+
+ Processing the ../../../data/mtx/cage15/cage15.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.701484 
+rows_ratio = 0.511279 
+TC_nnz_ratio = 0.134562
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 73625 blocks, 128 threads per block
+cdspmv:      0.4810 ms
+Launching tcspmv_kernel_fp64 with 82362 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 5154859 elements.
+du_spmv:      1.6544 ms
+se_spmv:      0.6028 ms
+
+
+ THE FINAL TIME = 2.135415 
+
+
+ Processing the ../../../data/mtx/rgg_n_2_24_s0/rgg_n_2_24_s0.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.716876 
+rows_ratio = 0.576629 
+TC_nnz_ratio = 0.129429
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 196765 blocks, 128 threads per block
+cdspmv:      1.2743 ms
+Launching tcspmv_kernel_fp64 with 302320 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 16777216 elements.
+du_spmv:      5.1074 ms
+se_spmv:      2.5668 ms
+
+
+ THE FINAL TIME = 6.381691 
+
+
+ Processing the ../../../data/mtx/nlpkkt160/nlpkkt160.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.785763 
+rows_ratio = 0.609621 
+TC_nnz_ratio = 0.278382
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 170346 blocks, 128 threads per block
+cdspmv:      0.8478 ms
+Launching tcspmv_kernel_fp64 with 158990 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 8345600 elements.
+du_spmv:      1.9960 ms
+se_spmv:      1.2810 ms
+
+
+ THE FINAL TIME = 2.843742 
+
+
+ Processing the ../../../data/mtx/soc-Pokec/soc-Pokec.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.308977 
+rows_ratio = 0.257118 
+TC_nnz_ratio = 0.125646
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 22728 blocks, 128 threads per block
+cdspmv:      0.1729 ms
+Launching tcspmv_kernel_fp64 with 13120 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1632803 elements.
+du_spmv:      2.4557 ms
+se_spmv:      0.2808 ms
+
+
+ THE FINAL TIME = 2.628625 
+
+
+ Processing the ../../../data/mtx/circuit5M/circuit5M.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.569752 
+rows_ratio = 0.525892 
+TC_nnz_ratio = 0.254910
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 44179 blocks, 128 threads per block
+cdspmv:     11.4928 ms
+Launching tcspmv_kernel_fp64 with 91347 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 5558326 elements.
+du_spmv:    259.9583 ms
+se_spmv:      0.4427 ms
+
+
+ THE FINAL TIME = 271.451123 
+
+
+ Processing the ../../../data/mtx/Bump_2911/Bump_2911.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.768461 
+rows_ratio = 0.610956 
+TC_nnz_ratio = 0.421479
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 94800 blocks, 128 threads per block
+cdspmv:      0.4538 ms
+Launching tcspmv_kernel_fp64 with 55586 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2911419 elements.
+du_spmv:      0.8174 ms
+se_spmv:      0.6907 ms
+
+
+ THE FINAL TIME = 1.271186 
+
+
+ Processing the ../../../data/mtx/mycielskian18/mycielskian18.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.351564 
+rows_ratio = 0.375658 
+TC_nnz_ratio = 0.243969
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 223348 blocks, 128 threads per block
+cdspmv:      1.2775 ms
+Launching tcspmv_kernel_fp64 with 2309 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 196607 elements.
+du_spmv:      8.0728 ms
+se_spmv:      1.4246 ms
+
+
+ THE FINAL TIME = 9.350360 
+
+
+ Processing the ../../../data/mtx/europe_osm/europe_osm.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.767467 
+rows_ratio = 0.600046 
+TC_nnz_ratio = 0.148021
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 80238 blocks, 128 threads per block
+cdspmv:      1.4096 ms
+Launching tcspmv_kernel_fp64 with 954674 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 50912018 elements.
+du_spmv:      3.2763 ms
+se_spmv:      1.2417 ms
+
+
+ THE FINAL TIME = 4.685889 
+
+
+ Processing the ../../../data/mtx/Cube_Coup_dt6/Cube_Coup_dt6.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.782369 
+rows_ratio = 0.606931 
+TC_nnz_ratio = 0.614334
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 94411 blocks, 128 threads per block
+cdspmv:      0.4322 ms
+Launching tcspmv_kernel_fp64 with 41059 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2164760 elements.
+du_spmv:      0.6008 ms
+se_spmv:      0.6585 ms
+
+
+ THE FINAL TIME = 1.033016 
+
+
+ Processing the ../../../data/mtx/Cube_Coup_dt0/Cube_Coup_dt0.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.782369 
+rows_ratio = 0.606931 
+TC_nnz_ratio = 0.614334
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 94411 blocks, 128 threads per block
+cdspmv:      0.4323 ms
+Launching tcspmv_kernel_fp64 with 41059 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2164760 elements.
+du_spmv:      0.6008 ms
+se_spmv:      0.6585 ms
+
+
+ THE FINAL TIME = 1.033069 
+
+
+ Processing the ../../../data/mtx/Flan_1565/Flan_1565.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.741034 
+rows_ratio = 0.589083 
+TC_nnz_ratio = 0.479787
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 87138 blocks, 128 threads per block
+cdspmv:      0.3959 ms
+Launching tcspmv_kernel_fp64 with 28807 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1564794 elements.
+du_spmv:      0.6608 ms
+se_spmv:      0.5831 ms
+
+
+ THE FINAL TIME = 1.056654 
+
+
+ Processing the ../../../data/mtx/vas_stokes_2M/vas_stokes_2M.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.605551 
+rows_ratio = 0.537612 
+TC_nnz_ratio = 0.237601
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 48338 blocks, 128 threads per block
+cdspmv:      0.2583 ms
+Launching tcspmv_kernel_fp64 with 36065 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2146677 elements.
+du_spmv:      0.6595 ms
+se_spmv:      0.3647 ms
+
+
+ THE FINAL TIME = 0.917764 
+
+
+ Processing the ../../../data/mtx/kron_g500-logn21/kron_g500-logn21.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.058977 
+rows_ratio = 0.052495 
+TC_nnz_ratio = 0.167799
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 135140 blocks, 128 threads per block
+cdspmv:      0.9986 ms
+Launching tcspmv_kernel_fp64 with 3441 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2097152 elements.
+du_spmv:     13.3098 ms
+se_spmv:      1.0008 ms
+
+
+ THE FINAL TIME = 14.308343 
+
+
+ Processing the ../../../data/mtx/dielFilterV3real/dielFilterV3real.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.683341 
+rows_ratio = 0.588607 
+TC_nnz_ratio = 0.219814
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 66282 blocks, 128 threads per block
+cdspmv:      0.3177 ms
+Launching tcspmv_kernel_fp64 with 20286 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1102824 elements.
+du_spmv:      0.9554 ms
+se_spmv:      0.4294 ms
+
+
+ THE FINAL TIME = 1.273127 
+
+
+ Processing the ../../../data/mtx/nv2/nv2.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.725987 
+rows_ratio = 0.664938 
+TC_nnz_ratio = 0.125177
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 39135 blocks, 128 threads per block
+cdspmv:      0.2714 ms
+Launching tcspmv_kernel_fp64 with 30212 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1453908 elements.
+du_spmv:      1.0147 ms
+se_spmv:      0.3753 ms
+
+
+ THE FINAL TIME = 1.286136 
+
+
+ Processing the ../../../data/mtx/ljournal-2008/ljournal-2008.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.224367 
+rows_ratio = 0.162726 
+TC_nnz_ratio = 0.141359
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 58650 blocks, 128 threads per block
+cdspmv:      0.5475 ms
+Launching tcspmv_kernel_fp64 with 27274 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 5363260 elements.
+du_spmv:      1.9496 ms
+se_spmv:      0.5041 ms
+
+
+ THE FINAL TIME = 2.497131 
+
+
+ Processing the ../../../data/mtx/kmer_U1a/kmer_U1a.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.789346 
+rows_ratio = 0.614821 
+TC_nnz_ratio = 0.125027
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 103000 blocks, 128 threads per block
+cdspmv:      2.4585 ms
+Launching tcspmv_kernel_fp64 with 1301042 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 67716231 elements.
+du_spmv:      4.5196 ms
+se_spmv:      2.7743 ms
+
+
+ THE FINAL TIME = 6.978110 
+
+
+ Processing the ../../../data/mtx/audikw_1/audikw_1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.688591 
+rows_ratio = 0.635809 
+TC_nnz_ratio = 0.338481
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 57633 blocks, 128 threads per block
+cdspmv:      0.2765 ms
+Launching tcspmv_kernel_fp64 with 18751 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 943695 elements.
+du_spmv:      0.5967 ms
+se_spmv:      0.3866 ms
+
+
+ THE FINAL TIME = 0.873133 
+
+
+ Processing the ../../../data/mtx/RM07R/RM07R.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.539240 
+rows_ratio = 0.407843 
+TC_nnz_ratio = 0.503953
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 27806 blocks, 128 threads per block
+cdspmv:      0.1348 ms
+Launching tcspmv_kernel_fp64 with 4865 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 381689 elements.
+du_spmv:      0.2177 ms
+se_spmv:      0.2071 ms
+
+
+ THE FINAL TIME = 0.352486 
+
+
+ Processing the ../../../data/mtx/rgg_n_2_23_s0/rgg_n_2_23_s0.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.715358 
+rows_ratio = 0.574449 
+TC_nnz_ratio = 0.130809
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 94260 blocks, 128 threads per block
+cdspmv:      0.5980 ms
+Launching tcspmv_kernel_fp64 with 150589 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 8388608 elements.
+du_spmv:      2.4108 ms
+se_spmv:      1.1488 ms
+
+
+ THE FINAL TIME = 3.008826 
+
+
+ Processing the ../../../data/mtx/Long_Coup_dt6/Long_Coup_dt6.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.774085 
+rows_ratio = 0.639638 
+TC_nnz_ratio = 0.568125
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 64637 blocks, 128 threads per block
+cdspmv:      0.3054 ms
+Launching tcspmv_kernel_fp64 with 29387 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1470152 elements.
+du_spmv:      0.4420 ms
+se_spmv:      0.4368 ms
+
+
+ THE FINAL TIME = 0.747396 
+
+
+ Processing the ../../../data/mtx/Long_Coup_dt0/Long_Coup_dt0.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.774085 
+rows_ratio = 0.639638 
+TC_nnz_ratio = 0.568125
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 64637 blocks, 128 threads per block
+cdspmv:      0.3053 ms
+Launching tcspmv_kernel_fp64 with 29387 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1470152 elements.
+du_spmv:      0.4417 ms
+se_spmv:      0.4370 ms
+
+
+ THE FINAL TIME = 0.747038 
+
+
+ Processing the ../../../data/mtx/bone010/bone010.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.718178 
+rows_ratio = 0.570055 
+TC_nnz_ratio = 0.468781
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 53190 blocks, 128 threads per block
+cdspmv:      0.2473 ms
+Launching tcspmv_kernel_fp64 with 17578 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 986703 elements.
+du_spmv:      0.4235 ms
+se_spmv:      0.3471 ms
+
+
+ THE FINAL TIME = 0.670820 
+
+
+ Processing the ../../../data/mtx/kmer_V2a/kmer_V2a.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.783703 
+rows_ratio = 0.610718 
+TC_nnz_ratio = 0.125266
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 86998 blocks, 128 threads per block
+cdspmv:      2.0154 ms
+Launching tcspmv_kernel_fp64 with 1050480 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 55042369 elements.
+du_spmv:      3.8486 ms
+se_spmv:      2.3856 ms
+
+
+ THE FINAL TIME = 5.864069 
+
+
+ Processing the ../../../data/mtx/soc-LiveJournal1/soc-LiveJournal1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.238651 
+rows_ratio = 0.177361 
+TC_nnz_ratio = 0.133109
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 51207 blocks, 128 threads per block
+cdspmv:      0.5633 ms
+Launching tcspmv_kernel_fp64 with 26868 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 4847571 elements.
+du_spmv:      4.0881 ms
+se_spmv:      0.4704 ms
+
+
+ THE FINAL TIME = 4.651382 
+
+
+ Processing the ../../../data/mtx/hugebubbles-00020/hugebubbles-00020.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.799824 
+rows_ratio = 0.619864 
+TC_nnz_ratio = 0.146667
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 47189 blocks, 128 threads per block
+cdspmv:      1.1007 ms
+Launching tcspmv_kernel_fp64 with 410624 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 21198119 elements.
+du_spmv:      1.7258 ms
+se_spmv:      0.8981 ms
+
+
+ THE FINAL TIME = 2.826437 
+
+
+ Processing the ../../../data/mtx/nlpkkt120/nlpkkt120.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.781115 
+rows_ratio = 0.606010 
+TC_nnz_ratio = 0.277753
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 71878 blocks, 128 threads per block
+cdspmv:      0.3650 ms
+Launching tcspmv_kernel_fp64 with 67086 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3542400 elements.
+du_spmv:      0.8498 ms
+se_spmv:      0.5398 ms
+
+
+ THE FINAL TIME = 1.214834 
+
+
+ Processing the ../../../data/mtx/wb-edu/wb-edu.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.234828 
+rows_ratio = 0.217181 
+TC_nnz_ratio = 0.333343
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 42421 blocks, 128 threads per block
+cdspmv:      0.3751 ms
+Launching tcspmv_kernel_fp64 with 66822 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 9845725 elements.
+du_spmv:      1.6517 ms
+se_spmv:      0.3599 ms
+
+
+ THE FINAL TIME = 2.026811 
+
+
+ Processing the ../../../data/mtx/Serena/Serena.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.739059 
+rows_ratio = 0.646003 
+TC_nnz_ratio = 0.332828
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 47895 blocks, 128 threads per block
+cdspmv:      0.2373 ms
+Launching tcspmv_kernel_fp64 with 28088 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1391349 elements.
+du_spmv:      0.5185 ms
+se_spmv:      0.3312 ms
+
+
+ THE FINAL TIME = 0.755771 
+
+
+ Processing the ../../../data/mtx/hugebubbles-00010/hugebubbles-00010.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.799798 
+rows_ratio = 0.625336 
+TC_nnz_ratio = 0.140964
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 43314 blocks, 128 threads per block
+cdspmv:      0.8840 ms
+Launching tcspmv_kernel_fp64 with 380246 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 19458087 elements.
+du_spmv:      1.6677 ms
+se_spmv:      0.8745 ms
+
+
+ THE FINAL TIME = 2.551764 
+
+
+ Processing the ../../../data/mtx/cage14/cage14.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.700947 
+rows_ratio = 0.512578 
+TC_nnz_ratio = 0.135540
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 20136 blocks, 128 threads per block
+cdspmv:      0.1551 ms
+Launching tcspmv_kernel_fp64 with 24120 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1505785 elements.
+du_spmv:      0.4486 ms
+se_spmv:      0.1467 ms
+
+
+ THE FINAL TIME = 0.603697 
+
+
+ Processing the ../../../data/mtx/dgreen/dgreen.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.669252 
+rows_ratio = 0.570883 
+TC_nnz_ratio = 0.125713
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 28396 blocks, 128 threads per block
+cdspmv:      0.1879 ms
+Launching tcspmv_kernel_fp64 with 21419 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1200611 elements.
+du_spmv:      0.7167 ms
+se_spmv:      0.2583 ms
+
+
+ THE FINAL TIME = 0.904604 
+
+
+ Processing the ../../../data/mtx/Geo_1438/Geo_1438.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.768462 
+rows_ratio = 0.634899 
+TC_nnz_ratio = 0.371569
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 46875 blocks, 128 threads per block
+cdspmv:      0.2330 ms
+Launching tcspmv_kernel_fp64 with 28530 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1437960 elements.
+du_spmv:      0.4522 ms
+se_spmv:      0.3339 ms
+
+
+ THE FINAL TIME = 0.685204 
+
+
+ Processing the ../../../data/mtx/dielFilterV2real/dielFilterV2real.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.715034 
+rows_ratio = 0.608219 
+TC_nnz_ratio = 0.190558
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 36025 blocks, 128 threads per block
+cdspmv:      0.1844 ms
+Launching tcspmv_kernel_fp64 with 22000 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1157456 elements.
+du_spmv:      0.5991 ms
+se_spmv:      0.2437 ms
+
+
+ THE FINAL TIME = 0.783509 
+
+
+ Processing the ../../../data/mtx/delaunay_n24/delaunay_n24.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.734107 
+rows_ratio = 0.694142 
+TC_nnz_ratio = 0.147189
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 74711 blocks, 128 threads per block
+cdspmv:      0.7052 ms
+Launching tcspmv_kernel_fp64 with 363931 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 16777216 elements.
+du_spmv:      2.2083 ms
+se_spmv:      1.3104 ms
+
+
+ THE FINAL TIME = 2.913483 
+
+
+ Processing the ../../../data/mtx/Hook_1498/Hook_1498.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.669245 
+rows_ratio = 0.636550 
+TC_nnz_ratio = 0.332030
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 45213 blocks, 128 threads per block
+cdspmv:      0.2296 ms
+Launching tcspmv_kernel_fp64 with 29799 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1498023 elements.
+du_spmv:      0.4963 ms
+se_spmv:      0.3141 ms
+
+
+ THE FINAL TIME = 0.725887 
+
+
+ Processing the ../../../data/mtx/Transport/Transport.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.782326 
+rows_ratio = 0.606303 
+TC_nnz_ratio = 0.233076
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 17442 blocks, 128 threads per block
+cdspmv:      0.1078 ms
+Launching tcspmv_kernel_fp64 with 30356 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1602111 elements.
+du_spmv:      0.2522 ms
+se_spmv:      0.1314 ms
+
+
+ THE FINAL TIME = 0.360020 
+
+
+ Processing the ../../../data/mtx/hugebubbles-00000/hugebubbles-00000.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.799792 
+rows_ratio = 0.619839 
+TC_nnz_ratio = 0.150993
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 40776 blocks, 128 threads per block
+cdspmv:      1.1687 ms
+Launching tcspmv_kernel_fp64 with 354822 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 18318143 elements.
+du_spmv:      1.3346 ms
+se_spmv:      0.6143 ms
+
+
+ THE FINAL TIME = 2.503383 
+
+
+ Processing the ../../../data/mtx/boneS10/boneS10.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.661105 
+rows_ratio = 0.566396 
+TC_nnz_ratio = 0.359920
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 41168 blocks, 128 threads per block
+cdspmv:      0.1993 ms
+Launching tcspmv_kernel_fp64 with 16194 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 914898 elements.
+du_spmv:      0.4054 ms
+se_spmv:      0.2830 ms
+
+
+ THE FINAL TIME = 0.604678 
+
+
+ Processing the ../../../data/mtx/ss/ss.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.649551 
+rows_ratio = 0.615530 
+TC_nnz_ratio = 0.207609
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 25794 blocks, 128 threads per block
+cdspmv:      0.1550 ms
+Launching tcspmv_kernel_fp64 with 31790 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1652680 elements.
+du_spmv:      0.4097 ms
+se_spmv:      0.1961 ms
+
+
+ THE FINAL TIME = 0.564680 
+
+
+ Processing the ../../../data/mtx/vas_stokes_1M/vas_stokes_1M.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.581336 
+rows_ratio = 0.480161 
+TC_nnz_ratio = 0.240076
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 25804 blocks, 128 threads per block
+cdspmv:      0.1447 ms
+Launching tcspmv_kernel_fp64 with 16366 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1090664 elements.
+du_spmv:      0.3814 ms
+se_spmv:      0.2401 ms
+
+
+ THE FINAL TIME = 0.526064 
+
+
+ Processing the ../../../data/mtx/hollywood-2009/hollywood-2009.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.220249 
+rows_ratio = 0.128940 
+TC_nnz_ratio = 0.159352
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 84529 blocks, 128 threads per block
+cdspmv:      0.4105 ms
+Launching tcspmv_kernel_fp64 with 4594 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1139905 elements.
+du_spmv:      3.2261 ms
+se_spmv:      0.6926 ms
+
+
+ THE FINAL TIME = 3.636562 
+
+
+ Processing the ../../../data/mtx/ML_Laplace/ML_Laplace.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.794033 
+rows_ratio = 0.615376 
+TC_nnz_ratio = 0.600019
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 20552 blocks, 128 threads per block
+cdspmv:      0.0990 ms
+Launching tcspmv_kernel_fp64 with 7250 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 377002 elements.
+du_spmv:      0.1447 ms
+se_spmv:      0.1462 ms
+
+
+ THE FINAL TIME = 0.243670 
+
+
+ Processing the ../../../data/mtx/3Dspectralwave/3Dspectralwave.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.660660 
+rows_ratio = 0.604217 
+TC_nnz_ratio = 0.186649
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 24976 blocks, 128 threads per block
+cdspmv:      0.1268 ms
+Launching tcspmv_kernel_fp64 with 12858 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 680943 elements.
+du_spmv:      0.4116 ms
+se_spmv:      0.1725 ms
+
+
+ THE FINAL TIME = 0.538388 
+
+
+ Processing the ../../../data/mtx/FullChip/FullChip.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.641289 
+rows_ratio = 0.595664 
+TC_nnz_ratio = 0.184198
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 19759 blocks, 128 threads per block
+cdspmv:      0.3130 ms
+Launching tcspmv_kernel_fp64 with 55602 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2987012 elements.
+du_spmv:    158.6560 ms
+se_spmv:      0.2565 ms
+
+
+ THE FINAL TIME = 158.968985 
+
+
+ Processing the ../../../data/mtx/hugetrace-00020/hugetrace-00020.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.799840 
+rows_ratio = 0.619876 
+TC_nnz_ratio = 0.146120
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 35624 blocks, 128 threads per block
+cdspmv:      0.5732 ms
+Launching tcspmv_kernel_fp64 with 309985 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 16002413 elements.
+du_spmv:      1.2368 ms
+se_spmv:      0.5380 ms
+
+
+ THE FINAL TIME = 1.810051 
+
+
+ Processing the ../../../data/mtx/kron_g500-logn20/kron_g500-logn20.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.063666 
+rows_ratio = 0.056862 
+TC_nnz_ratio = 0.175783
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 66233 blocks, 128 threads per block
+cdspmv:      0.4305 ms
+Launching tcspmv_kernel_fp64 with 1864 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1048576 elements.
+du_spmv:      7.3583 ms
+se_spmv:      0.4646 ms
+
+
+ THE FINAL TIME = 7.788775 
+
+
+ Processing the ../../../data/mtx/fem_hifreq_circuit/fem_hifreq_circuit.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.712690 
+rows_ratio = 0.608011 
+TC_nnz_ratio = 0.274653
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 15022 blocks, 128 threads per block
+cdspmv:      0.2428 ms
+Launching tcspmv_kernel_fp64 with 9332 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 491100 elements.
+du_spmv:      0.1895 ms
+se_spmv:      0.1112 ms
+
+
+ THE FINAL TIME = 0.432307 
+
+
+ Processing the ../../../data/mtx/af_shell10/af_shell10.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.798334 
+rows_ratio = 0.618709 
+TC_nnz_ratio = 0.598762
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 39093 blocks, 128 threads per block
+cdspmv:      0.1914 ms
+Launching tcspmv_kernel_fp64 with 29158 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1508065 elements.
+du_spmv:      0.2735 ms
+se_spmv:      0.2710 ms
+
+
+ THE FINAL TIME = 0.464911 
+
+
+ Processing the ../../../data/mtx/ldoor/ldoor.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.720390 
+rows_ratio = 0.690812 
+TC_nnz_ratio = 0.520806
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 34529 blocks, 128 threads per block
+cdspmv:      0.1735 ms
+Launching tcspmv_kernel_fp64 with 20557 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 952203 elements.
+du_spmv:      0.2639 ms
+se_spmv:      0.2313 ms
+
+
+ THE FINAL TIME = 0.437380 
+
+
+ Processing the ../../../data/mtx/channel-500x100x100-b050/channel-500x100x100-b050.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.790067 
+rows_ratio = 0.612302 
+TC_nnz_ratio = 0.211289
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 63356 blocks, 128 threads per block
+cdspmv:      0.3471 ms
+Launching tcspmv_kernel_fp64 with 91884 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 4802000 elements.
+du_spmv:      0.9699 ms
+se_spmv:      0.4870 ms
+
+
+ THE FINAL TIME = 1.317031 
+
+
+ Processing the ../../../data/mtx/dielFilterV3clx/dielFilterV3clx.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.671048 
+rows_ratio = 0.578507 
+TC_nnz_ratio = 0.222456
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 24408 blocks, 128 threads per block
+cdspmv:      0.1227 ms
+Launching tcspmv_kernel_fp64 with 7601 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 420408 elements.
+du_spmv:      0.3670 ms
+se_spmv:      0.1784 ms
+
+
+ THE FINAL TIME = 0.489645 
+
+
+ Processing the ../../../data/mtx/Freescale1/Freescale1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.748477 
+rows_ratio = 0.600577 
+TC_nnz_ratio = 0.146948
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 14043 blocks, 128 threads per block
+cdspmv:      0.1704 ms
+Launching tcspmv_kernel_fp64 with 64351 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3428755 elements.
+du_spmv:      0.3669 ms
+se_spmv:      0.1552 ms
+
+
+ THE FINAL TIME = 0.537324 
+
+
+ Processing the ../../../data/mtx/wikipedia-20070206/wikipedia-20070206.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.115138 
+rows_ratio = 0.202703 
+TC_nnz_ratio = 0.132086
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 33421 blocks, 128 threads per block
+cdspmv:      0.3868 ms
+Launching tcspmv_kernel_fp64 with 22595 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3566907 elements.
+du_spmv:      1.8643 ms
+se_spmv:      0.3016 ms
+
+
+ THE FINAL TIME = 2.251138 
+
+
+ Processing the ../../../data/mtx/rajat31/rajat31.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.711034 
+rows_ratio = 0.649146 
+TC_nnz_ratio = 0.196089
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 15079 blocks, 128 threads per block
+cdspmv:      0.1542 ms
+Launching tcspmv_kernel_fp64 with 95141 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 4690002 elements.
+du_spmv:      0.3525 ms
+se_spmv:      0.1437 ms
+
+
+ THE FINAL TIME = 0.506657 
+
+
+ Processing the ../../../data/mtx/com-LiveJournal/com-LiveJournal.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.275237 
+rows_ratio = 0.202198 
+TC_nnz_ratio = 0.132460
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 51480 blocks, 128 threads per block
+cdspmv:      0.5307 ms
+Launching tcspmv_kernel_fp64 with 25262 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3997962 elements.
+du_spmv:      4.7861 ms
+se_spmv:      0.4724 ms
+
+
+ THE FINAL TIME = 5.316828 
+
+
+ Processing the ../../../data/mtx/F1/F1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.690949 
+rows_ratio = 0.614783 
+TC_nnz_ratio = 0.323388
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 19919 blocks, 128 threads per block
+cdspmv:      0.0996 ms
+Launching tcspmv_kernel_fp64 with 6605 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 343791 elements.
+du_spmv:      0.2276 ms
+se_spmv:      0.1508 ms
+
+
+ THE FINAL TIME = 0.327179 
+
+
+ Processing the ../../../data/mtx/circuit5M_dc/circuit5M_dc.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.740835 
+rows_ratio = 0.576588 
+TC_nnz_ratio = 0.143059
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 14246 blocks, 128 threads per block
+cdspmv:      0.1762 ms
+Launching tcspmv_kernel_fp64 with 63485 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3523317 elements.
+du_spmv:      0.3753 ms
+se_spmv:      0.1598 ms
+
+
+ THE FINAL TIME = 0.551490 
+
+
+ Processing the ../../../data/mtx/PFlow_742/PFlow_742.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.677294 
+rows_ratio = 0.549726 
+TC_nnz_ratio = 0.283701
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 27564 blocks, 128 threads per block
+cdspmv:      0.1419 ms
+Launching tcspmv_kernel_fp64 with 12761 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 742793 elements.
+du_spmv:      0.3301 ms
+se_spmv:      0.1939 ms
+
+
+ THE FINAL TIME = 0.471907 
+
+
+ Processing the ../../../data/mtx/CoupCons3D/CoupCons3D.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.744544 
+rows_ratio = 0.620190 
+TC_nnz_ratio = 0.557961
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 16568 blocks, 128 threads per block
+cdspmv:      0.3291 ms
+Launching tcspmv_kernel_fp64 with 8078 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 416800 elements.
+du_spmv:      0.1218 ms
+se_spmv:      0.1202 ms
+
+
+ THE FINAL TIME = 0.450833 
+
+
+ Processing the ../../../data/mtx/inline_1/inline_1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.690694 
+rows_ratio = 0.615185 
+TC_nnz_ratio = 0.333822
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 27325 blocks, 128 threads per block
+cdspmv:      0.1345 ms
+Launching tcspmv_kernel_fp64 with 9684 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 503712 elements.
+du_spmv:      0.3000 ms
+se_spmv:      0.1936 ms
+
+
+ THE FINAL TIME = 0.434542 
+
+
+ Processing the ../../../data/mtx/mycielskian17/mycielskian17.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.370518 
+rows_ratio = 0.395064 
+TC_nnz_ratio = 0.248412
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 74401 blocks, 128 threads per block
+cdspmv:      0.5408 ms
+Launching tcspmv_kernel_fp64 with 1214 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 98303 elements.
+du_spmv:      4.0368 ms
+se_spmv:      0.4781 ms
+
+
+ THE FINAL TIME = 4.577565 
+
+
+ Processing the ../../../data/mtx/wikipedia-20061104/wikipedia-20061104.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.116803 
+rows_ratio = 0.204720 
+TC_nnz_ratio = 0.132702
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 29230 blocks, 128 threads per block
+cdspmv:      0.3177 ms
+Launching tcspmv_kernel_fp64 with 20143 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 3148440 elements.
+du_spmv:      1.8818 ms
+se_spmv:      0.2788 ms
+
+
+ THE FINAL TIME = 2.199517 
+
+
+ Processing the ../../../data/mtx/TSOPF_RS_b2383_c1/TSOPF_RS_b2383_c1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.312093 
+rows_ratio = 0.268127 
+TC_nnz_ratio = 0.989520
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 12001 blocks, 128 threads per block
+cdspmv:      0.0558 ms
+Launching tcspmv_kernel_fp64 with 320 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 38120 elements.
+du_spmv:      0.1615 ms
+se_spmv:      0.0861 ms
+
+
+ THE FINAL TIME = 0.217243 
+
+
+ Processing the ../../../data/mtx/TSOPF_RS_b2383/TSOPF_RS_b2383.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.312093 
+rows_ratio = 0.268127 
+TC_nnz_ratio = 0.989520
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 12001 blocks, 128 threads per block
+cdspmv:      0.0558 ms
+Launching tcspmv_kernel_fp64 with 320 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 38120 elements.
+du_spmv:      0.1614 ms
+se_spmv:      0.0861 ms
+
+
+ THE FINAL TIME = 0.217189 
+
+
+ Processing the ../../../data/mtx/rgg_n_2_22_s0/rgg_n_2_22_s0.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.712974 
+rows_ratio = 0.571465 
+TC_nnz_ratio = 0.132624
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 45065 blocks, 128 threads per block
+cdspmv:      0.2865 ms
+Launching tcspmv_kernel_fp64 with 74904 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 4194304 elements.
+du_spmv:      1.1305 ms
+se_spmv:      0.4466 ms
+
+
+ THE FINAL TIME = 1.417046 
+
+
+ Processing the ../../../data/mtx/hugetrace-00010/hugetrace-00010.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.799824 
+rows_ratio = 0.619864 
+TC_nnz_ratio = 0.149465
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 26841 blocks, 128 threads per block
+cdspmv:      0.3978 ms
+Launching tcspmv_kernel_fp64 with 233562 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 12057441 elements.
+du_spmv:      0.9051 ms
+se_spmv:      0.3888 ms
+
+
+ THE FINAL TIME = 1.302892 
+
+
+ Processing the ../../../data/mtx/wikipedia-20060925/wikipedia-20060925.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.117133 
+rows_ratio = 0.205772 
+TC_nnz_ratio = 0.133035
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 27661 blocks, 128 threads per block
+cdspmv:      0.2926 ms
+Launching tcspmv_kernel_fp64 with 19185 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2983494 elements.
+du_spmv:      1.6571 ms
+se_spmv:      0.2697 ms
+
+
+ THE FINAL TIME = 1.949712 
+
+
+ Processing the ../../../data/mtx/Freescale2/Freescale2.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.588134 
+rows_ratio = 0.434413 
+TC_nnz_ratio = 0.144279
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 17102 blocks, 128 threads per block
+cdspmv:      0.1469 ms
+Launching tcspmv_kernel_fp64 with 40718 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2999349 elements.
+du_spmv:      5.0703 ms
+se_spmv:      0.2173 ms
+
+
+ THE FINAL TIME = 5.217222 
+
+
+ Processing the ../../../data/mtx/wiki-topcats/wiki-topcats.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.159419 
+rows_ratio = 0.385000 
+TC_nnz_ratio = 0.140987
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 21162 blocks, 128 threads per block
+cdspmv:      0.1528 ms
+Launching tcspmv_kernel_fp64 with 21554 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 1791489 elements.
+du_spmv:      1.4592 ms
+se_spmv:      0.2223 ms
+
+
+ THE FINAL TIME = 1.612032 
+
+
+ Processing the ../../../data/mtx/memchip/memchip.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.746180 
+rows_ratio = 0.583936 
+TC_nnz_ratio = 0.142313
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 10992 blocks, 128 threads per block
+cdspmv:      0.1589 ms
+Launching tcspmv_kernel_fp64 with 49407 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2707524 elements.
+du_spmv:      0.2866 ms
+se_spmv:      0.1163 ms
+
+
+ THE FINAL TIME = 0.445462 
+
+
+ Processing the ../../../data/mtx/Emilia_923/Emilia_923.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.777644 
+rows_ratio = 0.633617 
+TC_nnz_ratio = 0.359062
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 30434 blocks, 128 threads per block
+cdspmv:      0.1555 ms
+Launching tcspmv_kernel_fp64 with 18279 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 923136 elements.
+du_spmv:      0.3051 ms
+se_spmv:      0.2111 ms
+
+
+ THE FINAL TIME = 0.460669 
+
+
+ Processing the ../../../data/mtx/road_usa/road_usa.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.659592 
+rows_ratio = 0.565114 
+TC_nnz_ratio = 0.127858
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 42831 blocks, 128 threads per block
+cdspmv:      0.7250 ms
+Launching tcspmv_kernel_fp64 with 422906 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 23947347 elements.
+du_spmv:      1.5961 ms
+se_spmv:      0.6351 ms
+
+
+ THE FINAL TIME = 2.321045 
+
+
+ Processing the ../../../data/mtx/CurlCurl_4/CurlCurl_4.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.786502 
+rows_ratio = 0.608631 
+TC_nnz_ratio = 0.200499
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 19680 blocks, 128 threads per block
+cdspmv:      0.1280 ms
+Launching tcspmv_kernel_fp64 with 45277 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 2380515 elements.
+du_spmv:      0.3441 ms
+se_spmv:      0.1772 ms
+
+
+ THE FINAL TIME = 0.472180 
+
+
+ Processing the ../../../data/mtx/dielFilterV2clx/dielFilterV2clx.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.712133 
+rows_ratio = 0.599644 
+TC_nnz_ratio = 0.185193
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 18785 blocks, 128 threads per block
+cdspmv:      0.1018 ms
+Launching tcspmv_kernel_fp64 with 11379 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 607232 elements.
+du_spmv:      0.3258 ms
+se_spmv:      0.1405 ms
+
+
+ THE FINAL TIME = 0.427589 
+
+
+ Processing the ../../../data/mtx/mouse_gene/mouse_gene.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.293297 
+rows_ratio = 0.255028 
+TC_nnz_ratio = 0.216073
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 21499 blocks, 128 threads per block
+cdspmv:      0.1289 ms
+Launching tcspmv_kernel_fp64 with 360 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 45101 elements.
+du_spmv:      1.2477 ms
+se_spmv:      0.1440 ms
+
+
+ THE FINAL TIME = 1.376610 
+
+
+ Processing the ../../../data/mtx/kim2/kim2.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.793392 
+rows_ratio = 0.614879 
+TC_nnz_ratio = 0.416663
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 8409 blocks, 128 threads per block
+cdspmv:      0.0520 ms
+Launching tcspmv_kernel_fp64 with 8781 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 456976 elements.
+du_spmv:      0.0869 ms
+se_spmv:      0.0730 ms
+
+
+ THE FINAL TIME = 0.138936 
+
+
+ Processing the ../../../data/mtx/loc-Gowalla/loc-Gowalla.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.282368 
+rows_ratio = 0.196199 
+TC_nnz_ratio = 0.136011
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 1411 blocks, 128 threads per block
+cdspmv:      0.0122 ms
+Launching tcspmv_kernel_fp64 with 1206 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 196591 elements.
+du_spmv:      1.2327 ms
+se_spmv:      0.0253 ms
+
+
+ THE FINAL TIME = 1.244900 
+
+
+ Processing the ../../../data/mtx/asia_osm/asia_osm.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.769810 
+rows_ratio = 0.602058 
+TC_nnz_ratio = 0.152652
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 18869 blocks, 128 threads per block
+cdspmv:      0.8106 ms
+Launching tcspmv_kernel_fp64 with 224846 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 11950757 elements.
+du_spmv:      0.7444 ms
+se_spmv:      0.2474 ms
+
+
+ THE FINAL TIME = 1.555001 
+
+
+ Processing the ../../../data/mtx/delaunay_n23/delaunay_n23.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.734107 
+rows_ratio = 0.694202 
+TC_nnz_ratio = 0.147273
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 37356 blocks, 128 threads per block
+cdspmv:      0.3534 ms
+Launching tcspmv_kernel_fp64 with 181981 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 8388608 elements.
+du_spmv:      1.0958 ms
+se_spmv:      0.6179 ms
+
+
+ THE FINAL TIME = 1.449237 
+
+
+ Processing the ../../../data/mtx/Fault_639/Fault_639.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.769323 
+rows_ratio = 0.646797 
+TC_nnz_ratio = 0.366619
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 21238 blocks, 128 threads per block
+cdspmv:      0.1123 ms
+Launching tcspmv_kernel_fp64 with 12912 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 638802 elements.
+du_spmv:      0.2128 ms
+se_spmv:      0.1547 ms
+
+
+ THE FINAL TIME = 0.325092 
+
+
+ Processing the ../../../data/mtx/loc-Brightkite/loc-Brightkite.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.270093 
+rows_ratio = 0.198942 
+TC_nnz_ratio = 0.138603
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 318 blocks, 128 threads per block
+cdspmv:      0.0071 ms
+Launching tcspmv_kernel_fp64 with 362 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 58228 elements.
+du_spmv:      0.1963 ms
+se_spmv:      0.0195 ms
+
+
+ THE FINAL TIME = 0.203383 
+
+
+ Processing the ../../../data/mtx/gsm_106857/gsm_106857.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.680223 
+rows_ratio = 0.572310 
+TC_nnz_ratio = 0.159197
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 16150 blocks, 128 threads per block
+cdspmv:      0.1010 ms
+Launching tcspmv_kernel_fp64 with 10543 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 589446 elements.
+du_spmv:      0.3173 ms
+se_spmv:      0.1206 ms
+
+
+ THE FINAL TIME = 0.418268 
+
+
+ Processing the ../../../data/mtx/germany_osm/germany_osm.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.757379 
+rows_ratio = 0.597466 
+TC_nnz_ratio = 0.143434
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 18361 blocks, 128 threads per block
+cdspmv:      0.5707 ms
+Launching tcspmv_kernel_fp64 with 215627 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 11548845 elements.
+du_spmv:      0.7539 ms
+se_spmv:      0.2818 ms
+
+
+ THE FINAL TIME = 1.324631 
+
+
+ Processing the ../../../data/mtx/human_gene1/human_gene1.mtx graph in FP64
+
+---------------------------------------------------------
+                     rowProp: 0.62
+                     colProp: 0.8
+---------------------------------------------------------
+---------------------Compression Info--------------------
+cols_ratio = 0.330297 
+rows_ratio = 0.247229 
+TC_nnz_ratio = 0.564829
+---------------------Performance Info--------------------
+Launching cdspmv_kernel with 18309 blocks, 128 threads per block
+cdspmv:      0.0851 ms
+Launching tcspmv_kernel_fp64 with 173 blocks, 128 threads per block
+
+Success! All values match within the tolerance for 22283 elements.
+du_spmv:      0.6667 ms
+se_spmv:      0.1222 ms
+
+
+ THE FINAL TIME = 0.751829 
+

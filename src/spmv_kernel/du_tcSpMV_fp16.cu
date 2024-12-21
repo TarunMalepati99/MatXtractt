@@ -1,5 +1,5 @@
 #include "common.h"
-#define SHM_SIZE 256 // Shared memory size in halves (8 KB)
+#define SHM_SIZE 512 // Shared memory size in halves (8 KB)
 
 __device__ __forceinline__ void mma_m8n8k4_fp16_v2(half *acc, uint32_t *A, half *frag_b)
 {
@@ -20,6 +20,7 @@ __device__ __forceinline__ void store_half_to_global(const half *a, half v)
     asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(a), "h"(*v_u));
 }
 
+// 1 warp - 1 row chunk
 __global__ void tcspmv_kernel_fp16_v1(
     const half *__restrict__ x_d,
     half *__restrict__ y_d,
@@ -31,6 +32,21 @@ __global__ void tcspmv_kernel_fp16_v1(
     int dRows,
     int dCols)
 {
+    // __shared__ half x_shm[SHM_SIZE];
+    // int num_elements = SHM_SIZE;
+    // int num_threads = blockDim.x;
+    // int elements_per_thread = (num_elements + num_threads - 1) / num_threads;
+
+    // // Load data into shared memory
+    // for (int i = 0; i < elements_per_thread; ++i)
+    // {
+    //     int idx = threadIdx.x + i * num_threads;
+    //     if (idx < num_elements)
+    //     {
+    //         x_shm[idx] = x_d[idx];
+    //     }
+    // }
+    // __syncthreads();
     const int warpsPerBlock = 4;
     int warpId = threadIdx.x / 32; // Warp ID within the block
     int laneId = threadIdx.x & 31; // Lane ID within the warp
@@ -81,6 +97,7 @@ __global__ void tcspmv_kernel_fp16_v1(
             int b_row = i; // Since i ranges from 0 to 3
             int x_idx = sparse_AToX_idx[b_row];
             frag_b[i] = __ldg(&x_d[x_idx]);
+            // frag_b[i] = (x_idx < SHM_SIZE) ? x_shm[x_idx] : __ldg(&x_d[x_idx]);
         }
         uint32_t const *A = reinterpret_cast<uint32_t const *>(&frag_a[0]);
         uint32_t const *B = reinterpret_cast<uint32_t const *>(&frag_b[0]);

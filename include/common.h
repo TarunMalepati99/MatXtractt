@@ -19,6 +19,12 @@
 #include <cuda_fp16.h>
 #include <cuda_fp16.hpp>
 #include <mma.h>
+#include <thrust/sort.h>
+#include <thrust/device_vector.h>
+#include <thrust/unique.h>
+#include <thrust/copy.h>
+#include <parallel/algorithm>
+
 // #include <cuda/std/future>
 // #include <cuda_pipeline.h>
 

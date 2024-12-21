@@ -1,5 +1,4 @@
 #include "common.h"
-#include "fuse_kernel.h"
 
 #define SHM_SIZE 128  // Shared memory size in doubles (8 KB)
 #define CONST_SIZE 4096  // 常量内存大小
@@ -264,7 +263,7 @@ void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t>
 
 
     double runtime = (elapsedTime) / test_iter;
-    printf("tcspmv_kernel_fp64: %g ms\n", runtime);
+    // printf("tcspmv_kernel_fp64: %g ms\n", runtime);
     *tcTime = runtime;
     tcspmv_kernel_fp64<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,

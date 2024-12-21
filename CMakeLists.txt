@@ -41,6 +41,8 @@ include_directories( ${PROJECT_SOURCE_DIR}/include)
 
 find_package(CUDA REQUIRED)
 find_library(CUSPARSE_LIBRARY NAMES libcusparse.so PATHS "${CUDA_TOOLKIT_ROOT_DIR}/targets/x86_64-linux/lib")
+find_package(OpenMP REQUIRED)
+
 
 if(CUDA_FOUND AND CUSPARSE_LIBRARY)
     message(STATUS "CUDA found: ${CUDA_VERSION}")
@@ -79,7 +81,7 @@ if(CUDA_TEST_FILES)
 
     #preprocess
     add_executable(TCSpMVlib_tcperftest ${CUDA_TCTEST_FILES})
-    target_link_libraries(TCSpMVlib_tcperftest TCSpMVlib cuda_utilities_lib)
+    target_link_libraries(TCSpMVlib_tcperftest TCSpMVlib cuda_utilities_lib OpenMP::OpenMP_CXX)
     target_include_directories(TCSpMVlib_tcperftest PRIVATE ${PROJECT_SOURCE_DIR}/include)
 else()
     message(FATAL_ERROR "No test files found!")
