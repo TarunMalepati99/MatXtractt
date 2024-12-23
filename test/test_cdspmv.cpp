@@ -207,11 +207,11 @@ int main(int argc, char **argv)
 
     cusparse_spmv_all(csrVal, csrRowPtr, csrColInd, X_val, cuY_val, rowA, colA, nnzA, data_origin1, data_origin2, &cu_time, &cu_gflops, &cu_bandwidth1, &cu_bandwidth2, &cu_pre);
 
-    double necTime = 0, necPre = 0;
-    cdspmv(filename, csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA, &necTime, &necPre);
+    double cdTime = 0, cdPre = 0;
+    cdspmv(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA, &cdTime, &cdPre);
     spmv_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val_s, rowA, colA, nnzA);
 
-    printf("cd_perf:%8.4lf ms, our_pre:%8.4lf ms\n", necTime, necPre);
+    printf("cd_perf:%8.4lf ms, our_pre:%8.4lf ms\n", cdTime, cdPre);
     printf("cusparse_perf:%8.4lf ms, cusparse_pre:%8.4lf ms\n", cu_time, cu_pre);
     // printf("\n iterate= %d\n", iter);
 

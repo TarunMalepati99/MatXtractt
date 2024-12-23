@@ -1,49 +1,12 @@
 /*
  * Dual-Phase Compression
  * Author: Luhan Wang
- * Date: 2024.9.24
+ * Date: 2024.12.22
  */
 #include "mmio.h"
 #include "csr2csc.h"
 #include "TCSpMV.h"
 
-// const float rowProp = 0.1;
-// const float colProp = 0.125;
-
-// const float rowProp = 0.15;
-// const float colProp = 0.1875;
-
-// const float rowProp = 0.2;
-// const float colProp = 0.25;
-
-// const float rowProp = 0.25;
-// const float colProp = 0.3125;
-
-// const float rowProp = 0.3 ;
-// const float colProp = 0.375;
-
-// const float rowProp = 0.35 ;
-// const float colProp = 0.4375;
-
-// const float rowProp = 0.4 ;
-// const float colProp = 0.5;
-
-// const float rowProp = 0.45;
-// const float colProp = 0.5625;
-
-// const float rowProp = 0.5 ;
-// const float colProp = 0.625;
-
-// const float rowProp = 0.55;
-// const float colProp = 0.6875;
-
-// const float rowProp = 0.6 ;
-// const float colProp = 0.75;
-
-// const float rowProp = 0.7 ;
-// const float colProp = 0.875;
-
-bool isDenseTC = 0;
 typedef struct
 {
     int count;
@@ -205,10 +168,7 @@ void merge2CSR_opt(
     // Step 2: Build csrRowPtr_CD
     csrRowPtr_CD = (int *)malloc((rowCD + 1) * sizeof(int));
 
-    // 使用calloc一次性初始化row_nnz为0
     int *row_nnz = (int *)calloc(rowCD, sizeof(int));
-
-    // 计算S贡献的行非零元数
     {
         
         #pragma omp parallel for
@@ -217,8 +177,6 @@ void merge2CSR_opt(
             row_nnz[i] += csrRowPtr_S[i + 1] - csrRowPtr_S[i];
         }
     }
-
-    // 计算D贡献的行非零元数
     {
         
         #pragma omp parallel for
@@ -228,8 +186,6 @@ void merge2CSR_opt(
             row_nnz[row_in_A_CD] += (csrRowPtr_D[i + 1] - csrRowPtr_D[i]);
         }
     }
-
-    // 使用partial_sum构建csrRowPtr_CD，以代替手动循环
     csrRowPtr_CD[0] = 0;
     std::partial_sum(row_nnz, row_nnz + rowCD, csrRowPtr_CD + 1);
 
@@ -261,7 +217,6 @@ void merge2CSR_opt(
         #pragma omp parallel for
         for (int i = 0; i < rowA; ++i)
         {
-            // 每个线程处理不同的i行，故无数据竞争
             int pos = current_pos[i];
             for (int k = csrRowPtr_S[i]; k < csrRowPtr_S[i + 1]; ++k)
             {
@@ -360,63 +315,6 @@ void spmv_serial(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
         Y_val[i] = Y_val[i] + t;
     }
 }
-
-void spmv_serial_csc(valT *cscVal, indT *cscColPtr, indT *cscRowInd,
-                     valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA)
-{
-    for (indT i = 0; i < colA; i++)
-    {
-        // printf(" i = %d \n", i);
-        indT col_start = cscColPtr[i];
-        indT col_end = cscColPtr[i + 1];
-
-        // printf("%d\n",i);
-        for (indT j = col_start; j < col_end; j++)
-        {
-            indT v_idx = cscRowInd[j];
-            Y_val[v_idx] = Y_val[v_idx] + cscVal[j] * X_val[i];
-        }
-        // printf(" i = %d ------ \n", i);
-    }
-}
-
-void spmv_serial_(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-                  valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order)
-{
-    valT t;
-    for (indT i = 0; i < rowA; i++)
-    {
-        t = static_cast<valT>(0.0);
-        indT ptr_start = csrRowPtr[i];
-        indT n_one_line = csrRowPtr[i + 1] - ptr_start;
-        for (indT j = 0; j < n_one_line; j++)
-        {
-            indT v_idx = csrColInd[j + ptr_start];
-            t = t + csrVal[j + ptr_start] * X_val[v_idx];
-        }
-        Y_val[row_order[i]] = Y_val[row_order[i]] + t;
-    }
-}
-
-void spmv_serial_ecr(valT *csrVal, indT *csrRowPtr, indT *csrColInd,
-                     valT *X_val, valT *Y_val, int rowA, int colA, indT nnzA, indT *row_order, int *ecrId, int **use_x_id)
-{
-    valT t;
-    for (int i = 0; i < rowA; i++)
-    {
-        int windowId = i / fragM;
-        t = static_cast<valT>(0.0);
-        indT ptr_start = csrRowPtr[i];
-        indT n_one_line = csrRowPtr[i + 1] - ptr_start;
-        for (indT j = 0; j < n_one_line; j++)
-        {
-            indT v_idx = use_x_id[windowId][ecrId[j + ptr_start]];
-            t = t + csrVal[j + ptr_start] * X_val[v_idx];
-        }
-        Y_val[row_order[i]] = Y_val[row_order[i]] + t;
-    }
-}
-
 // condense an sorted array with duplication: [1,2,2,3,4,5,5]
 // after condense, it becomes: [1,2,3,4,5].
 // Also, mapping the origin value to the corresponding new location in the new array.
@@ -617,8 +515,6 @@ void ecrPreprocess_opt1(
     int *nec_num)
 {
     int block_counter = 0;
-
-    // 确定最大窗口大小
     int max_window_size = 0;
     for (int i = 0; i < rowA; i += fragSize_h)
     {
@@ -628,7 +524,6 @@ void ecrPreprocess_opt1(
 
     #pragma omp parallel
     {
-        // 线程私有内存分配，避免反复分配
         int *neighbor_window = (int *)malloc(max_window_size * sizeof(int));
         if (neighbor_window == nullptr)
         {
@@ -649,16 +544,11 @@ void ecrPreprocess_opt1(
                 blockPartition[windowId] = 0;
                 continue;
             }
-
-            // 拷贝数据到线程私有的 neighbor_window
             std::memcpy(neighbor_window, &csrColInd[block_start], num_window_nnzs * sizeof(int));
-
-            // 并行排序
             __gnu_parallel::sort(neighbor_window, neighbor_window + num_window_nnzs);
             auto end_it = std::unique(neighbor_window, neighbor_window + num_window_nnzs);
             int unique_size = end_it - neighbor_window;
 
-            // 预分配 use_x_id 内存
             use_x_id[windowId] = (int *)malloc(unique_size * sizeof(int));
             if (use_x_id[windowId] == nullptr)
             {
@@ -666,7 +556,6 @@ void ecrPreprocess_opt1(
                 exit(EXIT_FAILURE);
             }
 
-            // 填充 use_x_id 和 clean_edges2col 映射
             std::unordered_map<int, int> clean_edges2col;
             for (int i = 0; i < unique_size; ++i)
             {
@@ -674,12 +563,9 @@ void ecrPreprocess_opt1(
                 clean_edges2col[neighbor_window[i]] = i;
             }
             nec_num[windowId] = unique_size;
-
-            // 计算 blockPartition
             blockPartition[windowId] = (unique_size + fragSize_w - 1) / fragSize_w;
             block_counter += blockPartition[windowId];
 
-            // 填充 ecrId
             for (int e_index = block_start; e_index < block_end; e_index++)
             {
                 int eid = csrColInd[e_index];
@@ -697,7 +583,6 @@ void ecrPreprocess_opt1(
             }
         }
 
-        // 释放线程私有内存
         free(neighbor_window);
     }
 }
@@ -855,7 +740,6 @@ void generateFormat_opt(
     // Initialize fragBit
     fragBit.resize(totalTcFrags, 0);
 
-    // 主循环：处理每个rowChunk
     for (int rowChunkIndex = 0; rowChunkIndex < numRowChunks; ++rowChunkIndex)
     {
         int rowChunkStart = rowChunkIndex * fragM;
@@ -867,7 +751,6 @@ void generateFormat_opt(
             continue;
         }
 
-        // 为当前rowChunk分配临时存储空间 (flattened arrays)
         size_t chunkSize = static_cast<size_t>(numTcFragsInChunk) * fragM * fragK;
         std::vector<valT> valueGrids(chunkSize, static_cast<valT>(0));
         std::vector<bool> hasValueGrids(chunkSize, false);
@@ -1040,9 +923,30 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        printf("Run the code by './spmv_double matrix.mtx'. \n");
-        return 0;
+        printf("Run the code by './TCSpMVlib_tcperftest (col_frac) (hot_frac) matrix.mtx'.\n");
+        printf("col_frac and hot_frac are optional, defaulting to 0 if not provided.\n");
+        return 1;
     }
+    char *filename = argv[argc - 1];
+    double col_frac = 0.0, hot_frac = 0.0;
+    if (argc == 4)
+    {
+        col_frac = atof(argv[1]);
+        hot_frac = atof(argv[2]);
+        if (col_frac < hot_frac)
+        {
+            printf("Error: col_frac must be greater than hot_frac.\n");
+            printf("Please run the program with valid parameters.\n");
+            return 1;
+        }
+    }
+    else if (argc > 4)
+    {
+        printf("Error: Too many arguments provided.\n");
+        printf("Run the code by './spmv_double (col_frac) (hot_frac) matrix.mtx'.\n");
+        return 1;
+    }
+
     int rowA, colA;
     indT nnzA;
     int isSymmetricA;
@@ -1053,8 +957,6 @@ int main(int argc, char **argv)
     indT *cscColPtr;
     indT *cscRowInd;
 
-    char *filename;
-    filename = argv[1];
 #ifdef fp64
     printf("\n Processing the %s graph in FP64\n\n", filename);
 #else
@@ -1063,6 +965,7 @@ int main(int argc, char **argv)
 
     mmio_allinone(&rowA, &colA, &nnzA, &isSymmetricA, &csrRowPtr, &csrColInd, &csrVal, filename);
     initVec(csrVal, nnzA);
+    // printf("\n rows = %d, nnzs = %d \n", rowA, nnzA);
     /***************************************************************
      *                 1.Sparsity-aware Compression                *
      ***************************************************************/
@@ -1072,17 +975,19 @@ int main(int argc, char **argv)
      ***************************************************************/
     // printf("\n------Sparsity-aware Compression START------\n");
     // float rowProp = 0.62f;
-    for (float rowProp = 0.1f; rowProp <= 0.7f; rowProp += 0.05f)
+    // for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
+    float colProp = col_frac;
+    float rowProp = hot_frac;
+    if(!((rowProp == 0.0) && (colProp == 0.0)))
     {
-        float colProp = rowProp / 0.8f;
+        // float colProp = rowProp / 0.8f;
         // float colProp = 0.8f;
+
         std::cout << "---------------------------------------------------------" << std::endl;
         std::cout << "                     rowProp: " << rowProp << std::endl;
         std::cout << "                     colProp: " << colProp << std::endl;
         std::cout << "---------------------------------------------------------" << std::endl;
         
-
-
         std::cout << "---------------------Compression Info--------------------" << std::endl;
         csr2csc(csrVal, csrRowPtr, csrColInd, rowA, colA, nnzA,
                 &cscVal, &cscColPtr, &cscRowInd);
@@ -1344,8 +1249,9 @@ int main(int argc, char **argv)
             chunkPtr[i] += chunkPtr[i - 1] + blockPartition[i - 1];
         }
         int totalTcFrags = chunkPtr[chunkNum];
+        double tc_nnz_ratio = ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK));
 
-        printf("TC_nnz_ratio = %lf\n", ((double)nnzRowD / ((double)chunkPtr[chunkNum] * fragM * fragK)));
+        printf("TC_nnz_ratio = %lf\n", tc_nnz_ratio);
 
         int *sparse_AToX_index = (int *)malloc(sizeof(int) * totalTcFrags * fragK);
         memset(sparse_AToX_index, 0, sizeof(int) * (totalTcFrags * fragK));
@@ -1430,9 +1336,8 @@ int main(int argc, char **argv)
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////Baseline
         ////////////////////////////////////////////////////////////////////////////////////////////
-
         spmv_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
-
+        
         /*
          *    Peripheral-Sparse Block: scsrVal, scsrRowPtr, scsrColInd : rowA, sCols, nnzColS        *
          *    Edge-Sparse Block: csrVal_ds, csrRowPtr_ds, csrColInd_ds : sRows, dCols, nnzRowS,      *
@@ -1441,16 +1346,6 @@ int main(int argc, char **argv)
          *    dense  col-segment: dcsrVal, dcsrRowPtr, dcsrColInd      *
          */
 
-        // Peripheral-Sparse Block
-        // spmv_serial(scsrVal, scsrRowPtr, scsrColInd, x_s, coldY_val, rowA, sCols, nnzColS);
-        // printf("Peripheral-Sparse nnz per row = %f\n", (double)nnzColS / (double)rowA);
-
-        // Edge-Sparse Block
-        // spmv_serial_(csrVal_ds, csrRowPtr_ds, csrColInd_ds, x_d, coldY_val, sRows, dCols, nnzRowS, newArray_);
-        // printf("Edge-Sparse nnz per row = %f\n", (double)nnzRowS / (double)sRows);
-
-        // Peripheral-Sparse and Edge-Sparse merge
-        // colA, rowA,
         int nnzCD = nnzColS + nnzRowS;
         int rowCD = rowA;
         int colCD = colA;
@@ -1467,99 +1362,89 @@ int main(int argc, char **argv)
             x_d, x_s,
             csrVal_CD, csrRowPtr_CD, csrColInd_CD,
             x_CD);
-
-
-        // spmv_serial(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
-        double cdTime1 = 0, necPre1 = 0;
+        double cdTime = 0, cdPre = 0;
         double tcTime_du = 0;
         double tcTime_se = 0;
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////cuda core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
-        cdspmv(filename, csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime1, &necPre1);
-        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime1, necPre1);
-        printf("cdspmv:    %8.4lf ms\n", cdTime1);
-        
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        // printf("------Core-Dense nnz per row = %f------\n", (double)nnzRowD / (double)dRows);
-        // printf("------Core-Dense 1st row nnz = %d------\n", csrRowPtr_dd[1] - csrRowPtr_dd[0]);
-        // printf("------Core-Dense 2st row nnz = %d------\n", csrRowPtr_dd[2] - csrRowPtr_dd[1]);
-        // printf("------Core-Dense 3th row nnz = %d------\n", csrRowPtr_dd[3] - csrRowPtr_dd[2]);
-        // printf("------Core-Dense 4th row nnz = %d------\n", csrRowPtr_dd[4] - csrRowPtr_dd[3]);
-        // printf("------Core-Dense 5th row nnz = %d------\n", csrRowPtr_dd[5] - csrRowPtr_dd[4]);
-        // printf("------Core-Dense last row nnz = %d------\n", csrRowPtr_dd[dRows] - csrRowPtr_dd[dRows - 1]);
+        cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
+        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
+        printf("cdspmv:    %8.4lf ms\n", cdTime);
 
-        // spmv_serial_ecr(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId, ecrId, use_x_id);
-        double cdTime = 0, necPre = 0;
-#ifdef fp64
-        // tcspmv_serial(x_d, hotY_val, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-        tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
-        
-
-        // fospmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
-        //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
-#else
-        // tcspmv_serial(x_d, hotY_val_solo_du, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
-        
-        
-        tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
-        
-
-        // fospmv_fp16(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val, dRows, dCols,
-        //             csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val, rowCD, colCD, nnzCD);
-#endif
-        
-        
         ////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////DASP Start
+        /////////////tensor core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
-        // Core-Dense Block
-        // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId); TODO: DASP on it
         
         int NUM = 4;
         int block_longest = 256;
         double threshold = 0.75;
         int *new_order = (int *)malloc(sizeof(int) * rowA);
+
 #ifdef fp64
-        se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se);
+        bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;
+        if(denseUnfold)
+        {
+            du_tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
+            // tcspmv_serial(x_d, hotY_val_solo_du, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+        }
+        else // sparseEncode
+        {
+            se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se); 
+        }
 #else
-        se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se);
-        
+        bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;// TODO: further evaluation
+        if(denseUnfold)
+        {
+            du_tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
+            // tcspmv_serial(x_d, hotY_val_solo_du, chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, dRows, dCols, fragM, fragK);
+        }
+        else // sparseEncode
+        {
+            se_tcspmv_fp16(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se);
+        }
 #endif
         cudaDeviceSynchronize();
-        
-        // for (int i = 0; i < dRows; i++)
-        // {
-        //     coldY_val_solo[rId[new_order[i]]] += hotY_val_solo_se[i];
-        // }
-        
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////DASP End
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        
-        for (int i = 0; i < dRows; i++)
+
+        if(denseUnfold)
         {
-            coldY_val_solo[rId[i]] += hotY_val_solo_du[i];
+            for (int i = 0; i < dRows; i++)
+            {
+                coldY_val_solo[rId[i]] += hotY_val_solo_du[i];
+            }
+
         }
+        else
+        {
+            for (int i = 0; i < dRows; i++)
+            {
+                coldY_val_solo[rId[new_order[i]]] += hotY_val_solo_se[i];
+            }
+        }
+
+        if(denseUnfold)
+        {
+            printf("du_spmv:    %8.4lf ms\n", tcTime_du);
+            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_du + cdTime);
+        }else{
+            printf("se_spmv:    %8.4lf ms\n", tcTime_se);
+            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_se + cdTime);
+        }
+        int result_auto = eQcheck(Y_val, coldY_val_solo, rowA);
         
 
-        // int result = eQcheck(hotY_val_solo_du, hotY_val, dRows);
-        // int result = eQcheck(coldY_val_solo, coldY_val, rowA);
 
-        // spmv_serial(dcsrVal, dcsrRowPtr, dcsrColInd, x_d, coldY_val, rowA, dCols, nnzColD);
-        // spmv_serial_(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, coldY_val, dRows, dCols, nnzRowD, rId);
 
-        int result_ = eQcheck(Y_val, coldY_val_solo, rowA);
-        
-        // int result = eQcheck(Y_val, coldY_val, rowA);
-        printf("du_spmv:    %8.4lf ms\n", tcTime_du);
-        printf("se_spmv:    %8.4lf ms\n", tcTime_se);
 
-        printf("\n\n THE FINAL TIME = %lf \n\n", tcTime_du + cdTime1);
 
+
+
+
+
+
+
+
+        // free memory
         free(sparse_AToX_index);
         free(nec_num);
         for (int i = 0; i < chunkNum; i++)
@@ -1569,6 +1454,8 @@ int main(int argc, char **argv)
                 free(use_x_id[i]);
             }
         }
+        free(rId);
+        free(new_order);
         free(use_x_id);
         free(ecrId);
         free(chunkPtr);
@@ -1620,7 +1507,26 @@ int main(int argc, char **argv)
         free(bitmap_);
         free(descRowId);
     }
+    else
+    {
+        // printf("\n all cd spmv \n");
+        valT *X_val = (valT *)malloc(sizeof(valT) * colA);
+        initVec(X_val, colA);
+        valT *Y_val = (valT *)malloc(sizeof(valT) * rowA);
+        valT *ourY_val = (valT *)malloc(sizeof(valT) * rowA);
+        std::fill(Y_val, Y_val + rowA, static_cast<valT>(0.0));
+        std::fill(ourY_val, ourY_val + rowA, static_cast<valT>(0.0));
 
+        spmv_serial(csrVal, csrRowPtr, csrColInd, X_val, Y_val, rowA, colA, nnzA);
+        double cdTime = 0, cdPre = 0;
+        cdspmv(csrVal, csrRowPtr, csrColInd, X_val, ourY_val, rowA, colA, nnzA, &cdTime, &cdPre);
+        
+        printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", cdTime);
+        int result_cd = eQcheck(Y_val, ourY_val, rowA);
+        free(Y_val);
+        free(ourY_val);
+        free(X_val);
+    }
     free(csrColInd);
     free(csrRowPtr);
     free(csrVal);

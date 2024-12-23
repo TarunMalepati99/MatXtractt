@@ -240,7 +240,7 @@ __global__ void tcspmv_kernel_fp16_v0(
     }
 }
 
-void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+void du_tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                  half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
@@ -332,7 +332,7 @@ void tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaFree(d_Y_val_perf));
 }
 
-void tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+void du_tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
                   std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
                   half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {

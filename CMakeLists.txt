@@ -13,7 +13,7 @@ endif()
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true)
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" OFF)
+option(USE_FP64 "Enable fp64 support" ON)
 
 
 if(ENABLE_CUDA_MEMCHECK)
@@ -74,12 +74,12 @@ message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
 
 if(CUDA_TEST_FILES)
-    #fp64
+    #cd kernel
     add_executable(TCSpMVlib_perf ${CUDA_TEST_FILES})
     target_link_libraries(TCSpMVlib_perf TCSpMVlib cuda_utilities_lib)
     target_include_directories(TCSpMVlib_perf PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-    #preprocess
+    #auto kernel
     add_executable(TCSpMVlib_tcperftest ${CUDA_TCTEST_FILES})
     target_link_libraries(TCSpMVlib_tcperftest TCSpMVlib cuda_utilities_lib OpenMP::OpenMP_CXX)
     target_include_directories(TCSpMVlib_tcperftest PRIVATE ${PROJECT_SOURCE_DIR}/include)

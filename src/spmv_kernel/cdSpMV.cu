@@ -317,9 +317,9 @@ __global__ void cdspmv_kernel(valT *__restrict__ d_val,
 }
 
 
-void cdspmv(char *filename, valT *csrVal, int *csrRowPtr, int *csrColInd,
+void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
             valT *X_val, valT *Y_val, int rowA, int colA, int nnzA,
-            double *necTime, double *necPre)
+            double *cdTime, double *cdPre)
 {
   struct timeval t1;
   struct timeval t2;
@@ -399,10 +399,10 @@ void cdspmv(char *filename, valT *csrVal, int *csrRowPtr, int *csrColInd,
   CUDA_CHECK_ERROR(cudaGetLastError());
 
   double pre_time = ((tpre2.tv_sec - tpre1.tv_sec) * 1000.0 + (tpre2.tv_usec - tpre1.tv_usec) / 1000.0) / 1;
-  *necPre = pre_time;
-  double nec_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / execute_time;
-  *necTime = nec_time;
-  double nec_gflops = (double)((long)nnzA * 2) / (nec_time * 1e6);
+  *cdPre = pre_time;
+  double cd_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / execute_time;
+  *cdTime = cd_time;
+  double cd_gflops = (double)((long)nnzA * 2) / (cd_time * 1e6);
 
   CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_vecY_csr, sizeof(valT) * rowA, cudaMemcpyDeviceToHost));
   cudaFree(d_vecY_csr_perf);

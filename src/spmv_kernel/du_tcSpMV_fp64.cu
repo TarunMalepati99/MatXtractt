@@ -189,7 +189,7 @@ __global__ void tcspmv_kernel_fp64__(
 
 
 
-void tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
+void du_tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32_t> fragBit,
             std::vector<double> tcVal, indT *sparse_AToX_index, double *X_val,
             double *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
