@@ -291,8 +291,8 @@ void du_tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     printf("Launching kernel with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 100;
-    for (int i = 0; i < warp_iter; ++i)
+    int warm_iter = 200;
+    for (int i = 0; i < warm_iter; ++i)
     {
         tcspmv_kernel_fp16_v0<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
@@ -300,7 +300,7 @@ void du_tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 3000;
+    int test_iter = 4000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {
@@ -384,8 +384,8 @@ void du_tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     printf("Launching tcspmv_kernel_fp16 with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 100;
-    for (int i = 0; i < warp_iter; ++i)
+    int warm_iter = 200;
+    for (int i = 0; i < warm_iter; ++i)
     {
         tcspmv_kernel_fp16_v1<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val_perf, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
@@ -393,7 +393,7 @@ void du_tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 3000;
+    int test_iter = 4000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {

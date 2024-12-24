@@ -345,7 +345,7 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
   cudaMemset(d_vecY_csr_perf, 0.0, sizeof(valT) * rowA);
 #ifdef fp64
-  int productNnzPerThread = 4;
+  int productNnzPerThread = (nnzA > 200000000) ? 8 : 4;
 #else
   int productNnzPerThread = (nnzA > 300000) ? 16 : 4;
 #endif
@@ -375,17 +375,17 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
          WORK_BLOCKS, THREADS_PER_BLOCK);
 
-  int warmup_time = 100;
-  int execute_time = 3000;
+  int warm_iter = 200;
+  int test_iter = 4000;
 
-  for (int i = 0; i < warmup_time; ++i)
+  for (int i = 0; i < warm_iter; ++i)
   {
     cdspmv_kernel<THREADS_PER_BLOCK><<<(WORK_BLOCKS), (THREADS_PER_BLOCK), productNnzPerBlock * sizeof(valT)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock, productNnzPerThread, productNnzPerBlock);
     
   }
   cudaDeviceSynchronize();
   gettimeofday(&t1, NULL);
-  for (int i = 0; i < execute_time; ++i)
+  for (int i = 0; i < test_iter; ++i)
   {
     cdspmv_kernel<THREADS_PER_BLOCK><<<(WORK_BLOCKS), (THREADS_PER_BLOCK), productNnzPerBlock * sizeof(valT)>>>(d_val, d_ptr, d_indices, rowA, d_vecX_csr, d_vecY_csr_perf, startRowPerBlock, productNnzPerThread, productNnzPerBlock);
     
@@ -400,7 +400,7 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
 
   double pre_time = ((tpre2.tv_sec - tpre1.tv_sec) * 1000.0 + (tpre2.tv_usec - tpre1.tv_usec) / 1000.0) / 1;
   *cdPre = pre_time;
-  double cd_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / execute_time;
+  double cd_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / test_iter;
   *cdTime = cd_time;
   double cd_gflops = (double)((long)nnzA * 2) / (cd_time * 1e6);
 

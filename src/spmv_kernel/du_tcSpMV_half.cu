@@ -209,8 +209,8 @@ void tcspmv_half(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
     printf("Launching kernel with %d blocks, %d threads per block\n",
            blocksPerGrid, threadsPerBlock);
 
-    int warp_iter = 0;
-    for (int i = 0; i < warp_iter; ++i)
+    int warm_iter = 200;
+    for (int i = 0; i < warm_iter; ++i)
     {
         tcspmv_kernel_half<<<blocksPerGrid, threadsPerBlock>>>(
             d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
@@ -218,7 +218,7 @@ void tcspmv_half(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
     }
     CUDA_CHECK_ERROR(cudaDeviceSynchronize());
 
-    int test_iter = 1;
+    int test_iter = 4000;
     cuda_time_test_start();
     for (int i = 0; i < test_iter; ++i)
     {

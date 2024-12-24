@@ -1,11 +1,11 @@
 cd "$(dirname "$0")"
-command="../build/TCSpMVlib_tcperftest"
+command="../build/TCSpMVlib_perf"
 
 # Define data directory
 data_dir="../../../data/large_mtx/"
 
 # Define output file
-log="./res/duse_fp64.log"
+log="./res/222.log"
 
 # Loop through each subdirectory in the data directory
 for dir in "$data_dir"*/; do

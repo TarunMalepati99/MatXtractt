@@ -1557,11 +1557,11 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     cudaFuncSetAttribute(dasp_spmv2<2>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
     cudaFuncSetAttribute(dasp_spmv2<4>, cudaFuncAttributePreferredSharedMemoryCarveout, carveout);
 
-    int warmup_time = 100;
-    int execute_time = 1000;
+    int warm_iter = 200;
+    int test_iter = 4000;
     if (rowloop == 1)
     {
-        for (int i = 0; i < warmup_time; ++i)
+        for (int i = 0; i < warm_iter; ++i)
         {
             dasp_spmv<1><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1573,7 +1573,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         }
         cudaDeviceSynchronize();
         gettimeofday(&t1, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv<1><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1586,14 +1586,14 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
             cudaDeviceSynchronize();
         }
         gettimeofday(&t2, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv2<1><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                            dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1606,7 +1606,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
@@ -1616,7 +1616,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     }
     else if (rowloop == 2)
     {
-        for (int i = 0; i < warmup_time; ++i)
+        for (int i = 0; i < warm_iter; ++i)
         {
             dasp_spmv<2><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1628,7 +1628,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         }
         cudaDeviceSynchronize();
         gettimeofday(&t1, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv<2><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1641,14 +1641,14 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
             cudaDeviceSynchronize();
         }
         gettimeofday(&t2, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv2<2><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                            dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1661,7 +1661,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
@@ -1671,7 +1671,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
     }
     else
     {
-        for (int i = 0; i < warmup_time; ++i)
+        for (int i = 0; i < warm_iter; ++i)
         {
             dasp_spmv<4><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1683,7 +1683,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         }
         cudaDeviceSynchronize();
         gettimeofday(&t1, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv<4><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                           dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1696,14 +1696,14 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
             cudaDeviceSynchronize();
         }
         gettimeofday(&t2, NULL);
-        for (int i = 0; i < execute_time; ++i)
+        for (int i = 0; i < test_iter; ++i)
         {
             dasp_spmv2<4><<<BlockNum_all, ThreadNum_all>>>(dX_val, dY_val,
                                                            dlong_val, dlong_cid, dval_by_warp, dlong_ptr_warp, row_long,
@@ -1716,7 +1716,7 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         cudaDeviceSynchronize();
         if (row_long)
         {
-            for (int i = 0; i < execute_time; ++i)
+            for (int i = 0; i < test_iter; ++i)
             {
                 longPart_sum<<<sumBlockNum, ThreadNum_all>>>(dlong_ptr_warp, dval_by_warp, dY_val, row_long);
             }
@@ -1725,9 +1725,9 @@ void se_tcspmv_fp16(half *csrValA, indT *csrRowPtrA, int *csrColIdxA,
         gettimeofday(&t3, NULL);
     }
 
-    double dasp_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / execute_time;
+    double dasp_time = ((t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0) / test_iter;
     double dasp_gflops = (double)((long)nnzA * 2) / (dasp_time * 1e6);
-    double dasp_time_bypass = ((t3.tv_sec - t2.tv_sec) * 1000.0 + (t3.tv_usec - t2.tv_usec) / 1000.0) / execute_time;
+    double dasp_time_bypass = ((t3.tv_sec - t2.tv_sec) * 1000.0 + (t3.tv_usec - t2.tv_usec) / 1000.0) / test_iter;
     double dasp_gflops_bypass = (double)((long)nnzA * 2) / (dasp_time_bypass * 1e6);
     double dasp_bandwidth1 = (double)data_X / (dasp_time_bypass * 1e6);
     double dasp_bandwidth2 = (double)data_X2 / (dasp_time_bypass * 1e6);

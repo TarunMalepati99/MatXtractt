@@ -113,10 +113,10 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     double cusparse_pre = (t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0;
     // printf("cusparse preprocessing time: %8.4lf ms\n", cusparse_pre);
     *cu_pre = cusparse_pre;
-    int warp_iter = 100;
-    int test_iter = 3000;
+    int warm_iter = 200;
+    int test_iter = 4000;
 
-    for (int i = 0; i < warp_iter; ++i)
+    for (int i = 0; i < warm_iter; ++i)
     {
         cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                      &alpha, matA, vecX, &beta, vecY, BUF_CUDA_R_TYPE,
