@@ -89,7 +89,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     cudaMemcpy(dA_cid, cu_ColIdxA, sizeof(int) * nnzA, cudaMemcpyHostToDevice);
     cudaMemcpy(dA_rpt, cu_RowPtrA, sizeof(indT) * (rowA + 1), cudaMemcpyHostToDevice);
     cudaMemcpy(dX, cu_ValX, sizeof(valT) * colA, cudaMemcpyHostToDevice);
-    // cudaMemset(dY, 0.0, sizeof(valT) * rowA);
+    cudaMemset(dY, 0.0, sizeof(valT) * rowA);
 
     cusparseHandle_t handle = NULL;
     cusparseSpMatDescr_t matA;
@@ -99,6 +99,13 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
 
     gettimeofday(&t1, NULL);
     cusparseCreate(&handle);
+    // int version;
+    // if (cusparseGetVersion(handle, &version) == CUSPARSE_STATUS_SUCCESS) {
+    //     std::cout << "cuSPARSE Version: " << version / 1000 << "." << (version % 1000) / 10 << std::endl;
+    // } else {
+    //     std::cerr << "Failed to get cuSPARSE version." << std::endl;
+    // }
+    
     cusparseCreateCsr(&matA, rowA, colA, nnzA, dA_rpt, dA_cid, dA_val,
                       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                       CUSPARSE_INDEX_BASE_ZERO, VAL_CUDA_R_TYPE);

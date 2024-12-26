@@ -22,7 +22,7 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件路径
 ##############################################################################
-MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/large_mtx/uk-2005/uk-2005.mtx"
+MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/a0nsdsil/a0nsdsil.mtx"
 # MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/roadNet-CA/roadNet-CA.mtx"
 
 
@@ -127,7 +127,8 @@ if __name__ == "__main__":
         acq_func="EI",        # 采集函数: Expected Improvement
         random_state=42,
         x0=x0,                # 手动添加初始点
-        y0=y0
+        y0=y0,
+        noise=0.005
     )
     
     # 打印优化结果
@@ -139,8 +140,8 @@ if __name__ == "__main__":
     print(f"Min Time (ms)  = {res.fun:.4f}")
     
     # 可选：画出收敛曲线
-    plot_convergence(res)
-    plt.title("Convergence Plot (col_frac, hot_frac) -> Time")
-    plt.savefig("convergence_plot.pdf")
-    # 关闭图形，释放内存
-    plt.close()
+    # plot_convergence(res)
+    # plt.title("Convergence Plot (col_frac, hot_frac) -> Time")
+    # plt.savefig("convergence_plot.pdf")
+    # # 关闭图形，释放内存
+    # plt.close()

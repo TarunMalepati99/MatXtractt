@@ -13,7 +13,7 @@ endif()
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true)
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" ON)
+option(USE_FP64 "Enable fp64 support" OFF)
 
 
 if(ENABLE_CUDA_MEMCHECK)
@@ -71,7 +71,7 @@ message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
 # file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tcpreprocess.cpp")
 # file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tckernel.cpp")
-file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
+file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_autotc_spmv.cpp")
 
 if(CUDA_TEST_FILES)
     #cd kernel
