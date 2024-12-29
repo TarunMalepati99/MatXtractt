@@ -15,7 +15,7 @@ from skopt.plots import plot_convergence
 ##############################################################################
 MATRIX_ROOT_DIR = "/home/v-jiawcheng/wangluhan/data/large_mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
 
-OUTPUT_FILE = "optimization_results_fp64_large.csv"  # 输出的 CSV 文件路径
+OUTPUT_FILE = "optimization_results_fp64_large_new.csv"  # 输出的 CSV 文件路径
 
 # 初始化 CSV 文件，并写入表头（修改部分）
 if not os.path.exists(OUTPUT_FILE):
@@ -134,13 +134,12 @@ if __name__ == "__main__":
             res = gp_minimize(
                 func=objective,
                 dimensions=space,
-                n_calls=8,           # 总共评估 7 个点
-                n_random_starts=3,    # 其中 3 个随机点 + 1个人工点 => 4个初始样本
+                n_calls=20,           # 总共评估 7 个点
+                n_random_starts=4,    # 其中 3 个随机点 + 1个人工点 => 4个初始样本
                 acq_func="EI",        # 采集函数: Expected Improvement
                 random_state=42,
                 x0=x0,                # 手动添加初始点
-                y0=y0,
-                noise=0.005
+                y0=y0
             )
 
             # 打印优化结果

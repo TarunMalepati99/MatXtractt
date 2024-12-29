@@ -7,11 +7,11 @@ command="../build/TCSpMVlib_tcperftest"
 data_dir="../../../data/large_mtx/"
 
 # Define output files
-csv_file="./res/se_fp16.csv"
+csv_file="./res/du_fp16.csv"
 error_log="./res/111.log"
 
 # Initialize CSV file with header row
-echo "Matrix Name,Rows,NNZs,Parameters (colProp, rowProp),TC_nnz_ratio,se_spmv (ms),cdspmv (ms)" > "$csv_file"
+echo "Matrix Name,Rows,NNZs,Parameters (colProp, rowProp),TC_nnz_ratio,du_spmv (ms),cdspmv (ms)" > "$csv_file"
 
 # Clear error log file if it already exists
 > "$error_log"
@@ -40,19 +40,19 @@ for dir in "$data_dir"/*/; do
       /rowProp:/ { rowProp=$2 }
       /colProp:/ { colProp=$2 }
       /TC_nnz_ratio =/ { tc_nnz_ratio=$3 }
-      /se_spmv:/ { se_spmv=$2 + 0 }  # 确保提取数字部分
+      /du_spmv:/ { du_spmv=$2 + 0 }  # 确保提取数字部分
       /cdspmv:/ { cdspmv=$2 + 0 }  # 同样处理 cdspmv
       /Success!/ {
         missing_fields = ""
         if (rowProp == "") missing_fields = missing_fields "rowProp "
         if (colProp == "") missing_fields = missing_fields "colProp "
         if (tc_nnz_ratio == "") missing_fields = missing_fields "TC_nnz_ratio "
-        if (se_spmv == "") missing_fields = missing_fields "se_spmv "
+        if (du_spmv == "") missing_fields = missing_fields "du_spmv "
         if (cdspmv == "") missing_fields = missing_fields "cdspmv "
         
         if (missing_fields == "") {
           # If no fields are missing, print the result
-          printf "%s,%s,%s,(%s, %s),%s,%s,%s\n", matrix_name, rows, nnzs, colProp, rowProp, tc_nnz_ratio, se_spmv, cdspmv
+          printf "%s,%s,%s,(%s, %s),%s,%s,%s\n", matrix_name, rows, nnzs, colProp, rowProp, tc_nnz_ratio, du_spmv, cdspmv
         } else {
           # If there are missing fields, log them
           print "Incomplete data for " matrix_name ": Missing fields - " missing_fields >> "'"$error_log"'"
@@ -60,7 +60,7 @@ for dir in "$data_dir"/*/; do
           print $0 >> "'"$error_log"'"
         }
         # Reset variables for the next record
-        rowProp=""; colProp=""; tc_nnz_ratio=""; se_spmv=""; cdspmv=""
+        rowProp=""; colProp=""; tc_nnz_ratio=""; du_spmv=""; cdspmv=""
       }' >> "$csv_file"
 
 

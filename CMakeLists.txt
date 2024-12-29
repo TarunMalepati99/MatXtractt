@@ -69,9 +69,9 @@ target_link_libraries(cuda_utilities_lib ${CUSPARSE_LIBRARY})
 file(GLOB CUDA_TEST_FILES "${CUDA_TEST_PATH}/test_cdspmv.cpp")
 message(STATUS "CUDA_TEST_FILES: ${CUDA_TEST_FILES}")
 
-# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tcpreprocess.cpp")
-# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/tckernel.cpp")
-file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_autotc_spmv.cpp")
+
+# file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_autotc_spmv.cpp")
+file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_tcspmv.cpp")
 
 if(CUDA_TEST_FILES)
     #cd kernel
@@ -86,3 +86,18 @@ if(CUDA_TEST_FILES)
 else()
     message(FATAL_ERROR "No test files found!")
 endif()
+
+
+
+
+
+
+# 添加 ML 文件夹路径
+set(ML_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ML)
+
+# 添加 extract_features.cpp 的构建规则
+file(GLOB ML_SOURCES "${ML_PATH}/extract_features.cpp")
+
+add_executable(extract_features ${ML_SOURCES})
+target_include_directories(extract_features PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(extract_features cuda_utilities_lib TCSpMVlib)

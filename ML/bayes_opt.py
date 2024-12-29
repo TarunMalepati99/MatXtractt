@@ -22,7 +22,7 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件路径
 ##############################################################################
-MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/a0nsdsil/a0nsdsil.mtx"
+MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/large_mtx/uk-2002/uk-2002.mtx"
 # MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/roadNet-CA/roadNet-CA.mtx"
 
 
@@ -102,6 +102,7 @@ def objective(**params):
     return time_ms
 
 if __name__ == "__main__":
+    print(f"Matrix path: {MATRIX_PATH}")
     # ========================================
     # 1) 先手动测试 (col_frac=0, hot_frac=0)
     # ========================================
@@ -122,13 +123,12 @@ if __name__ == "__main__":
     res = gp_minimize(
         func=objective,
         dimensions=space,
-        n_calls=12,           # 总共评估 20 个点
+        n_calls=20,           # 总共评估 20 个点
         n_random_starts=4,    # 其中 4 个随机点 + 1个人工点 => 5个初始样本
         acq_func="EI",        # 采集函数: Expected Improvement
         random_state=42,
         x0=x0,                # 手动添加初始点
-        y0=y0,
-        noise=0.005
+        y0=y0
     )
     
     # 打印优化结果

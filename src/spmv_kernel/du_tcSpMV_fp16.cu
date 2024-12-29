@@ -85,9 +85,9 @@ __global__ void tcspmv_kernel_fp16_v1(
         {
             int a_col = i; // Since i ranges from 0 to 3
             int a_bitPos = a_row * fragK + a_col;
-            int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
+            // int a_valIdx = __popc(bitmap & ((1U << a_bitPos) - 1));
             int bit = (bitmap >> a_bitPos) & 1;
-            frag_a[i] = bit ? tcValPtr[a_valIdx] : __float2half(0.0f);
+            frag_a[i] = bit ? tcValPtr[__popc(bitmap & ((1U << a_bitPos) - 1))] : __float2half(0.0f);
         }
         // load B
         const int *sparse_AToX_idx = &sparse_AToX_index[fragIdx * fragK];

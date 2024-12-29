@@ -66,8 +66,8 @@ const int fragN = 8;
 // const int fragK = 16;
 // const int fragN = 8;
 const int fragM = 8;
-const int fragK = 4;
-const int fragN = 8;
+const int fragK = 8;
+// const int fragN = 8;
 #endif
 
 #define innzT int64_t
