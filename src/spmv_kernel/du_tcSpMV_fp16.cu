@@ -1,5 +1,5 @@
 #include "common.h"
-#define SHM_SIZE 512 // Shared memory size in halves (8 KB)
+#define SHM_SIZE 128 // Shared memory size in halves (8 KB)
 
 __device__ __forceinline__ void mma_m8n8k4_fp16_v2(half *acc, uint32_t *A, half *frag_b)
 {

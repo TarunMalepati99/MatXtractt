@@ -7,7 +7,7 @@ command="../build/TCSpMVlib_tcperftest"
 data_dir="../../../data/large_mtx/"
 
 # Define output files
-csv_file="./res/du_fp16.csv"
+csv_file="./res/du_large_fp16_new.csv"
 error_log="./res/111.log"
 
 # Initialize CSV file with header row

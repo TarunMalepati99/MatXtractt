@@ -28,10 +28,11 @@ __global__ void tcspmv_kernel_fp16_v2(
     // }
     // __syncthreads();
     const int warpsPerBlock = 4;
-    int warpId = threadIdx.x / 32; // Warp ID within the block
+    int warpId = threadIdx.x >> 5; // Warp ID within the block
     int laneId = threadIdx.x & 31; // Lane ID within the warp
-    int groupID           = laneId >> 2;
-    int threadID_in_group = laneId % 4;
+    int groupID = laneId >> 2;
+    int threadID_in_group = laneId & 3;
+    int double_threadID_in_group = threadID_in_group * 2;
 
     int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
 
@@ -52,33 +53,30 @@ __global__ void tcspmv_kernel_fp16_v2(
     half acc[4] = {__half(0)};
     half sum0 = __half(0);
     half sum1 = __half(0);
-    int b_col = groupID;// 0123是0,4567是1
+    int b_col = groupID;
     for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
     {
         uint64_t bitmap = fragBit[tcFragIdx];
         const half *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
         // load BBB
-#pragma unroll
-        for (int i = 0; i < 2; ++i)
-        {
-            int b_row = (threadID_in_group * 2) + i;
-            int b_bitPos = b_col * fragK + b_row;
-            int b_valIdx = __popcll(bitmap & ((1ULL << b_bitPos) - 1));
-            int bit = (bitmap >> b_bitPos) & 1;
-            frag_b[i] = bit ? tcValPtr[b_valIdx] : __float2half(0.0f);
-        }
+        int b_row = double_threadID_in_group;
+        int b_bitPos = b_col * fragK + b_row;
+        int bit = (bitmap >> b_bitPos) & 1;
+        frag_b[0] = bit ? tcValPtr[__popcll(bitmap & ((1ULL << b_bitPos) - 1))] : __float2half(0.0f);
+
+        b_row = double_threadID_in_group + 1;
+        b_bitPos = b_col * fragK + b_row;
+        bit = (bitmap >> b_bitPos) & 1;
+        frag_b[1] = bit ? tcValPtr[__popcll(bitmap & ((1ULL << b_bitPos) - 1))] : __float2half(0.0f);
         // load AAA
         const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
-#pragma unroll
         
-        for (int i = 0; i < 2; ++i)
-        {
-            int a_col = threadID_in_group * 2 + (i & 0x1);
-            int x_idx = sparse_AToX_idx[a_col];
-            frag_a[i] = __ldg(&x_d[x_idx]);
-            // frag_a[i] = (x_idx < SHM_SIZE) ? x_shm[x_idx] : __ldg(&x_d[x_idx]);
-        }
-        // mma.sync.aligned.m16n8k8.row.col.f16.f16.f16.f16
+        int x_idx = sparse_AToX_idx[double_threadID_in_group];
+        frag_a[0] = __ldg(&x_d[x_idx]);
+
+        x_idx = sparse_AToX_idx[double_threadID_in_group + 1];
+        frag_a[1] = __ldg(&x_d[x_idx]);
+
         uint32_t const *A = reinterpret_cast<uint32_t const *>(&frag_a[0]);
         uint32_t const *B = reinterpret_cast<uint32_t const *>(&frag_b[0]);
         uint32_t *C = reinterpret_cast<uint32_t *>(&acc[0]);
@@ -89,44 +87,31 @@ __global__ void tcspmv_kernel_fp16_v2(
             : "=r"(D[0]), "=r"(D[1])
             : "r"(A[0]), "r"(A[1]), "r"(B[0]), "r"(C[0]), "r"(C[1]));
 
-        // asm volatile(
-        //     "mma.sync.aligned.m16n8k8.row.col.f16.f16.f16.f16 {%0,%1}, {%2,%3}, {%4}, {%0,%1};\n"
-        //     : "+r"(C[0]), "+r"(C[1])
-        //     : "r"(A[0]), "r"(A[1]), "r"(B[0]));
         sum0 += frag_d[0];
         sum1 += frag_d[1];
-        
     }
     // // Write the result to y_d
-    if (groupID == 0)// t0 t1 t2 t3
+    if (groupID == 0) // t0 t1 t2 t3
     {
-        // for (int i = 0; i < 2; ++i)
-        // {
-            // int c_col = threadID_in_group * 2 + (i & 0x1);
-            int y_idx0 = rowStart + threadID_in_group * 2;
-            if (y_idx0 < dRows)
-            {
-                // atomicAdd(&y_d[y_idx], frag_d[i]);
-                ushort *sum_u0 = reinterpret_cast<ushort *>(&sum0);
-                asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx0), "h"(*sum_u0));
-            }
+        int y_idx0 = rowStart + double_threadID_in_group;
+        if (y_idx0 < dRows)
+        {
+            ushort *sum_u0 = reinterpret_cast<ushort *>(&sum0);
+            asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx0), "h"(*sum_u0));
+        }
 
-            int y_idx1 = rowStart + threadID_in_group * 2 + 1;
-            if (y_idx1 < dRows)
-            {
-                // atomicAdd(&y_d[y_idx], frag_d[i]);
-                ushort *sum_u1 = reinterpret_cast<ushort *>(&sum1);
-                asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx1), "h"(*sum_u1));
-            }
-        // }
+        int y_idx1 = rowStart + double_threadID_in_group + 1;
+        if (y_idx1 < dRows)
+        {
+            ushort *sum_u1 = reinterpret_cast<ushort *>(&sum1);
+            asm volatile("st.global.cs.u16 [%0], %1;" ::"l"(y_d + y_idx1), "h"(*sum_u1));
+        }
     }
-    
 }
 
-
 void du_tcspmv_fp16_v2(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint64_t> fragBit,
-                  std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
-                  half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
+                       std::vector<half> tcVal, indT *sparse_AToX_index, half *X_val,
+                       half *Y_val, int rowA, int colA, int *row_order, double *tcTime)
 {
     int chunkNum = ceil((double)rowA / (double)fragM);
     int totalTcFrags = chunkPtr[chunkNum];
@@ -200,8 +185,8 @@ void du_tcspmv_fp16_v2(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     *tcTime = runtime;
 
     tcspmv_kernel_fp16_v2<<<blocksPerGrid, threadsPerBlock>>>(
-            d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
-            d_sparse_AToX_index, rowA, colA);
+        d_X_val, d_Y_val, d_chunkPtr, d_fragPtr, d_fragBit, d_tcVal,
+        d_sparse_AToX_index, rowA, colA);
 
     CUDA_CHECK_ERROR(cudaGetLastError());
 

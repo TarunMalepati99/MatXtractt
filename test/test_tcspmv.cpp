@@ -1562,7 +1562,8 @@ int main(int argc, char **argv)
         int *new_order = (int *)malloc(sizeof(int) * rowA);
 
 #ifdef fp64
-        bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;
+        bool denseUnfold = true;
+        // bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;
         if (denseUnfold)
         {
             du_tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
@@ -1573,7 +1574,7 @@ int main(int argc, char **argv)
             se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se);
         }
 #else
-        // bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false; // TODO: further evaluation
+        // bool denseUnfold = ((nnzA >= 298113762) && (tc_nnz_ratio >= 0.688047)) ? true : false; // TODO: further evaluation
         bool denseUnfold = true;
         if (denseUnfold)
         {

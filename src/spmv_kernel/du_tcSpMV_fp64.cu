@@ -12,6 +12,72 @@
 // 重新组织tcVal、fragPtr和sparse_AToX_index的数据布局，使得连续线程访问连续的内存地址
 // 利用CUDA的Warp级别原语（如__shfl_down_sync）在warp内部高效地共享数据，减少同步开销
 
+__global__ void tcspmv_kernel_fp64_v1(
+    const double *__restrict__ x_d,
+    double *__restrict__ y_d,
+    const int *__restrict__ chunkPtr,
+    const int *__restrict__ fragPtr,
+    const uint32_t *__restrict__ fragBit,
+    const double *__restrict__ tcVal,
+    const int *__restrict__ sparse_AToX_index,
+    int dRows,
+    int dCols)
+{
+    const int warpsPerBlock = 4;
+    int warpId = threadIdx.x / 32; // Warp ID within the block
+    int laneId = threadIdx.x & 31; // Lane ID within the warp
+    int rowChunkIndex = blockIdx.x * warpsPerBlock + warpId;
+
+    int tcFragStart = chunkPtr[rowChunkIndex];
+    int tcFragEnd = chunkPtr[rowChunkIndex + 1];
+    int numTcFragsInChunk = tcFragEnd - tcFragStart;
+
+    if (numTcFragsInChunk == 0)
+    {
+        return;
+    }
+    int rowStart = rowChunkIndex * fragM;
+
+    // Calculate positions according to the documentation
+    int a_row = laneId >> 2; // laneId / 4
+    int a_col = laneId & 3;  // laneId % 4
+    int a_bitPos = a_row * fragK + a_col;
+    double sum = 0.0;
+    
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
+    {
+        double c_frag[2] = {0.0, 0.0};
+        uint32_t bitmap = fragBit[tcFragIdx];
+        const double *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
+        const int *sparse_AToX_idx = &sparse_AToX_index[tcFragIdx * fragK];
+
+        // Load A fragment
+        int bit = (bitmap >> a_bitPos) & 1;
+        double a_frag = bit ? tcValPtr[__popc(bitmap & ((1U << a_bitPos) - 1))] : 0.0;
+
+        int x_idx = sparse_AToX_idx[a_col];
+        double b_frag = __ldg(&x_d[x_idx]);
+
+        // Perform MMA operation
+        asm volatile(
+            "mma.sync.aligned.m8n8k4.row.col.f64.f64.f64.f64 \n\t"
+            "{%0, %1}, {%2}, {%3}, {%0, %1};\n\t"
+            : "+d"(c_frag[0]), "+d"(c_frag[1])
+            : "d"(a_frag), "d"(b_frag));
+        // Compute sum of accumulator elements
+        sum += c_frag[0];
+    } // End of tcFrag loop
+    if (a_col == 0)
+    {
+        int y_idx = rowStart + a_row;
+        if (y_idx < dRows)
+        {
+            store_double_to_global(y_d + y_idx, sum);
+        }
+    }
+}
+
+
 __global__ void tcspmv_kernel_fp64(
     const double *__restrict__ x_d,
     double *__restrict__ y_d,
