@@ -27,6 +27,80 @@ __global__ void pre_startRowPerBlock(const int *__restrict__ row_ptr,
 }
 
 
+
+// Helper kernel to compute row counts for each block
+__global__ void computeRowCounts(int* startRowPerBlock, int* rowCounts, int WORK_BLOCKS) {
+    const int block_id = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (block_id >= WORK_BLOCKS) {
+        return;
+    }
+
+    rowCounts[block_id] = startRowPerBlock[block_id + 1] - startRowPerBlock[block_id];
+}
+
+// Host function to compute standard deviation of thread block row assignments
+float computeStandardDeviation(const std::vector<int>& rowCounts) {
+    float mean = 0.0f;
+    for (int count : rowCounts) {
+        mean += count;
+    }
+    mean /= rowCounts.size();
+
+    float variance = 0.0f;
+    for (int count : rowCounts) {
+        variance += (count - mean) * (count - mean);
+    }
+    variance /= rowCounts.size();
+    return std::sqrt(variance);
+}
+
+// Function to calculate the best productNnzPerThread for balance using CUDA
+int chooseOptimalProductNnzPerThread(int nnzA, int rowA, const int* d_ptr, int THREADS_PER_BLOCK) {
+    std::vector<int> candidates = {16, 8, 4};
+    int optimalValue = candidates[0];
+    float minStdDev = std::numeric_limits<float>::max();
+
+    int* d_startRowPerBlock;
+    int* d_rowCounts;
+
+    for (int candidate : candidates) {
+        int WORK_BLOCKS = nnzA / (candidate * THREADS_PER_BLOCK) + ((nnzA % (candidate * THREADS_PER_BLOCK) == 0) ? 0 : 1);
+        int startRowPerBlock_len = WORK_BLOCKS + 1;
+
+        cudaMalloc(&d_startRowPerBlock, sizeof(int) * startRowPerBlock_len);
+        cudaMalloc(&d_rowCounts, sizeof(int) * WORK_BLOCKS);
+
+        cudaMemset(d_startRowPerBlock, 0, sizeof(int) * startRowPerBlock_len);
+
+        // Launch kernel to compute startRowPerBlock
+        pre_startRowPerBlock<<<divup<uint32_t>(rowA + 1, 128), 128>>>(d_ptr, rowA, d_startRowPerBlock, candidate * THREADS_PER_BLOCK);
+
+        // Launch kernel to compute rowCounts
+        computeRowCounts<<<divup<uint32_t>(WORK_BLOCKS, 128), 128>>>(d_startRowPerBlock, d_rowCounts, WORK_BLOCKS);
+
+        // Copy rowCounts back to host
+        std::vector<int> rowCounts(WORK_BLOCKS);
+        cudaMemcpy(rowCounts.data(), d_rowCounts, sizeof(int) * WORK_BLOCKS, cudaMemcpyDeviceToHost);
+
+        // Compute standard deviation on host
+        float stdDev = computeStandardDeviation(rowCounts);
+        if (stdDev < minStdDev) {
+            minStdDev = stdDev;
+            optimalValue = candidate;
+        }
+
+        cudaFree(d_startRowPerBlock);
+        cudaFree(d_rowCounts);
+    }
+
+    return optimalValue;
+}
+
+
+
+
+
 template <int THREADS_PER_BLOCK>
 __device__ __forceinline__ void lbNEC_reduce_oneRow_in_thread(int NNZ_PER_BLOCK, const int tid_in_block, const int block_id,
                                                               const int reduceStartRowId, const int reduceEndRowId,
@@ -340,16 +414,19 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   cudaMemcpy(d_indices, csrColInd, sizeof(int) * nnzA, cudaMemcpyHostToDevice);
   cudaMemcpy(d_ptr, csrRowPtr, sizeof(int) * (rowA + 2), cudaMemcpyHostToDevice);
   cudaMemcpy(d_vecX_csr, X_val, sizeof(valT) * colA, cudaMemcpyHostToDevice);
-  // cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_vecY_csr, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
   // cudaMemcpy(d_vecY_csr_perf, Y_val, sizeof(valT) * rowA, cudaMemcpyHostToDevice);
-  cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
-  cudaMemset(d_vecY_csr_perf, 0.0, sizeof(valT) * rowA);
+  // cudaMemset(d_vecY_csr, 0.0, sizeof(valT) * rowA);
+  // cudaMemset(d_vecY_csr_perf, 0.0, sizeof(valT) * rowA);
+  const int THREADS_PER_BLOCK = 128;
+  //TODO: TEST
 #ifdef fp64
   int productNnzPerThread = (nnzA > 200000000) ? 8 : 4;
 #else
   int productNnzPerThread = (nnzA > 300000) ? 16 : 4;
 #endif
-  const int THREADS_PER_BLOCK = 128;
+  // int productNnzPerThread = chooseOptimalProductNnzPerThread(nnzA, rowA, d_ptr, THREADS_PER_BLOCK);
+  
 
   const int WORK_BLOCKS = nnzA / (productNnzPerThread * THREADS_PER_BLOCK) + ((nnzA % (productNnzPerThread * THREADS_PER_BLOCK) == 0) ? 0 : 1);
 
@@ -368,8 +445,6 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   {
     printf("pre_startRowPerBlock kernel launch failed: %s\n", cudaGetErrorString(err));
   }
-
-  double mean_col_num = (double)(nnzA + rowA) / (double)rowA;
   int productNnzPerBlock = THREADS_PER_BLOCK * productNnzPerThread;
 
   printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",

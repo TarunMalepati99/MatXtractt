@@ -1152,11 +1152,11 @@ int main(int argc, char **argv)
     /***************************************************************
      *                  1.1split to two csc format                 *
      ***************************************************************/
-    // for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
+    for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
     {
-        // float colProp = rowProp / 0.8f;
-        float rowProp = 0.62f;
-        float colProp = 0.8f;
+        float colProp = rowProp / 0.8f;
+        // float rowProp = 0.62f;
+        // float colProp = 0.8f;
 
         std::cout << "---------------------------------------------------------" << std::endl;
         std::cout << "                     rowProp: " << rowProp << std::endl;
@@ -1545,12 +1545,7 @@ int main(int argc, char **argv)
         double cdTime = 0, cdPre = 0;
         double tcTime_du = 0;
         double tcTime_se = 0;
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////cuda core partition
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
-        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
-        printf("cdspmv:    %8.4lf ms\n", cdTime);
+        
 
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////tensor core partition
@@ -1562,8 +1557,8 @@ int main(int argc, char **argv)
         int *new_order = (int *)malloc(sizeof(int) * rowA);
 
 #ifdef fp64
-        bool denseUnfold = true;
-        // bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;
+        // bool denseUnfold = true;
+        bool denseUnfold = ((nnzA >= 22322336) && (tc_nnz_ratio >= 0.55)) ? true : false;
         if (denseUnfold)
         {
             du_tcspmv_fp64(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
@@ -1574,8 +1569,8 @@ int main(int argc, char **argv)
             se_tcspmv_fp64(csrVal_dd, csrRowPtr_dd, csrColInd_dd, x_d, hotY_val_solo_se, new_order, dRows, dCols, nnzRowD, NUM, threshold, block_longest, &tcTime_se);
         }
 #else
-        // bool denseUnfold = ((nnzA >= 298113762) && (tc_nnz_ratio >= 0.688047)) ? true : false; // TODO: further evaluation
-        bool denseUnfold = true;
+        bool denseUnfold = ((nnzA >= 298113762) && (tc_nnz_ratio >= 0.688047)) ? true : false; // TODO: further evaluation
+        // bool denseUnfold = true;
         if (denseUnfold)
         {
             // du_tcspmv_fp16_v1(chunkPtr, fragPtr, fragBit, tcVal, sparse_AToX_index, x_d, hotY_val_solo_du, dRows, dCols, rId, &tcTime_du);
@@ -1595,16 +1590,22 @@ int main(int argc, char **argv)
         {
             for (int i = 0; i < dRows; i++)
             {
-                coldY_val_solo[rId[i]] += hotY_val_solo_du[i];
+                coldY_val_solo[rId[i]] = hotY_val_solo_du[i];
             }
         }
         else
         {
             for (int i = 0; i < dRows; i++)
             {
-                coldY_val_solo[rId[new_order[i]]] += hotY_val_solo_se[i];
+                coldY_val_solo[rId[new_order[i]]] = hotY_val_solo_se[i];
             }
         }
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////cuda core partition
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
+        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
+        printf("cdspmv:    %8.4lf ms\n", cdTime);
 
         if (denseUnfold)
         {

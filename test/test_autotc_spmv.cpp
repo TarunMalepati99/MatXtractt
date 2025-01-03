@@ -1494,13 +1494,7 @@ int main(int argc, char **argv)
         double cdTime = 0, cdPre = 0;
         double tcTime_du = 0;
         double tcTime_se = 0;
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        /////////////cuda core partition
-        ////////////////////////////////////////////////////////////////////////////////////////////
-        cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
-        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
-        printf("cdspmv:    %8.4lf ms\n", cdTime);
-
+        
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////tensor core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1539,16 +1533,23 @@ int main(int argc, char **argv)
         {
             for (int i = 0; i < dRows; i++)
             {
-                coldY_val_solo[rId[i]] += hotY_val_solo_du[i];
+                coldY_val_solo[rId[i]] = hotY_val_solo_du[i];
             }
         }
         else
         {
             for (int i = 0; i < dRows; i++)
             {
-                coldY_val_solo[rId[new_order[i]]] += hotY_val_solo_se[i];
+                coldY_val_solo[rId[new_order[i]]] = hotY_val_solo_se[i];
             }
         }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////cuda core partition
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
+        // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
+        printf("cdspmv:    %8.4lf ms\n", cdTime);
 
         if (denseUnfold)
         {

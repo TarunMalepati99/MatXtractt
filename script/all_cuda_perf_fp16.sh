@@ -65,8 +65,8 @@ command="../build/TCSpMVlib_perf"
 data_dir="../../../data/large_mtx/"
 
 # Define output files
-csv_file="./res/results_all_cd_fp16_final_large.csv"
-error_log="./res/error_all_cd_fp16_final.log"
+csv_file="./res/results_all_cd_fp16_final_large_aaaaaa.csv"
+error_log="./res/error_all_cd_fp16_final_aaaaaa.log"
 
 # Initialize CSV file with header row
 echo "Matrix Name,cd_perf (ms),cusparse_perf (ms)" > "$csv_file"
