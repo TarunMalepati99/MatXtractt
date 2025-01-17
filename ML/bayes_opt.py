@@ -5,8 +5,8 @@
 示例脚本：使用贝叶斯优化搜索 (col_frac, hot_frac) 以优化 SpMV 执行时间。
 人工经验：
   1) 不允许 hot_frac > col_frac。
-  2) 当 hot_frac == col_frac 时，仅当二者都为0才合法，否则作废。
-  3) 将 (0,0) 作为人工“好点” (good point) 预先测试并纳入优化初始数据。
+  2) 当 hot_frac == col_frac 时，仅当二者都为0或者1才合法，否则作废。
+  3) 将 (0,0) 和 (1,1) 作为人工“好点” (good points) 预先测试并纳入优化初始数据。
 """
 import os
 import subprocess
@@ -22,9 +22,8 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件路径
 ##############################################################################
-MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/large_mtx/uk-2002/uk-2002.mtx"
+MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/144/144.mtx"
 # MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/roadNet-CA/roadNet-CA.mtx"
-
 
 def measure_spmv_time(col_frac, hot_frac, matrix_path):
     """
@@ -34,7 +33,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
 
     人工经验：
       1) 若 hot_frac > col_frac，则返回一个大惩罚值 (1e6)。
-      2) 若 hot_frac == col_frac，则仅当它们都为0时有效，否则返回大惩罚值。
+      2) 当 hot_frac == col_frac 时，仅当二者都为0或者1才合法，否则返回大惩罚值。
     """
     if not os.path.exists(matrix_path):
         print(f"[Error] The matrix file '{matrix_path}' does not exist.")
@@ -42,10 +41,10 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
     # 1) 不允许 hot_frac > col_frac
     if hot_frac > col_frac:
         return 1e6
-    
-    # 2) 若 hot_frac == col_frac，但不等于0，则也视为无效
+
+    # 2) 当 hot_frac == col_frac 时，仅当二者都为0或者1才合法
     if abs(hot_frac - col_frac) < 1e-15:  # 近似判断相等
-        if abs(col_frac) > 1e-15:        # 当 col_frac != 0
+        if abs(col_frac) > 1e-15 and abs(col_frac - 1.0) > 1e-15:  # 不是(0,0)或(1,1)
             return 1e6
 
     # ================ 如果满足上述人工经验，则正式测试 ================
@@ -57,7 +56,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         str(hot_frac),
         matrix_path
     ]
-    
+
     try:
         # 执行命令并获取输出
         output = subprocess.check_output(cmd, universal_newlines=True)
@@ -65,7 +64,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         # 如果程序执行失败，返回一个大惩罚值
         print(f"[Error] Failed to run: {cmd}\n{e}")
         return 1e6
-    
+
     # 在输出中查找 "THE autoTC FINAL TIME = xxxxx ms"
     match = re.search(r"THE autoTC FINAL TIME\s*=\s*([\d\.Ee+-]+)\s*ms", output)
     if not match:
@@ -73,7 +72,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         print("[Warning] Could not find time in output. Full output:")
         print(output)
         return 1e6
-    
+
     # 解析执行时间
     time_ms_str = match.group(1)  # 提取 "xx.xx" 部分
     try:
@@ -82,14 +81,19 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         # 若转换失败，也返回惩罚
         print("[Warning] Could not parse time as float.")
         return 1e6
-    
+
     return time_ms
 
 # 定义贝叶斯优化的搜索空间：col_frac, hot_frac 都在 [0,1]
+# space = [
+#     Real(0.0, 0.85, name='col_frac'),
+#     Real(0.0, 0.7, name='hot_frac')
+# ]
 space = [
-    Real(0.0, 0.85, name='col_frac'),
-    Real(0.0, 0.7, name='hot_frac')
+    Real(0.0, 1.0, name='col_frac'),
+    Real(0.0, 1.0, name='hot_frac')
 ]
+
 
 @use_named_args(space)
 def objective(**params):
@@ -104,16 +108,16 @@ def objective(**params):
 if __name__ == "__main__":
     print(f"Matrix path: {MATRIX_PATH}")
     # ========================================
-    # 1) 先手动测试 (col_frac=0, hot_frac=0)
+    # 1) 先手动测试 (col_frac=0, hot_frac=0) 和 (col_frac=1, hot_frac=1)
     # ========================================
-    init_col_frac = 0.0
-    init_hot_frac = 0.0
-    init_time = measure_spmv_time(init_col_frac, init_hot_frac, MATRIX_PATH)
-    print("Manually tested (col_frac=0, hot_frac=0). Time(ms) =", init_time)
-
-    # 将该点当作已有的好点 x0, 并将其目标值 y0 传给 gp_minimize
-    x0 = [[init_col_frac, init_hot_frac]]
-    y0 = [init_time]
+    init_points = [(0.0, 0.0), (1.0, 1.0)]
+    x0 = []
+    y0 = []
+    for col_frac, hot_frac in init_points:
+        init_time = measure_spmv_time(col_frac, hot_frac, MATRIX_PATH)
+        x0.append([col_frac, hot_frac])
+        y0.append(init_time)
+        print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
 
     # ========================================
     # 2) 进行贝叶斯优化
@@ -124,13 +128,13 @@ if __name__ == "__main__":
         func=objective,
         dimensions=space,
         n_calls=20,           # 总共评估 20 个点
-        n_random_starts=4,    # 其中 4 个随机点 + 1个人工点 => 5个初始样本
+        n_random_starts=4,    # 其中 4 个随机点 + 2个人工点 => 6个初始样本
         acq_func="EI",        # 采集函数: Expected Improvement
         random_state=42,
         x0=x0,                # 手动添加初始点
         y0=y0
     )
-    
+
     # 打印优化结果
     print("===========================================")
     print("        Bayesian Optimization Result      ")
@@ -138,7 +142,7 @@ if __name__ == "__main__":
     print(f"Best col_frac  = {res.x[0]:.4f}")
     print(f"Best hot_frac  = {res.x[1]:.4f}")
     print(f"Min Time (ms)  = {res.fun:.4f}")
-    
+
     # 可选：画出收敛曲线
     # plot_convergence(res)
     # plt.title("Convergence Plot (col_frac, hot_frac) -> Time")

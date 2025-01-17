@@ -13,9 +13,9 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件根目录
 ##############################################################################
-MATRIX_ROOT_DIR = "/home/v-jiawcheng/wangluhan/data/large_mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
+MATRIX_ROOT_DIR = "/home/v-jiawcheng/wangluhan/data/mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
 
-OUTPUT_FILE = "optimization_results_fp16_large_.csv"  # 输出的 CSV 文件路径
+OUTPUT_FILE = "optimization_results_fp16_dasp_v_.csv"  # 输出的 CSV 文件路径
 
 # 初始化 CSV 文件，并写入表头（修改部分）
 if not os.path.exists(OUTPUT_FILE):
@@ -31,7 +31,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
 
     人工经验：
       1) 若 hot_frac > col_frac，则返回一个大惩罚值 (1e6)。
-      2) 若 hot_frac == col_frac，则仅当它们都为0时有效，否则返回大惩罚值。
+      2) 若 hot_frac == col_frac，则仅当二者都为0或者1时合法，否则返回大惩罚值。
     """
     if not os.path.exists(matrix_path):
         print(f"[Error] The matrix file '{matrix_path}' does not exist.")
@@ -41,9 +41,9 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
     if hot_frac > col_frac:
         return 1e6
     
-    # 2) 若 hot_frac == col_frac，但不等于0，则也视为无效
+    # 2) 若 hot_frac == col_frac，则仅当二者都为0或者1时合法
     if abs(hot_frac - col_frac) < 1e-15:  # 近似判断相等
-        if abs(col_frac) > 1e-15:        # 当 col_frac != 0
+        if abs(col_frac) > 1e-15 and abs(col_frac - 1.0) > 1e-15:  # 不是(0,0)或(1,1)
             return 1e6
 
     # ================ 如果满足上述人工经验，则正式测试 ================
@@ -85,8 +85,8 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
 
 # 定义贝叶斯优化的搜索空间：col_frac, hot_frac 都在 [0,1]
 space = [
-    Real(0.0, 0.85, name='col_frac'),  # col_frac 的范围缩小为 [0.0, 0.85]
-    Real(0.0, 0.7, name='hot_frac')    # hot_frac 的范围缩小为 [0.0, 0.7]
+    Real(0.0, 1.0, name='col_frac'),  # col_frac 的范围扩展为 [0.0, 1.0]
+    Real(0.0, 1.0, name='hot_frac')    # hot_frac 的范围扩展为 [0.0, 1.0]
 ]
 
 @use_named_args(space)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     for subdir, dirs, files in os.walk(MATRIX_ROOT_DIR):
         dirs.sort()
         for dir_name in dirs:
-            if not re.match(r"^[a-z]", dir_name):
+            if not re.match(r"^[v-z]", dir_name):
                 continue
             matrix_file = os.path.join(subdir, dir_name, f"{dir_name}.mtx")
 
@@ -117,27 +117,27 @@ if __name__ == "__main__":
             current_matrix_path = matrix_file  # 设置当前矩阵路径
 
             # ========================================
-            # 1) 先手动测试 (col_frac=0, hot_frac=0)
+            # 1) 先手动测试 (col_frac=0, hot_frac=0) 和 (col_frac=1, hot_frac=1)
             # ========================================
-            init_col_frac = 0.0
-            init_hot_frac = 0.0
-            init_time = measure_spmv_time(init_col_frac, init_hot_frac, current_matrix_path)
-            print("Manually tested (col_frac=0, hot_frac=0). Time(ms) =", init_time)
-
-            # 将该点当作已有的好点 x0, 并将其目标值 y0 传给 gp_minimize
-            x0 = [[init_col_frac, init_hot_frac]]
-            y0 = [init_time]
+            init_points = [(0.0, 0.0), (1.0, 1.0)]
+            x0 = []
+            y0 = []
+            for col_frac, hot_frac in init_points:
+                init_time = measure_spmv_time(col_frac, hot_frac, current_matrix_path)
+                x0.append([col_frac, hot_frac])
+                y0.append(init_time)
+                print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
 
             # ========================================
             # 2) 进行贝叶斯优化
             #    - n_calls表示最大评估次数(可按资源酌情增减).
-            #    - n_random_starts=4 => 加上 x0,y0 => 总计5个初始样本
+            #    - n_random_starts=4 => 加上 x0,y0 => 总计6个初始样本
             # ========================================
             res = gp_minimize(
                 func=objective,
                 dimensions=space,
-                n_calls=9,           # 总共评估 7 个点
-                n_random_starts=4,    # 其中 3 个随机点 + 1个人工点 => 4个初始样本
+                n_calls=12,           # 总共评估 12 个点
+                n_random_starts=4,    # 其中 4 个随机点 + 2个人工点 => 6个初始样本
                 acq_func="EI",        # 采集函数: Expected Improvement
                 random_state=42,
                 x0=x0,                # 手动添加初始点

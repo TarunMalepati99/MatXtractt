@@ -1152,11 +1152,11 @@ int main(int argc, char **argv)
     /***************************************************************
      *                  1.1split to two csc format                 *
      ***************************************************************/
-    for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
+    // for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
     {
-        float colProp = rowProp / 0.8f;
-        // float rowProp = 0.62f;
-        // float colProp = 0.8f;
+        // float colProp = rowProp / 0.8f;
+        float rowProp = 0.6f;
+        float colProp = 0.8f;
 
         std::cout << "---------------------------------------------------------" << std::endl;
         std::cout << "                     rowProp: " << rowProp << std::endl;
@@ -1308,7 +1308,7 @@ int main(int argc, char **argv)
         }
         // printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
         printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
-        // printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
+        printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
         int *rId = (int *)malloc(sizeof(int) * dRows);
         for (int i = 0; i < dRows; i++)
         {

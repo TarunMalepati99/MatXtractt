@@ -1,0 +1,929 @@
+nohup: ignoring input
+/home/v-jiawcheng/.local/lib/python3.10/site-packages/skopt/optimizer/optimizer.py:517: UserWarning: The objective has been evaluated at point [0.0, 0.0] before, using random point [0.75709608368832, 0.22702082555351205]
+  warnings.warn(
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/va2010/va2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.016391
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.020289
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0164
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vanbody/vanbody.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.011299
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.018718
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0113
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_1M/vas_stokes_1M.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.16949
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_1M/vas_stokes_1M.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_1M/vas_stokes_1M.mtx']' died with <Signals.SIGSEGV: 11>.
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 1000000.0
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '0.5012570633255256', '/home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_1M/vas_stokes_1M.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '0.5012570633255256', '/home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_1M/vas_stokes_1M.mtx']' died with <Signals.SIGSEGV: 11>.
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.1695
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_2M/vas_stokes_2M.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.306627
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.402848
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.3066
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vas_stokes_4M/vas_stokes_4M.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.620992
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.806876
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.6210
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/venkat01/venkat01.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009265
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.013057
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0093
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/venkat25/venkat25.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009297
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.013024
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0093
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/venkat50/venkat50.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009195
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.012985
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0092
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/venturiLevel3/venturiLevel3.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.125999
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.099954
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.1000
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vfem/vfem.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.010201
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.014868
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0102
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vibrobox/vibrobox.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007489
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.010293
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0075
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/viscoplastic1/viscoplastic1.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00531
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006267
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0053
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/viscoplastic2/viscoplastic2.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009842
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.009948
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0098
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/viscorocks/viscorocks.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007936
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.011276
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0079
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_barth5_1Ksep_50in_5Kout/vsp_barth5_1Ksep_50in_5Kout.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00913
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.009172
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0091
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_bcsstk30_500sep_10in_1Kout/vsp_bcsstk30_500sep_10in_1Kout.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.060749
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.031497
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0315
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_befref_fxm_2_4_air02/vsp_befref_fxm_2_4_air02.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007655
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.012017
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0077
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_bump2_e18_aa01_model1_crew1/vsp_bump2_e18_aa01_model1_crew1.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.013551
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.024276
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0136
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_c-30_data_data/vsp_c-30_data_data.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.070302
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.016901
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0169
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_c-60_data_cti_cs4/vsp_c-60_data_cti_cs4.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.021697
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.016512
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0165
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_data_and_seymourl/vsp_data_and_seymourl.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006364
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.01486
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0064
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_finan512_scagr7-2c_rlfddd/vsp_finan512_scagr7-2c_rlfddd.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.014977
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.031257
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0150
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_mod2_pgp2_slptsk/vsp_mod2_pgp2_slptsk.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.021476
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.024848
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0215
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_model1_crew1_cr42_south31/vsp_model1_crew1_cr42_south31.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.015743
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.022619
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0157
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_msc10848_300sep_100in_1Kout/vsp_msc10848_300sep_100in_1Kout.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.019203
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.023926
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0192
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_p0291_seymourl_iiasa/vsp_p0291_seymourl_iiasa.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007076
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.014639
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0071
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_sctap1-2b_and_seymourl/vsp_sctap1-2b_and_seymourl.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.008197
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.019898
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0082
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_south31_slptsk/vsp_south31_slptsk.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.015641
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.023022
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0156
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vsp_vibrobox_scagr7-2c_rlfddd/vsp_vibrobox_scagr7-2c_rlfddd.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.015742
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.022856
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0157
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/vt2010/vt2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006226
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.009005
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0062
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wa2010/wa2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.014605
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.021084
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0146
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wang1/wang1.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004727
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004602
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0046
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wang2/wang2.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004979
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004544
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0045
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wang3/wang3.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005539
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006653
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0055
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wang4/wang4.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005531
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006636
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0055
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/water_tank/water_tank.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.010886
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.01403
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0109
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wathen100/wathen100.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007672
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.007422
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0074
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wathen120/wathen120.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007959
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.008443
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0080
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/watt_1/watt_1.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00556
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004447
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0044
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/watt_2/watt_2.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005488
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006763
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0055
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wave/wave.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.012799
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.018843
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0128
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/waveguide3D/waveguide3D.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.010286
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.009076
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0091
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wb-cs-stanford/wb-cs-stanford.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009014
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.016947
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0090
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wb-edu/wb-edu.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.388828
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.517172
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.3888
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/web-BerkStan/web-BerkStan.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.060864
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.065866
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0609
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/web-Google/web-Google.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.084714
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.074808
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0748
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/web-NotreDame/web-NotreDame.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.08142
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.03439
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0344
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/web-Stanford/web-Stanford.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.033369
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.044059
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0334
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/webbase-1M/webbase-1M.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.027837
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.040268
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0278
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west0381/west0381.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004569
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004349
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0043
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west0479/west0479.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005804
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004209
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0042
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west0497/west0497.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005496
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005077
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0051
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west0655/west0655.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006013
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004344
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0043
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west0989/west0989.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005983
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004212
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0042
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west1505/west1505.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00597
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004408
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0044
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/west2021/west2021.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006173
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004416
+===========================================
+/home/v-jiawcheng/.local/lib/python3.10/site-packages/skopt/optimizer/optimizer.py:517: UserWarning: The objective has been evaluated at point [1.0, 1.0] before, using random point [0.75709608368832, 0.22702082555351205]
+  warnings.warn(
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0044
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/whitaker3/whitaker3.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005697
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005181
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0052
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/whitaker3_dual/whitaker3_dual.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00608
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.00458
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0046
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wi2010/wi2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.015247
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.018077
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0152
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wiki-RfA/wiki-RfA.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007815
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.018813
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0078
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wiki-Talk/wiki-Talk.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 1.932952
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.072096
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0721
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wiki-Vote/wiki-Vote.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007534
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.018236
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0075
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wiki-talk-temporal/wiki-talk-temporal.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.235065
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.051396
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0514
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wiki-topcats/wiki-topcats.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.231361
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/wiki-topcats/wiki-topcats.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/wiki-topcats/wiki-topcats.mtx']' died with <Signals.SIGSEGV: 11>.
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 1000000.0
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '0.5012571151539194', '/home/v-jiawcheng/wangluhan/data/mtx/wiki-topcats/wiki-topcats.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '0.5012571151539194', '/home/v-jiawcheng/wangluhan/data/mtx/wiki-topcats/wiki-topcats.mtx']' died with <Signals.SIGSEGV: 11>.
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.2314
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20051105/wikipedia-20051105.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.232336
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.197376
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.1974
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20060925/wikipedia-20060925.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.438038
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.356867
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.3569
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20061104/wikipedia-20061104.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.465651
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20061104/wikipedia-20061104.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '1.0', '/home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20061104/wikipedia-20061104.mtx']' died with <Signals.SIGSEGV: 11>.
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 1000000.0
+[Error] Failed to run: ['../build/TCSpMVlib_tcperftest', '1.0', '0.501257138250489', '/home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20061104/wikipedia-20061104.mtx']
+Command '['../build/TCSpMVlib_tcperftest', '1.0', '0.501257138250489', '/home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20061104/wikipedia-20061104.mtx']' died with <Signals.SIGSEGV: 11>.
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.7797
+Best hot_frac  = 0.5969
+Min Time (ms)  = 0.4197
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wikipedia-20070206/wikipedia-20070206.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.543481
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.434095
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.4341
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/windscreen/windscreen.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.008486
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.00994
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0085
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/windtunnel_evap2d/windtunnel_evap2d.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006037
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006429
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0060
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/windtunnel_evap3d/windtunnel_evap3d.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.014247
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.015734
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0142
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wing/wing.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.009274
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.007536
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0075
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wing_nodal/wing_nodal.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.007216
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.007016
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0070
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/worms20_10NN/worms20_10NN.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006255
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.006768
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0063
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wv2010/wv2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.012228
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.01313
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0122
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/ww_36_pmec_36/ww_36_pmec_36.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004736
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004806
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0047
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/ww_vref_6405/ww_vref_6405.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006397
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005631
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0056
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/wy2010/wy2010.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.011633
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.012579
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0116
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/x104/x104.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.051563
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.059898
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0516
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/xenon1/xenon1.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.008134
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.011051
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0081
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/xenon2/xenon2.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.015364
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.028658
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0154
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/xingo3012/xingo3012.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00782
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.00559
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0056
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/xingo_afonso_itaipu/xingo_afonso_itaipu.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006305
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005759
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0058
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/yeast/yeast.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006196
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.007201
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0062
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/yeast_30NN/yeast_30NN.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.005839
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.00713
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 0.0000
+Best hot_frac  = 0.0000
+Min Time (ms)  = 0.0058
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/young1c/young1c.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004811
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004416
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0044
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/young2c/young2c.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004806
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004248
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0042
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/young3c/young3c.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.004794
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004313
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0043
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/young4c/young4c.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.00479
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.004455
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0045
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/zenios/zenios.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006793
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005668
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0057
+
+[INFO] Testing matrix: /home/v-jiawcheng/wangluhan/data/mtx/zeros_nopss_13k/zeros_nopss_13k.mtx
+Manually tested (col_frac=0.0, hot_frac=0.0). Time(ms) = 0.006313
+Manually tested (col_frac=1.0, hot_frac=1.0). Time(ms) = 0.005633
+===========================================
+        Bayesian Optimization Result       
+===========================================
+Best col_frac  = 1.0000
+Best hot_frac  = 1.0000
+Min Time (ms)  = 0.0056
+
+[INFO] All results saved to 'optimization_results_fp16_dasp_v_.csv'

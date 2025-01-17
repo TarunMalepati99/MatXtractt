@@ -334,60 +334,61 @@ __global__ void cdspmv_kernel(valT *__restrict__ d_val,
   // 线程256
   if (n_reduce_rows_num > 128)
   {
-    lbNEC_reduce_oneRow_in_thread<THREADS_PER_BLOCK>(tid_in_block, blockIdx.x,
-                                                               reduceStartRowId, reduceEndRowId,
-                                                               d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_thread<THREADS_PER_BLOCK>(productNnzPerBlock, tid_in_block, blockIdx.x,
+                                                                          reduceStartRowId, reduceEndRowId,
+                                                                          d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num == 1)
   {
 
-    lbNEC_reduce_oneRow_in_block<THREADS_PER_BLOCK>(tid_in_block, blockIdx.x,
-                                                                reduceStartRowId, reduceEndRowId,
-                                                                d_ptr, middle_s, d_out);
-  }
-  else if (n_reduce_rows_num == 2)
-  {
-    lbNEC_reduce_oneRow_in_vector_L<THREADS_PER_BLOCK, 128>(n_reduce_rows_num, tid_in_block, blockIdx.x,
+    lbNEC_reduce_oneRow_in_block<THREADS_PER_BLOCK>(productNnzPerBlock, tid_in_block, blockIdx.x,
                                                                          reduceStartRowId, reduceEndRowId,
                                                                          d_ptr, middle_s, d_out);
   }
+  else if (n_reduce_rows_num == 2)
+  {
+    lbNEC_reduce_oneRow_in_vector_L<THREADS_PER_BLOCK, 128>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                                reduceStartRowId, reduceEndRowId,
+                                                                                d_ptr, middle_s, d_out);
+  }
   else if (n_reduce_rows_num <= 4)
   {
-    lbNEC_reduce_oneRow_in_vector_L<THREADS_PER_BLOCK, 64>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                        reduceStartRowId, reduceEndRowId,
-                                                                        d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector_L<THREADS_PER_BLOCK, 64>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                                reduceStartRowId, reduceEndRowId,
+                                                                                d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num <= 8)
   {
-    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 32>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                      reduceStartRowId, reduceEndRowId,
-                                                                      d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 32>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                             reduceStartRowId, reduceEndRowId,
+                                                                             d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num <= 16)
   {
-    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 16>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                      reduceStartRowId, reduceEndRowId,
-                                                                      d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 16>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                             reduceStartRowId, reduceEndRowId,
+                                                                             d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num <= 32)
   {
-    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 8>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                     reduceStartRowId, reduceEndRowId,
-                                                                     d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 8>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                             reduceStartRowId, reduceEndRowId,
+                                                                             d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num <= 64)
   {
-    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 4>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                     reduceStartRowId, reduceEndRowId,
-                                                                     d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 4>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                             reduceStartRowId, reduceEndRowId,
+                                                                             d_ptr, middle_s, d_out);
   }
   else if (n_reduce_rows_num <= 128)
   {
-    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 2>(n_reduce_rows_num, tid_in_block, blockIdx.x,
-                                                                     reduceStartRowId, reduceEndRowId,
-                                                                     d_ptr, middle_s, d_out);
+    lbNEC_reduce_oneRow_in_vector<THREADS_PER_BLOCK, 2>(productNnzPerBlock, n_reduce_rows_num, tid_in_block, blockIdx.x,
+                                                                             reduceStartRowId, reduceEndRowId,
+                                                                             d_ptr, middle_s, d_out);
   }
   */
+  
 }
 
 

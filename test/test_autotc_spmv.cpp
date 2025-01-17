@@ -1258,6 +1258,7 @@ int main(int argc, char **argv)
             }
         }
         // printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
+        printf("nnzD = %d\n", nnzRowD);
         printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
         // printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
         int *rId = (int *)malloc(sizeof(int) * dRows);
@@ -1547,9 +1548,17 @@ int main(int argc, char **argv)
         ////////////////////////////////////////////////////////////////////////////////////////////
         /////////////cuda core partition
         ////////////////////////////////////////////////////////////////////////////////////////////
+        if(!((rowProp == 1.0) && (colProp == 1.0)))
+        {
+        printf("nnzS = %d\n", nnzCD);
         cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
         // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
         printf("cdspmv:    %8.4lf ms\n", cdTime);
+        }
+        else
+        {
+            cdTime = 0;
+        }
 
         if (denseUnfold)
         {
