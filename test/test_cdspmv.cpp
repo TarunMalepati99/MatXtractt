@@ -37,7 +37,7 @@ int eQcheck(valT *tmp1, valT *tmp2, int length)
 {
 #ifdef fp64
     // Use double precision (fp64), check for 15 significant digits
-    const double tolerance = 1e-8;  // 15 significant digits for double precision
+    const double tolerance = 1e-8; // 15 significant digits for double precision
     for (int i = 0; i < length; i++)
     {
         double val1 = tmp1[i];
@@ -50,7 +50,7 @@ int eQcheck(valT *tmp1, valT *tmp2, int length)
     }
 #else
     // Use half precision (fp16), check for 3-4 significant digits
-    const float tolerance = 1e-1;  // 3 significant digits for half precision
+    const float tolerance = 1e-1; // 3 significant digits for half precision
     for (int i = 0; i < length; i++)
     {
         // Convert __half to float for computation
@@ -77,7 +77,6 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     int *dA_cid;
     indT *dA_rpt;
     valT alpha = (valT)1, beta = (valT)0;
-    
 
     cudaMalloc((void **)&dA_val, sizeof(valT) * nnzA);
     cudaMalloc((void **)&dA_cid, sizeof(int) * nnzA);
@@ -105,7 +104,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     // } else {
     //     std::cerr << "Failed to get cuSPARSE version." << std::endl;
     // }
-    
+
     cusparseCreateCsr(&matA, rowA, colA, nnzA, dA_rpt, dA_cid, dA_val,
                       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                       CUSPARSE_INDEX_BASE_ZERO, VAL_CUDA_R_TYPE);
@@ -115,6 +114,11 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
                             &alpha, matA, vecX, &beta, vecY, BUF_CUDA_R_TYPE,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
+    
+    // cusparseSpMV_preprocess(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+    //                         &alpha, matA, vecX, &beta, vecY, BUF_CUDA_R_TYPE,
+    //                         CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
     // cudaDeviceSynchronize();
     gettimeofday(&t2, NULL);
     double cusparse_pre = (t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0;
@@ -148,7 +152,7 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     //                  CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
     cudaDeviceSynchronize();
     cudaMemcpy(cu_ValY, dY, sizeof(valT) * rowA, cudaMemcpyDeviceToHost);
-    
+
     double runtime = (elapsedTime) / test_iter;
     // double gflops = (2.0 * matA_csr->nnz) / ((runtime / 1000) * 1e9);
     // printf("\n CUSPARSE CUDA kernel runtime = %g ms\n", runtime);
@@ -162,8 +166,6 @@ void cusparse_spmv_all(valT *cu_ValA, indT *cu_RowPtrA, int *cu_ColIdxA,
     cusparseDestroyDnVec(vecX);
     cusparseDestroyDnVec(vecY);
     cusparseDestroy(handle);
-
-   
 
     cudaFree(dA_val);
     cudaFree(dA_cid);
@@ -228,8 +230,7 @@ int main(int argc, char **argv)
     // fclose(fout);
 
     /* verify the result with cusparse */
-    
-    
+
     // int result = eQcheck(cuY_val, Y_val, rowA);
     int result = eQcheck(Y_val_s, Y_val, rowA);
 

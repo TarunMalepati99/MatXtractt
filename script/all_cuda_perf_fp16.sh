@@ -62,11 +62,11 @@ cd "$(dirname "$0")"
 command="../build/TCSpMVlib_perf"
 
 # Define data directory
-data_dir="../../../data/large_mtx/"
+data_dir="../../../data/mtx/"
 
 # Define output files
-csv_file="./res/results_all_cd_fp16_final_large_aaaaaa.csv"
-error_log="./res/error_all_cd_fp16_final_aaaaaa.log"
+csv_file="./res/results_all_cd_fp16_12_8_pre.csv"
+error_log="./res/error_all_cd_fp16_12_8_pre.log"
 
 # Initialize CSV file with header row
 echo "Matrix Name,cd_perf (ms),cusparse_perf (ms)" > "$csv_file"
