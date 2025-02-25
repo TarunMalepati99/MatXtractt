@@ -1555,7 +1555,7 @@ int main(int argc, char **argv)
         // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
         printf("cdspmv:    %8.4lf ms\n", cdTime);
         }
-        else
+        else //all tcu 
         {
             cdTime = 0;
         }
