@@ -22,7 +22,7 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件路径
 ##############################################################################
-MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/144/144.mtx"
+# MATRIX_PATH = "/home/v-wangtuowei/wangluhan/data/mtx/bundle_adj/bundle_adj.mtx"
 # MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/roadNet-CA/roadNet-CA.mtx"
 
 def measure_spmv_time(col_frac, hot_frac, matrix_path):
@@ -95,30 +95,61 @@ space = [
 ]
 
 
-@use_named_args(space)
-def objective(**params):
-    """
-    目标函数: 返回要最小化的值(执行时间).
-    """
-    col_frac = params['col_frac']
-    hot_frac = params['hot_frac']
-    time_ms = measure_spmv_time(col_frac, hot_frac, MATRIX_PATH)
-    return time_ms
+# @use_named_args(space)
+# def objective(**params):
+#     """
+#     目标函数: 返回要最小化的值(执行时间).
+#     """
+#     col_frac = params['col_frac']
+#     hot_frac = params['hot_frac']
+#     time_ms = measure_spmv_time(col_frac, hot_frac, MATRIX_PATH)
+#     return time_ms
 
 if __name__ == "__main__":
-    print(f"Matrix path: {MATRIX_PATH}")
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python bayes_opt.py <matrix_path>")
+        sys.exit(1)
+        
+    matrix_path = sys.argv[1]  # 替换原来的 MATRIX_PATH
+    if not os.path.exists(matrix_path):
+        print(f"[Error] The matrix file '{matrix_path}' does not exist.")
+        sys.exit(1)
+
+    print(f"Using matrix: {matrix_path}")  # 修改输出信息
+
+    @use_named_args(space)
+    def objective(**params):
+        col_frac = params['col_frac']
+        hot_frac = params['hot_frac']
+        return measure_spmv_time(col_frac, hot_frac, matrix_path)  # 使用命令行参数
     # ========================================
     # 1) 先手动测试 (col_frac=0, hot_frac=0) 和 (col_frac=1, hot_frac=1)
     # ========================================
     init_points = [(0.0, 0.0), (1.0, 1.0)]
     x0 = []
     y0 = []
-    for col_frac, hot_frac in init_points:
-        init_time = measure_spmv_time(col_frac, hot_frac, MATRIX_PATH)
-        x0.append([col_frac, hot_frac])
-        y0.append(init_time)
-        print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
+    # for col_frac, hot_frac in init_points:
+    #     init_time = measure_spmv_time(col_frac, hot_frac, MATRIX_PATH)
+    #     x0.append([col_frac, hot_frac])
+    #     y0.append(init_time)
+    #     print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
 
+    init0_time, init1_time = None, None  # 明确分离两个初始时间       
+    # 测试 col_frac=0, hot_frac=0
+    col_frac, hot_frac = init_points[0]
+    time = measure_spmv_time(col_frac, hot_frac, matrix_path)
+    x0.append([col_frac, hot_frac])
+    y0.append(time)
+    init0_time = time  # 明确赋值
+    print(f"Init0 (0,0) Time = {init0_time} ms")
+    # 测试 col_frac=1, hot_frac=1
+    col_frac, hot_frac = init_points[1]
+    time = measure_spmv_time(col_frac, hot_frac, matrix_path)
+    x0.append([col_frac, hot_frac])
+    y0.append(time)
+    init1_time = time  # 明确赋值
+    print(f"Init1 (1,1) Time = {init1_time} ms")
     # ========================================
     # 2) 进行贝叶斯优化
     #    - n_calls表示最大评估次数(可按资源酌情增减).

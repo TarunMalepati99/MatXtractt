@@ -13,7 +13,7 @@ endif()
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true)
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" OFF)
+option(USE_FP64 "Enable fp64 support" ON)
 
 
 if(ENABLE_CUDA_MEMCHECK)

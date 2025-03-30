@@ -13,13 +13,23 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件根目录
 ##############################################################################
-MATRIX_ROOT_DIR = "/home/v-jiawcheng/wangluhan/data/mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
+MATRIX_ROOT_DIR = "/home/v-wangtuowei/wangluhan/data/mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
 
-OUTPUT_FILE = "optimization_results_fp16_dasp_v_.csv"  # 输出的 CSV 文件路径
+OUTPUT_FILE = "optimization_results_fp64_dasp_.csv"  # 输出的 CSV 文件路径
 
 # 初始化 CSV 文件，并写入表头（修改部分）
+# if not os.path.exists(OUTPUT_FILE):
+#     df = pd.DataFrame(columns=["Matrix", "Init Time (ms)", "Best Time (ms)", "Best col_frac", "Best hot_frac"])
+#     df.to_csv(OUTPUT_FILE, index
 if not os.path.exists(OUTPUT_FILE):
-    df = pd.DataFrame(columns=["Matrix", "Init Time (ms)", "Best Time (ms)", "Best col_frac", "Best hot_frac"])
+    df = pd.DataFrame(columns=[
+        "Matrix", 
+        "Init0 Time (ms)",   # col_frac=0, hot_frac=0 的时间
+        "Init1 Time (ms)",   # col_frac=1, hot_frac=1 的时间
+        "Best Time (ms)", 
+        "Best col_frac", 
+        "Best hot_frac"
+    ])
     df.to_csv(OUTPUT_FILE, index=False)
 
 
@@ -104,8 +114,8 @@ if __name__ == "__main__":
     for subdir, dirs, files in os.walk(MATRIX_ROOT_DIR):
         dirs.sort()
         for dir_name in dirs:
-            if not re.match(r"^[v-z]", dir_name):
-                continue
+            # if not re.match(r"^[v-z]", dir_name):
+            #     continue
             matrix_file = os.path.join(subdir, dir_name, f"{dir_name}.mtx")
 
             # 如果 .mtx 文件不存在，跳过
@@ -122,11 +132,29 @@ if __name__ == "__main__":
             init_points = [(0.0, 0.0), (1.0, 1.0)]
             x0 = []
             y0 = []
-            for col_frac, hot_frac in init_points:
-                init_time = measure_spmv_time(col_frac, hot_frac, current_matrix_path)
-                x0.append([col_frac, hot_frac])
-                y0.append(init_time)
-                print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
+            # for col_frac, hot_frac in init_points:
+            #     init_time = measure_spmv_time(col_frac, hot_frac, current_matrix_path)
+            #     x0.append([col_frac, hot_frac])
+            #     y0.append(init_time)
+            #     print(f"Manually tested (col_frac={col_frac}, hot_frac={hot_frac}). Time(ms) = {init_time}")
+
+            init0_time, init1_time = None, None  # 明确分离两个初始时间
+            
+            # 测试 col_frac=0, hot_frac=0
+            col_frac, hot_frac = init_points[0]
+            time = measure_spmv_time(col_frac, hot_frac, current_matrix_path)
+            x0.append([col_frac, hot_frac])
+            y0.append(time)
+            init0_time = time  # 明确赋值
+            print(f"Init0 (0,0) Time = {init0_time} ms")
+
+            # 测试 col_frac=1, hot_frac=1
+            col_frac, hot_frac = init_points[1]
+            time = measure_spmv_time(col_frac, hot_frac, current_matrix_path)
+            x0.append([col_frac, hot_frac])
+            y0.append(time)
+            init1_time = time  # 明确赋值
+            print(f"Init1 (1,1) Time = {init1_time} ms")
 
             # ========================================
             # 2) 进行贝叶斯优化
@@ -159,9 +187,18 @@ if __name__ == "__main__":
             # plt.close()
 
             # 追加结果到 CSV 文件（修改部分）
+            # df_row = pd.DataFrame({
+            #     "Matrix": [dir_name],
+            #     "Init Time (ms)": [init_time],
+            #     "Best Time (ms)": [res.fun],
+            #     "Best col_frac": [res.x[0]],
+            #     "Best hot_frac": [res.x[1]]
+            # })
+            # df_row.to_csv(OUTPUT_FILE, mode='a', index=False, header=False)
             df_row = pd.DataFrame({
                 "Matrix": [dir_name],
-                "Init Time (ms)": [init_time],
+                "Init0 Time (ms)": [init0_time],
+                "Init1 Time (ms)": [init1_time],  # 新增列
                 "Best Time (ms)": [res.fun],
                 "Best col_frac": [res.x[0]],
                 "Best hot_frac": [res.x[1]]
