@@ -1,4 +1,4 @@
-# A TCU-accelerated SpMV library based on ML-based auto-tuning
+# MatXtract: Sparsity-Aware Matrix Transformation via Cascaded Compute Density Extraction for TCU-Accelerated SpMV
 
 This repository provides a **Sparse Matrix-Vector Multiplication (SpMV)** computation library optimized for **GPU architectures**, leveraging **tensor cores** and **CUDA cores** to achieve high performance through automated techniques.
 
