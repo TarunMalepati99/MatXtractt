@@ -68,7 +68,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 # Performance data log
-# *.log
-# *.csv
+*.log
+*.csv
 *.xlsx
 
