@@ -5,7 +5,7 @@
  */
 #include "mmio.h"
 #include "csr2csc.h"
-#include "TCSpMV.h"
+#include "MatXtract.h"
 
 typedef struct
 {
@@ -1051,7 +1051,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        printf("Run the code by './TCSpMVlib_tcperftest (col_frac) (hot_frac) matrix.mtx'.\n");
+        printf("Run the code by './matxtract_perftest (col_frac) (hot_frac) matrix.mtx'.\n");
         printf("col_frac and hot_frac are optional, defaulting to 0 if not provided.\n");
         return 1;
     }

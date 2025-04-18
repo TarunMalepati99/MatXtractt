@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(TCSpMVProj CXX C)
+project(MatXtractProj CXX C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CPP_STANDARD 11)
@@ -13,7 +13,7 @@ endif()
 set(CUDA_SEPARABLE_COMPILATION ON)
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_80 -rdc=true)
 option(ENABLE_CUDA_MEMCHECK "Enable cuda-memcheck support" OFF)
-option(USE_FP64 "Enable fp64 support" ON)
+option(USE_FP64 "Enable fp64 support" OFF)
 
 
 if(ENABLE_CUDA_MEMCHECK)
@@ -54,7 +54,7 @@ endif()
 message(STATUS "CUDA libraries: ${CUDA_LIBRARIES}")
 message(STATUS "CUDA include dirs: ${CUDA_INCLUDE_DIRS}")
 
-cuda_add_library(TCSpMVlib ${cuda_sources})
+cuda_add_library(MatXtractlib ${cuda_sources})
 
 
 set(CUDA_TEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/test)
@@ -75,14 +75,14 @@ file(GLOB CUDA_TCTEST_FILES "${CUDA_TEST_PATH}/test_autotc_spmv.cpp")
 
 if(CUDA_TEST_FILES)
     #cd kernel
-    add_executable(TCSpMVlib_perf ${CUDA_TEST_FILES})
-    target_link_libraries(TCSpMVlib_perf TCSpMVlib cuda_utilities_lib)
-    target_include_directories(TCSpMVlib_perf PRIVATE ${PROJECT_SOURCE_DIR}/include)
+    add_executable(cuda_perftest ${CUDA_TEST_FILES})
+    target_link_libraries(cuda_perftest MatXtractlib cuda_utilities_lib)
+    target_include_directories(cuda_perftest PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
     #auto kernel
-    add_executable(TCSpMVlib_tcperftest ${CUDA_TCTEST_FILES})
-    target_link_libraries(TCSpMVlib_tcperftest TCSpMVlib cuda_utilities_lib OpenMP::OpenMP_CXX)
-    target_include_directories(TCSpMVlib_tcperftest PRIVATE ${PROJECT_SOURCE_DIR}/include)
+    add_executable(matxtract_perftest ${CUDA_TCTEST_FILES})
+    target_link_libraries(matxtract_perftest MatXtractlib cuda_utilities_lib OpenMP::OpenMP_CXX)
+    target_include_directories(matxtract_perftest PRIVATE ${PROJECT_SOURCE_DIR}/include)
 else()
     message(FATAL_ERROR "No test files found!")
 endif()
@@ -100,4 +100,4 @@ file(GLOB ML_SOURCES "${ML_PATH}/extract_features.cpp")
 
 add_executable(extract_features ${ML_SOURCES})
 target_include_directories(extract_features PRIVATE ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(extract_features cuda_utilities_lib TCSpMVlib)
+target_link_libraries(extract_features cuda_utilities_lib MatXtractlib)

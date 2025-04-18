@@ -5,7 +5,7 @@
  */
 #include "mmio.h"
 #include "csr2csc.h"
-#include "TCSpMV.h"
+#include "MatXtract.h"
 
 // const float colProp = 0.82;
 const float rowProp = 0.62;

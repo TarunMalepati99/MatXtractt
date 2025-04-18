@@ -70,7 +70,7 @@ def final_evaluation(model, X_test, y_test):
 
 def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
     matrix_path = f"../../../data/mtx/{matrix_name}/{matrix_name}.mtx"
-    cmd = ["../build/TCSpMVlib_tcperftest", f"{col_frac}", f"{hot_frac}", matrix_path]
+    cmd = ["../build/matxtract_perftest", f"{col_frac}", f"{hot_frac}", matrix_path]
 
     try:
         output = subprocess.check_output(cmd, universal_newlines=True)

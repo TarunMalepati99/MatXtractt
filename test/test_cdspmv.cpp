@@ -1,4 +1,4 @@
-#include "TCSpMV.h"
+#include "MatXtract.h"
 #include "mmio.h"
 //-------------------------------------------------------------------------------
 // int resCompare(double *our_val, double *cuda_val, int length)

@@ -23,11 +23,11 @@ def apply_zero_clamp(y_pred, threshold):
 
 def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
     """
-    执行指定的命令行程序 ../build/TCSpMVlib_tcperftest。
+    执行指定的命令行程序 ../build/matxtract_perftest。
     """
     matrix_path = f"../../../data/mtx/{matrix_name}/{matrix_name}.mtx"
     cmd = [
-        "../build/TCSpMVlib_tcperftest",
+        "../build/matxtract_perftest",
         f"{col_frac}",
         f"{hot_frac}",
         matrix_path

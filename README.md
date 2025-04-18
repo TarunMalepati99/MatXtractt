@@ -50,11 +50,7 @@ To prepare the testing dataset, execute the following script in the `data` direc
 bash prepare_all_dataset.sh
 ```
 
-The dataset will be generated in:
-
-```
-`/data/mtx`
-```
+The dataset will be generated in:`/data/mtx`.
 
 ## Running the Program
 After compilation, the executable files are located in the `build/` directory.
@@ -106,11 +102,8 @@ Then run:
 ./cuda_perftest <path_to_matrixA.mtx>
 ```
 
-- **CSR5 and Merge-SpMV**: Both are integrated into:
+- **CSR5 and Merge-SpMV**: Both are integrated into `/baselines`.
 
-```
-`/baselines`
-```
 
 Refer to their respective markdown files for compilation and execution instructions.
 

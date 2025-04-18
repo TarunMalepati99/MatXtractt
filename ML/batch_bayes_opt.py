@@ -35,7 +35,7 @@ if not os.path.exists(OUTPUT_FILE):
 
 def measure_spmv_time(col_frac, hot_frac, matrix_path):
     """
-    调用命令行 "../build/TCSpMVlib_tcperftest col_frac hot_frac matrix.mtx"
+    调用命令行 "../build/matxtract_perftest col_frac hot_frac matrix.mtx"
     并解析输出中的执行时间（ms）。
     返回值为执行时间(浮点数)，数值越小表示速度越快。
 
@@ -60,7 +60,7 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
 
     # 组装命令行参数
     cmd = [
-        "../build/TCSpMVlib_tcperftest",
+        "../build/matxtract_perftest",
         str(col_frac),
         str(hot_frac),
         matrix_path

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the log file containing the URLs
-log_file="2664.log"
+log_file="all_url.log"
 
 # Define the target directory for downloaded files
 target_dir="targz"

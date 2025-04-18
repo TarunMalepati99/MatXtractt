@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd "$(dirname "$0")"
-command="../build/TCSpMVlib_tcperftest"
+command="../build/matxtract_perftest"
 
 # Define data directory
 data_dir="../../../data/large_mtx/"

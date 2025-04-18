@@ -1,7 +1,7 @@
 # #!/bin/bash
 
 # cd "$(dirname "$0")"
-# command="../build/TCSpMVlib_perf"
+# command="../build/cuda_perftest"
 
 # # Define data directory
 # data_dir="../../../data/mtx/"
@@ -59,7 +59,7 @@
 #!/bin/bash
 
 cd "$(dirname "$0")"
-command="../build/TCSpMVlib_perf"
+command="../build/cuda_perftest"
 
 # Define data directory
 data_dir="../../../data/mtx/"
