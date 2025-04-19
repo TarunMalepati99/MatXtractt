@@ -1656,7 +1656,7 @@ int main(int argc, char **argv)
         free(ourY_val);
         free(X_val);
     }
-    printf("\nMatXtract GFLOPS= %.2f\n",
+    printf("MatXtract GFLOPS= %.2f\n",
         (2.0 * (double)nnzA)           // FLOPs
       / (matxtract_time * 1e-3)       // seconds
       / 1e9);                         // to GFLOPS
