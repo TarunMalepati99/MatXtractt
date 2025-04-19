@@ -206,8 +206,8 @@ void tcspmv_half(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching kernel with %d blocks, %d threads per block\n",
-           blocksPerGrid, threadsPerBlock);
+    // printf("Launching kernel with %d blocks, %d threads per block\n",
+    //        blocksPerGrid, threadsPerBlock);
 
     int warm_iter = 200;
     for (int i = 0; i < warm_iter; ++i)

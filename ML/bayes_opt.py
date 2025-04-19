@@ -19,11 +19,6 @@ from skopt.space import Real
 from skopt.utils import use_named_args
 from skopt.plots import plot_convergence
 
-##############################################################################
-# 请修改以下路径为你的实际稀疏矩阵文件路径
-##############################################################################
-# MATRIX_PATH = "/home/v-wangtuowei/wangluhan/data/mtx/bundle_adj/bundle_adj.mtx"
-# MATRIX_PATH = "/home/v-jiawcheng/wangluhan/data/mtx/roadNet-CA/roadNet-CA.mtx"
 
 def measure_spmv_time(col_frac, hot_frac, matrix_path):
     """
@@ -65,8 +60,8 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         print(f"[Error] Failed to run: {cmd}\n{e}")
         return 1e6
 
-    # 在输出中查找 "THE autoTC FINAL TIME = xxxxx ms"
-    match = re.search(r"THE autoTC FINAL TIME\s*=\s*([\d\.Ee+-]+)\s*ms", output)
+    # 在输出中查找 "MatXtract time = xxxxx ms"
+    match = re.search(r"MatXtract time\s*=\s*([\d\.Ee+-]+)\s*ms", output)
     if not match:
         # 若未找到匹配的浮点数，视为失败，返回惩罚
         print("[Warning] Could not find time in output. Full output:")

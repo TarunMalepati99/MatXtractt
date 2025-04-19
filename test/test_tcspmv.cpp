@@ -1610,12 +1610,12 @@ int main(int argc, char **argv)
         if (denseUnfold)
         {
             printf("du_spmv:    %8.4lf ms\n", tcTime_du);
-            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_du + cdTime);
+            printf("\n\n MatXtract time = %lf ms\n\n", tcTime_du + cdTime);
         }
         else
         {
             printf("se_spmv:    %8.4lf ms\n", tcTime_se);
-            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_se + cdTime);
+            printf("\n\n MatXtract time = %lf ms\n\n", tcTime_se + cdTime);
         }
         int result_auto = eQcheck(Y_val, coldY_val_solo, rowA);
         // int result_ = eQcheck(hotY_val_solo_serial, hotY_val_solo_du, dRows);

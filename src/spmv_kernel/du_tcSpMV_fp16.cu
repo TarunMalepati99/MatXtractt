@@ -288,8 +288,8 @@ void du_tcspmv_fp16_v0(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + chunksPerBlock - 1) / chunksPerBlock;
 
-    printf("Launching kernel with %d blocks, %d threads per block\n",
-           blocksPerGrid, threadsPerBlock);
+    // printf("Launching kernel with %d blocks, %d threads per block\n",
+    //        blocksPerGrid, threadsPerBlock);
 
     int warm_iter = 200;
     for (int i = 0; i < warm_iter; ++i)
@@ -381,8 +381,8 @@ void du_tcspmv_fp16_v1(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uin
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching tcspmv_kernel_fp16 with %d blocks, %d threads per block\n",
-           blocksPerGrid, threadsPerBlock);
+    // printf("Launching tcspmv_kernel_fp16 with %d blocks, %d threads per block\n",
+    //        blocksPerGrid, threadsPerBlock);
 
     int warm_iter = 200;
     for (int i = 0; i < warm_iter; ++i)

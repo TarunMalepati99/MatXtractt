@@ -305,8 +305,8 @@ void du_tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     int numRowChunks = (rowA + fragM - 1) / fragM;
     int blocksPerGrid = (numRowChunks + warpsPerBlock - 1) / warpsPerBlock;
 
-    printf("Launching tcspmv_kernel_fp64 with %d blocks, %d threads per block\n",
-           blocksPerGrid, threadsPerBlock);
+    // printf("Launching tcspmv_kernel_fp64 with %d blocks, %d threads per block\n",
+    //        blocksPerGrid, threadsPerBlock);
 
     int warm_iter = 200;
     for (int i = 0; i < warm_iter; ++i)

@@ -1,5 +1,5 @@
 /*
- * autoTC SpMV Performance Test
+ * MatXtract SpMV Performance Test
  * Author: Luhan Wang
  * Date: 2024.12.26
  */
@@ -1102,6 +1102,7 @@ int main(int argc, char **argv)
     // for (float rowProp = 0.1f; rowProp <= 0.75f; rowProp += 0.05f)
     float colProp = col_frac;
     float rowProp = hot_frac;
+    double matxtract_time = 0.0;
     if (!((rowProp == 0.0) && (colProp == 0.0)))
     {
         // float colProp = rowProp / 0.8f;
@@ -1110,8 +1111,8 @@ int main(int argc, char **argv)
         indT *cscColPtr;
         indT *cscRowInd;
         std::cout << "---------------------------------------------------------" << std::endl;
-        std::cout << "                     rowProp: " << rowProp << std::endl;
-        std::cout << "                     colProp: " << colProp << std::endl;
+        std::cout << "                     localRow: " << rowProp << std::endl;
+        std::cout << "                     globalCol: " << colProp << std::endl;
         std::cout << "---------------------------------------------------------" << std::endl;
 
         std::cout << "---------------------Compression Info--------------------" << std::endl;
@@ -1138,7 +1139,6 @@ int main(int argc, char **argv)
                 break;
             }
         }
-        // printf("col_nnz_ratio = %f\n", (float)nnzColD / (float)nnzA);
         printf("cols_ratio = %f \n", (float)dCols / (float)colA);
 
         int nnzColS = nnzA - nnzColD;
@@ -1257,10 +1257,9 @@ int main(int argc, char **argv)
                 break;
             }
         }
-        // printf("row_nnz_ratio = %f\n", (float)nnzRowD / (float)nnzA);
-        printf("nnzD = %d\n", nnzRowD);
-        printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
-        // printf("square_ratio = %f \n", ((float)dRows / (float)rowA) * ((float)dCols / (float)colA));
+
+        // printf("nnzD = %d\n", nnzRowD);
+        // printf("rows_ratio = %f \n", (float)dRows / (float)rowA);
         int *rId = (int *)malloc(sizeof(int) * dRows);
         for (int i = 0; i < dRows; i++)
         {
@@ -1344,7 +1343,6 @@ int main(int argc, char **argv)
                 sr_ptr++;
             }
         }
-        // printf("\n------Sparsity-aware Compression END------\n");
 
         /***************************************************************
          *                     2.TCU-aware Compression                 *
@@ -1550,10 +1548,10 @@ int main(int argc, char **argv)
         ////////////////////////////////////////////////////////////////////////////////////////////
         if(!((rowProp == 1.0) && (colProp == 1.0)))
         {
-        printf("nnzS = %d\n", nnzCD);
+        // printf("nnzS = %d\n", nnzCD);
         cdspmv(csrVal_CD, csrRowPtr_CD, csrColInd_CD, x_CD, coldY_val_solo, rowCD, colCD, nnzCD, &cdTime, &cdPre);
         // printf("cdspmv:    %8.4lf ms, cdspmv pre:%8.4lf ms\n", cdTime, cdPre);
-        printf("cdspmv:    %8.4lf ms\n", cdTime);
+        /*printf("cdspmv:    %8.4lf ms\n", cdTime);*/
         }
         else //all tcu 
         {
@@ -1562,13 +1560,15 @@ int main(int argc, char **argv)
 
         if (denseUnfold)
         {
-            printf("du_spmv:    %8.4lf ms\n", tcTime_du);
-            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_du + cdTime);
+            /*printf("du_spmv:    %8.4lf ms\n", tcTime_du);*/
+            printf("MatXtract time = %lf ms\n\n", tcTime_du + cdTime);
+            matxtract_time = tcTime_du + cdTime;
         }
         else
         {
-            printf("se_spmv:    %8.4lf ms\n", tcTime_se);
-            printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", tcTime_se + cdTime);
+            /*printf("se_spmv:    %8.4lf ms\n", tcTime_se);*/
+            printf("MatXtract time = %lf ms\n\n", tcTime_se + cdTime);
+            matxtract_time = tcTime_se + cdTime;
         }
         int result_auto = eQcheck(Y_val, coldY_val_solo, rowA);
 
@@ -1649,12 +1649,18 @@ int main(int argc, char **argv)
         double cdTime = 0, cdPre = 0;
         cdspmv(csrVal, csrRowPtr, csrColInd, X_val, ourY_val, rowA, colA, nnzA, &cdTime, &cdPre);
 
-        printf("\n\n THE autoTC FINAL TIME = %lf ms\n\n", cdTime);
+        printf("MatXtract time = %lf ms\n", cdTime);
+        matxtract_time = cdTime;
         int result_cd = eQcheck(Y_val, ourY_val, rowA);
         free(Y_val);
         free(ourY_val);
         free(X_val);
     }
+    printf("\nMatXtract GFLOPS= %.2f\n",
+        (2.0 * (double)nnzA)           // FLOPs
+      / (matxtract_time * 1e-3)       // seconds
+      / 1e9);                         // to GFLOPS
+      
     free(csrColInd);
     free(csrRowPtr);
     free(csrVal);

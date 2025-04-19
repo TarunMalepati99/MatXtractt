@@ -13,9 +13,9 @@ from skopt.plots import plot_convergence
 ##############################################################################
 # 请修改以下路径为你的实际稀疏矩阵文件根目录
 ##############################################################################
-MATRIX_ROOT_DIR = "/home/v-wangtuowei/wangluhan/data/mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
+MATRIX_ROOT_DIR = "../data/mtx"  # 根目录，包含多个子文件夹，每个子文件夹有一个.mtx 文件
 
-OUTPUT_FILE = "optimization_results_fp64_dasp_.csv"  # 输出的 CSV 文件路径
+OUTPUT_FILE = "batch_bayes_output.csv"  # 输出的 CSV 文件路径
 
 # 初始化 CSV 文件，并写入表头（修改部分）
 # if not os.path.exists(OUTPUT_FILE):
@@ -74,8 +74,8 @@ def measure_spmv_time(col_frac, hot_frac, matrix_path):
         print(f"[Error] Failed to run: {cmd}\n{e}")
         return 1e6
     
-    # 在输出中查找 "THE autoTC FINAL TIME = xxxxx ms"
-    match = re.search(r"THE autoTC FINAL TIME\s*=\s*([\d\.Ee+-]+)\s*ms", output)
+    # 在输出中查找 "MatXtract time = xxxxx ms"
+    match = re.search(r"MatXtract time\s*=\s*([\d\.Ee+-]+)\s*ms", output)
     if not match:
         # 若未找到匹配的浮点数，视为失败，返回惩罚
         print("[Warning] Could not find time in output. Full output:")

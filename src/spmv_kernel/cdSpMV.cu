@@ -448,8 +448,8 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   }
   int productNnzPerBlock = THREADS_PER_BLOCK * productNnzPerThread;
 
-  printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
-         WORK_BLOCKS, THREADS_PER_BLOCK);
+  // printf("Launching cdspmv_kernel with %d blocks, %d threads per block\n",
+  //        WORK_BLOCKS, THREADS_PER_BLOCK);
 
   int warm_iter = 200;
   int test_iter = 4000;
