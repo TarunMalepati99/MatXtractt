@@ -92,10 +92,10 @@ endif()
 
 
 
-# 添加 ML 文件夹路径
+# Add ML folder path
 set(ML_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ML)
 
-# 添加 extract_features.cpp 的构建规则
+# Add extract_features.cpp build rule
 file(GLOB ML_SOURCES "${ML_PATH}/extract_features.cpp")
 
 add_executable(extract_features ${ML_SOURCES})

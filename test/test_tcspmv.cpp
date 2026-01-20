@@ -1,7 +1,7 @@
 /*
  * autoTC SpMV Performance Test
- * Author: Luhan Wang
- * Date: 2024.12.26
+ * Author: luuhwy
+ * Date: 2025.12.26
  */
 #include "mmio.h"
 #include "csr2csc.h"

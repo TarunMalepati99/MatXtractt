@@ -4,13 +4,13 @@
 """
 train_and_save_model.py
 
-功能:
-1) 从 ML_data_fp16.csv 读取数据并随机打乱；
-2) 按 80:20 划分训练集和测试集；
-3) 在训练集上做 5-Fold CV，对四个模型(RF, XGB, AdaBoost, GBDT)做性能比较；
-4) 选出CV中表现最好的模型并用全部训练集拟合；
-5) 在测试集上评估(MSE/MAE/R2)，并对预测结果做"阈值截断"(如<0.1视为0)，以融入"大多数矩阵(0,0)最好"的先验；
-6) 最终将训练好的最佳模型保存到 "best_model.joblib"。
+Functions:
+1) Read data from ML_data_fp16.csv and shuffle randomly;
+2) Split into train/test sets with 80:20 ratio;
+3) Perform 5-Fold CV on training set, compare four models (RF, XGB, AdaBoost, GBDT);
+4) Select best performing model from CV and fit on entire training set;
+5) Evaluate on test set (MSE/MAE/R2), apply "threshold clamping" (e.g. <0.1 as 0) to incorporate prior that most matrices perform best at (0,0);
+6) Save trained best model to "best_model.joblib".
 """
 
 import numpy as np
@@ -24,16 +24,16 @@ from sklearn.ensemble import (
 )
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from joblib import dump  # 用于保存模型
+from joblib import dump  # To save model
 
-# ====== 超参数 ======
-THRESHOLD_NEAR_ZERO = 0.1  # 若预测值 < 0.1, 则视为 0
+# ====== Hyperparameters ======
+THRESHOLD_NEAR_ZERO = 0.1  # If prediction value < 0.1, then set to 0
 
 def evaluate_model(model, X, y, n_splits=5):
     """
-    对给定模型进行 n_splits-Fold 交叉验证，返回 MSE 的平均值(越低越好)。
-    这里对多输出回归 (col_frac, hot_frac) 做简单处理：
-      - 分别计算两个目标的 MSE，然后取平均。
+    Perform n_splits-Fold cross-validation on given model, return average MSE (lower is better).
+    For multi-output regression (col_frac, hot_frac):
+      - Compute MSE for each target separately, then take average.
     """
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     mse_list = []
@@ -44,13 +44,13 @@ def evaluate_model(model, X, y, n_splits=5):
         model.fit(X_tr, y_tr)
         y_pred = model.predict(X_val)
 
-        # 对预测结果做先验截断(若预测值很接近0，则设为0)
+        # Apply prior clamping to predictions (if value is close to 0, set to 0)
         y_pred = apply_zero_clamp(y_pred, THRESHOLD_NEAR_ZERO)
 
-        # 分别计算 col_frac, hot_frac 的 MSE
+        # Compute MSE for col_frac and hot_frac separately
         mse_1 = mean_squared_error(y_val[:, 0], y_pred[:, 0])
         mse_2 = mean_squared_error(y_val[:, 1], y_pred[:, 1])
-        # 取平均
+        # Take average
         mse_mean = 0.5 * (mse_1 + mse_2)
         
         mse_list.append(mse_mean)
@@ -59,8 +59,8 @@ def evaluate_model(model, X, y, n_splits=5):
 
 def apply_zero_clamp(y_pred, threshold):
     """
-    对 2D预测结果 y_pred (shape=[n_samples,2]) 进行截断:
-    若 y_pred[i, j] < threshold，则 y_pred[i, j] = 0.
+    Apply clamping to 2D prediction results y_pred (shape=[n_samples,2]):
+    If y_pred[i, j] < threshold, then y_pred[i, j] = 0.
     """
     y_pred_clamped = np.copy(y_pred)
     y_pred_clamped[y_pred_clamped < threshold] = 0.0
@@ -73,14 +73,14 @@ def apply_zero_clamp(y_pred, threshold):
 
 def final_evaluation(model, X_test, y_test):
     """
-    用模型对测试集预测，并做"截断"处理，然后计算MSE/MAE/R2等指标。
-    返回 (metrics_dict, y_pred_after_clamp)
+    Use model to predict on test set, apply "clamping" processing, then compute MSE/MAE/R2 metrics.
+    Return (metrics_dict, y_pred_after_clamp)
     """
     y_pred = model.predict(X_test)
-    # 应用截断
+    # Apply clamping
     y_pred_clamped = apply_zero_clamp(y_pred, THRESHOLD_NEAR_ZERO)
 
-    # 分别计算
+    # Compute separately
     mse_1 = mean_squared_error(y_test[:, 0], y_pred_clamped[:, 0])
     mse_2 = mean_squared_error(y_test[:, 1], y_pred_clamped[:, 1])
     mae_1 = mean_absolute_error(y_test[:, 0], y_pred_clamped[:, 0])
@@ -107,14 +107,14 @@ def final_evaluation(model, X_test, y_test):
 
 
 def main():
-    # 1) 读取 CSV
-    data_path = "ML_data_fp16.csv"  # 你的数据文件
+    # 1) Read CSV
+    data_path = "ML_data_fp16.csv"  # Your data file
     df = pd.read_csv(data_path)
     
-    # 打乱 DataFrame 行顺序
+    # Shuffle DataFrame rows
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    # 2) 分离特征与目标
+    # 2) Separate features and targets
     feature_cols = list(df.columns)
     feature_cols.remove("MatrixName")
     feature_cols.remove("Best col_frac")
@@ -123,12 +123,12 @@ def main():
     X = df[feature_cols].values
     y = df[["Best col_frac", "Best hot_frac"]].values
 
-    # 3) 划分训练集和测试集 (80%:20%)
+    # 3) Split train and test sets (80%:20%)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
-    # 候选模型 (不包含 MLP, SVM, LinearReg, Ridge)
+    # Candidate models (excluding MLP, SVM, LinearReg, Ridge)
     from sklearn.multioutput import MultiOutputRegressor
     candidate_models = {
         "RandomForest": MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_state=42)),
@@ -144,22 +144,22 @@ def main():
         model_scores[model_name] = cv_mse
         print(f"[CV] {model_name}, 5-Fold MSE = {cv_mse:.5f}")
 
-    # 选出CV下 MSE最小的
+    # Select model with minimum MSE from CV
     best_model_name = min(model_scores, key=model_scores.get)
     print(f"\n[Info] Best model from CV: {best_model_name}, MSE={model_scores[best_model_name]:.5f}")
 
-    # 5) 用整个训练集训练该最佳模型
+    # 5) Train best model on entire training set
     best_model = candidate_models[best_model_name]
     best_model.fit(X_train, y_train)
 
-    # 6) 在测试集上评估
+    # 6) Evaluate on test set
     metrics, y_pred_test = final_evaluation(best_model, X_test, y_test)
     
     print("\n=== 6) Final Test Evaluation (with zero-clamp) ===")
     for k, v in metrics.items():
         print(f"{k}: {v:.5f}")
 
-    # 7) 保存训练好的最佳模型
+    # 7) Save trained best model
     dump(best_model, "best_model.joblib")
     print("\n[Info] Model saved to best_model.joblib")
 

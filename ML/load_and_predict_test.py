@@ -4,18 +4,18 @@
 """
 load_and_predict_test.py
 
-功能:
-1) 加载已保存的最佳模型 "best_model.joblib";
-2) 对测试集(或其它新数据)做推理;
-3) 输出预测的 (col_frac, hot_frac).
-4) 同样可在预测后应用 "阈值截断" 以体现先验.
+Functions:
+1) Load saved best model "best_model.joblib";
+2) Perform inference on test set (or other new data);
+3) Output predicted (col_frac, hot_frac).
+4) Apply "threshold clamping" after prediction to reflect prior.
 """
 
 import numpy as np
 import pandas as pd
 from joblib import load
 
-THRESHOLD_NEAR_ZERO = 0.1  # 与训练时相同的截断阈值
+THRESHOLD_NEAR_ZERO = 0.1  # Same threshold as training
 
 # def apply_zero_clamp(y_pred, threshold):
 #     y_pred_clamped = np.copy(y_pred)
@@ -26,7 +26,7 @@ def apply_zero_clamp(y_pred, threshold):
     y_pred_clamped = np.copy(y_pred)
     y_pred_clamped[y_pred_clamped < threshold] = 0.0
 
-    # 确保 col_frac >= hot_frac，否则设置为 0
+    # Ensure col_frac >= hot_frac, otherwise set to 0
     for i in range(y_pred_clamped.shape[0]):
         if y_pred_clamped[i, 0] < y_pred_clamped[i, 1]:
             y_pred_clamped[i, 0] = 0.0
@@ -35,11 +35,11 @@ def apply_zero_clamp(y_pred, threshold):
     return y_pred_clamped
 
 def main():
-    # 加载训练好的模型
+    # Load trained model
     model = load("best_model.joblib")
     print("[Info] Model loaded from best_model.joblib")
 
-    # 这里演示: 依然加载 ML_data_fp16.csv 并拆分出测试集(与训练脚本保持一致)
+    # Demo: Load ML_data_fp16.csv and split test set (consistent with training script)
     df = pd.read_csv("ML_data_fp16.csv")
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
@@ -50,24 +50,24 @@ def main():
     X = df[feature_cols].values
     y = df[["Best col_frac", "Best hot_frac"]].values
 
-    # 同样的 80:20 split (确保 random_state=42 一致)
+    # Same 80:20 split (ensure random_state=42 consistent)
     from sklearn.model_selection import train_test_split
     X_train, X_test, y_train, y_test, matrix_names_train, matrix_names_test = train_test_split(
         X, y, df["MatrixName"].values, test_size=0.2, random_state=42
     )
 
-    # 对测试集做预测
+    # Make predictions on test set
     y_pred = model.predict(X_test)
-    # 做先验截断
+    # Apply prior clamping
     y_pred_clamped = apply_zero_clamp(y_pred, THRESHOLD_NEAR_ZERO)
 
-    # 输出前10条结果做示例
+    # Output first 10 results as example
     print("\n[Prediction on TestSet, first 10 samples]")
     for i in range(10):
         print(f"True=({y_test[i,0]:.3f},{y_test[i,1]:.3f}),  "
               f"Pred=({y_pred_clamped[i,0]:.3f},{y_pred_clamped[i,1]:.3f})")
 
-    # 若需要把这些预测写到 CSV 中, 添加矩阵名称列:
+    # Write predictions to CSV with matrix name column if needed:
     df_test_predictions = pd.DataFrame({
         "MatrixName": matrix_names_test,
         "True col_frac": y_test[:, 0],

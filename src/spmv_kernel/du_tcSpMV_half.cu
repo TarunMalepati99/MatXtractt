@@ -41,16 +41,16 @@ __global__ void tcspmv_kernel_half(
     }
 
     int rowStart = rowChunkIndex * fragM;
-    int groupID = laneId >> 2;            // laneId / 4  四个线程为一组
+    int groupID = laneId >> 2;            // laneId / 4  four threads in a group
     int threadID_in_group = laneId & 0x3; // laneId % 4
 
-    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx) // 遍历当前行块的所有稀疏矩阵片段（tcFrag）
+    for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx) // Traverse all sparse matrix fragments (tcFrag) in the current row block
     {
-        const uint64_t *bitmapArray = &fragBit[tcFragIdx * 4]; // 每个 tcFrag 有 4 个 uint64_t
+        const uint64_t *bitmapArray = &fragBit[tcFragIdx * 4]; // Each tcFrag has 4 uint64_t
         const half *tcValPtr = &tcVal[fragPtr[tcFragIdx]];
         const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK];
 
-        // 每个线程负责8个寄存器的a_frag
+        // Each thread is responsible for 8 registers of a_frag
         half a_frag[8];
         for (int i = 0; i < 8; ++i)
         {
@@ -91,7 +91,7 @@ __global__ void tcspmv_kernel_half(
             a_frag[i] = bit ? tcValPtr[a_valIdx] : __float2half(0.0f);
         }
 
-        // 每个线程负责4个寄存器的b_frag, 只算第一列, 前四个线程即可
+        // Each thread is responsible for 4 registers of b_frag, only the first column, the first four threads are enough
         half b_frag[4];
         for (int i = 0; i < 4; ++i)
         {
@@ -116,7 +116,7 @@ __global__ void tcspmv_kernel_half(
             }
         }
 
-        // 将单独的half组合成__half2
+        // Combine separate halves into __half2
         __half2 a_frag2[4];
         a_frag2[0] = __halves2half2(a_frag[0], a_frag[1]);
         a_frag2[1] = __halves2half2(a_frag[2], a_frag[3]);
@@ -132,7 +132,7 @@ __global__ void tcspmv_kernel_half(
         c_frag[0] = __float2half2_rn(0.0f);
         c_frag[1] = __float2half2_rn(0.0f);
 
-        // 将__half2 转换为无符号整数类型，方便在汇编中操作
+        // Convert __half2 to unsigned integer type, for easy operation in assembly
         unsigned int *a_frag_int = reinterpret_cast<unsigned int *>(&a_frag2[0]);
         unsigned int *b_frag_int = reinterpret_cast<unsigned int *>(&b_frag2[0]);
         unsigned int *c_frag_int = reinterpret_cast<unsigned int *>(&c_frag[0]);
@@ -235,7 +235,7 @@ void tcspmv_half(int *chunkPtr, std::vector<int> fragPtr, std::vector<std::array
 
     CUDA_CHECK_ERROR(cudaMemcpy(Y_val, d_Y_val, sizeof(half) * rowA, cudaMemcpyDeviceToHost));
 
-    // 释放设备内存
+    // Release device memory
     CUDA_CHECK_ERROR(cudaFree(d_tcVal));
     CUDA_CHECK_ERROR(cudaFree(d_fragPtr));
     CUDA_CHECK_ERROR(cudaFree(d_fragBit));

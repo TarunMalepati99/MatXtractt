@@ -13,7 +13,7 @@ def apply_zero_clamp(y_pred, threshold):
     y_pred_clamped = np.copy(y_pred)
     y_pred_clamped[y_pred_clamped < threshold] = 0.0
 
-    # 确保 col_frac >= hot_frac，否则设置为 0
+    # Ensure col_frac >= hot_frac, otherwise set to 0
     for i in range(y_pred_clamped.shape[0]):
         if y_pred_clamped[i, 0] < y_pred_clamped[i, 1]:
             y_pred_clamped[i, 0] = 0.0
@@ -23,7 +23,7 @@ def apply_zero_clamp(y_pred, threshold):
 
 def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
     """
-    执行指定的命令行程序 ../build/matxtract_perftest。
+    Execute the specified command line program ../build/matxtract_perftest.
     """
     matrix_path = f"../../../data/mtx/{matrix_name}/{matrix_name}.mtx"
     cmd = [
@@ -42,28 +42,28 @@ def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
 
 
 def main():
-    # 1) 加载模型
+    # 1) Load model
     model = load("best_model.joblib")
     print("[Info] Loaded best_model.joblib")
 
-    # 2) 读取 'new_data.csv'，第一列是矩阵名，后面是特征
+    # 2) Read 'new_data.csv', first column is matrix name, rest are features
     df_new = pd.read_csv("new_data.csv")
-    matrix_names = df_new.iloc[:, 0].values  # 第一列是矩阵名
-    X_new = df_new.iloc[:, 1:].values  # 其余列是特征
+    matrix_names = df_new.iloc[:, 0].values  # First column is matrix name
+    X_new = df_new.iloc[:, 1:].values  # Remaining columns are features
 
-    # 3) 推理
+    # 3) Inference
     y_pred = model.predict(X_new)
 
-    # 4) 若要体现先验(多数(0,0)最优)，则做阈值截断
+    # 4) Apply threshold clamping to reflect prior (most cases (0,0) is optimal)
     y_pred_clamped = apply_zero_clamp(y_pred, THRESHOLD_NEAR_ZERO)
 
-    # 5) 保存或输出预测结果并执行命令
+    # 5) Save or output prediction results and execute commands
     for i, matrix_name in enumerate(matrix_names):
         col_frac = y_pred_clamped[i, 0]
         hot_frac = y_pred_clamped[i, 1]
         print(f"Matrix {matrix_name}: col_frac={col_frac:.4f}, hot_frac={hot_frac:.4f}")
 
-        # 执行命令
+        # Execute command
         execute_tcspmv_test(matrix_name, col_frac, hot_frac)
 
 if __name__ == "__main__":

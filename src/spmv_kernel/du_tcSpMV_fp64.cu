@@ -1,7 +1,7 @@
 #include "common.h"
 
 #define SHM_SIZE 128  // Shared memory size in doubles (8 KB)
-#define CONST_SIZE 4096  // 常量内存大小
+#define CONST_SIZE 4096  // Constant memory size
  __constant__ double x_const[CONST_SIZE];
 
  __device__ __forceinline__ void store_double_to_global(const double* a, double v)
@@ -9,8 +9,8 @@
     asm volatile("st.global.cs.f64 [%0], %1;" :: "l"(a), "d"(v));
 }
 
-// 重新组织tcVal、fragPtr和sparse_AToX_index的数据布局，使得连续线程访问连续的内存地址
-// 利用CUDA的Warp级别原语（如__shfl_down_sync）在warp内部高效地共享数据，减少同步开销
+// Reorganize the data layout of tcVal, fragPtr and sparse_AToX_index, so that consecutive threads access consecutive memory addresses
+// Use CUDA's Warp-level primitives (such as __shfl_down_sync) to efficiently share data within a warp, reducing synchronization overhead
 
 __global__ void tcspmv_kernel_fp64_v1(
     const double *__restrict__ x_d,

@@ -1,15 +1,11 @@
-// TODO:
-/*
-    第一版整合版本，统一一个线程块4个warp
-    long part： 一个warp进行两次mma，多个block得到一个y
-    row_block part：
-        根据row-block行数进行分情况讨论
-        row-block < 59990                        一个warp算1个行块
-        row-block >= 59990 && row-block < 400000 一个warp算2个行块
-        row-block >= 400000                      一个warp算4个行块
-
-    short part：一个warp进行四次mma，一个warp得到32个y
-*/
+/**
+ * Copyright (c) 2026 luuhwy.
+ * * This file includes code derived from the DASP project.
+ * Source: https://github.com/SuperScientificSoftwareLaboratory/DASP
+ * Original Copyright (c) SuperScientificSoftwareLaboratory
+ * * SPDX-License-Identifier: BSD-3-Clause
+ * See the LICENSE-THIRD-PARTY file in the project root for the full license text.
+ */
 #include "common.h"
 #include "mmio.h"
 

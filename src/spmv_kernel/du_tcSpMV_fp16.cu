@@ -75,7 +75,7 @@ __global__ void tcspmv_kernel_fp16_v1(
         half acc[8] = {__half(0)};
 
         int dangfragIdx = tcFragIdx_warp_start + mmaIndex;
-        int fragIdx = dangfragIdx >= tcFragEnd ? (tcFragEnd - 1) : dangfragIdx;//确保其合法内存访问
+        int fragIdx = dangfragIdx >= tcFragEnd ? (tcFragEnd - 1) : dangfragIdx;//Ensure legal memory access
 
         uint32_t bitmap = fragBit[fragIdx];
         const half *tcValPtr = &tcVal[fragPtr[fragIdx]];
@@ -116,14 +116,14 @@ __global__ void tcspmv_kernel_fp16_v1(
         }
         sum += acc[0];
     }
-    // 0 4 8 12 线程
-    // 1 5 9 13 线程
-    // 2 6 10 14 线程
-    // 3 7 11 15
-    // 16 20 24 28
-    // 17 21 25 29
-    // 18 22 26 30
-    // 19 23 27 31
+    // 0 4 8 12 threads
+    // 1 5 9 13 threads
+    // 2 6 10 14 threads
+    // 3 7 11 15 threads
+    // 16 20 24 28 threads
+    // 17 21 25 29 threads
+    // 18 22 26 30 threads
+    // 19 23 27 31 threads
 
     sum += __shfl_down_sync(0xffffffff, sum, 8);
     sum += __shfl_down_sync(0xffffffff, sum, 4);

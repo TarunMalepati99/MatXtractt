@@ -331,7 +331,7 @@ __global__ void cdspmv_kernel(valT *__restrict__ d_val,
   }
 
   /*
-  // 线程256
+  // threads = 256
   if (n_reduce_rows_num > 128)
   {
     lbNEC_reduce_oneRow_in_thread<THREADS_PER_BLOCK>(productNnzPerBlock, tid_in_block, blockIdx.x,
@@ -440,7 +440,7 @@ void cdspmv(valT *csrVal, int *csrRowPtr, int *csrColInd,
   pre_startRowPerBlock<<<divup<uint32_t>(rowA + 1, 128), 128>>>(d_ptr, rowA, startRowPerBlock, productNnzPerThread * THREADS_PER_BLOCK);
   CUDA_CHECK_ERROR(cudaGetLastError());
   gettimeofday(&tpre2, NULL);
-  cudaDeviceSynchronize(); // 确保 pre_startRowPerBlock 执行完成
+  cudaDeviceSynchronize(); // Ensure pre_startRowPerBlock execution is complete
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {

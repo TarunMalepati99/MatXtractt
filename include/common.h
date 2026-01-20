@@ -5,7 +5,7 @@
 #include <cstring>
 #include <cstdio>
 #include <omp.h>
-#include <cstdlib> // 为了使用malloc和free
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <cstdint>
@@ -13,7 +13,6 @@
 #include <filesystem>
 #include <array>
 #include <cstddef> // for size_t
-// 其他可能需要的头文件
 
 #include <cuda.h>
 #include <cuda_fp16.h>

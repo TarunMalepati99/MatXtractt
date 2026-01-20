@@ -18,7 +18,7 @@ def apply_zero_clamp(y_pred, threshold):
     y_pred_clamped = np.copy(y_pred)
     y_pred_clamped[y_pred_clamped < threshold] = 0.0
 
-    # 确保 col_frac >= hot_frac，否则设置为 0
+    # Ensure col_frac >= hot_frac, otherwise set to 0
     for i in range(y_pred_clamped.shape[0]):
         if y_pred_clamped[i, 0] < y_pred_clamped[i, 1]:
             y_pred_clamped[i, 0] = 0.0
@@ -86,7 +86,7 @@ def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
         return None
 
 def main():
-    # 加载数据
+    # Load data
     df = pd.read_csv("ML_data_fp64.csv")
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
@@ -99,17 +99,17 @@ def main():
     y = df[["Best col_frac", "Best hot_frac"]].values
     matrix_names = df["MatrixName"].values
 
-    # 划分训练/测试集
-    # 创建用于分层的nnz类别（如5个等级）
+    # Split train/test sets
+    # Create nnz categories for stratification (e.g. 5 levels)
     df['nnz_category'] = pd.qcut(df['nnz'], q=5, labels=False)
 
-    # 分层划分训练/测试集（stratify参数）
+    # Stratified train/test split (stratify parameter)
     X_train, X_test, y_train, y_test, matrix_train, matrix_test = train_test_split(
         X, y, matrix_names, test_size=0.2, random_state=42, stratify=df['nnz_category']
     )
 
 
-    # 模型定义
+    # Model definitions
     candidate_models = {
         "RandomForest": MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_state=42)),
         "XGBoost":      MultiOutputRegressor(XGBRegressor(n_estimators=100, random_state=42, verbosity=0)),
@@ -117,13 +117,13 @@ def main():
         "GBDT":         MultiOutputRegressor(GradientBoostingRegressor(n_estimators=100, random_state=42)),
     }
 
-    # 模型选择
+    # Model selection
     model_scores = {name: evaluate_model(model, X_train, y_train) for name, model in candidate_models.items()}
     best_model_name = min(model_scores, key=model_scores.get)
     best_model = candidate_models[best_model_name]
     print(f"Best model: {best_model_name} (MSE={model_scores[best_model_name]:.5f})")
 
-    # 最终训练和评估
+    # Final training and evaluation
     best_model.fit(X_train, y_train)
     metrics, y_pred_test = final_evaluation(best_model, X_test, y_test)
     print("Final evaluation metrics:")
@@ -133,7 +133,7 @@ def main():
     dump(best_model, "best_model.joblib")
     print("[Info] Saved best_model.joblib")
 
-    # 测试集SpMV实际性能评测并记录
+    # Test set SpMV actual performance evaluation and recording
     performance_records = []
     for i, matrix_name in enumerate(matrix_test):
         col_frac, hot_frac = y_pred_test[i]
@@ -147,7 +147,7 @@ def main():
             })
             print(f"[Result] {matrix_name}, Time: {final_time:.3f} ms")
 
-    # 保存性能数据到csv
+    # Save performance data to csv
     perf_df = pd.DataFrame(performance_records)
     perf_df.to_csv("329_fp64.csv", index=False)
     print("[Info] Saved 329_fp64.csv")

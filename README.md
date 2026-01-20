@@ -1,6 +1,6 @@
 # MatXtract: Sparsity-Aware Matrix Transformation via Cascaded Compute Density Extraction for SpMV
 
-This repository provides a **Sparse Matrix-Vector Multiplication (SpMV)** computation library optimized for **GPU architectures**, leveraging **tensor cores** and **CUDA cores** to achieve high performance through automated techniques.
+This repository provides a **Sparse Matrix-Vector Multiplication (SpMV)** computation library optimized for **GPU architectures**, leveraging **Tensor Cores** and **CUDA Cores** to achieve high performance through automated techniques.
 
 ## Features
 

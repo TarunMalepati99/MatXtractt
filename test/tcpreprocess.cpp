@@ -1,7 +1,7 @@
 /*
  * Dual-Phase Compression
- * Author: Luhan Wang
- * Date: 2024.9.24
+ * Author: luuhwy
+ * Date: 2025.9.24
  */
 #include "mmio.h"
 #include "csr2csc.h"
@@ -393,13 +393,13 @@ void tcspmv_serial_fp64(
     int fragM,
     int fragK)
 {
-    int chunkNum = (dRows + fragM - 1) / fragM; // 计算总的行块数
+    int chunkNum = (dRows + fragM - 1) / fragM; // Calculate the total number of row chunks
 
-    // 初始化输出向量 y_d 为零
+    // Initialize output vector y_d to zero
     for (int i = 0; i < dRows; ++i)
         y_d[i] = 0.0;
 
-    // 遍历每个行块（chunk）
+    // Traverse each row chunk (chunk)
     for (int rowChunkIndex = 0; rowChunkIndex < chunkNum; ++rowChunkIndex)
     {
         int rowStart = rowChunkIndex * fragM;
@@ -408,58 +408,58 @@ void tcspmv_serial_fp64(
         int tcFragStart = chunkPtr[rowChunkIndex];
         int tcFragEnd = chunkPtr[rowChunkIndex + 1];
 
-        // 遍历该行块中的每个 Tc 碎片
+        // Traverse each Tc fragment in the row chunk
         for (int tcFragIdx = tcFragStart; tcFragIdx < tcFragEnd; ++tcFragIdx)
         {
-            // 获取位图
+            // Get the bitmap
             uint32_t bitmap = fragBit[tcFragIdx];
 
-            // 获取该 Tc 碎片在 tcVal 中的起始和结束索引
+            // Get the start and end indices of the Tc fragment in tcVal
             int valStartIdx = fragPtr[tcFragIdx];
             int valEndIdx = fragPtr[tcFragIdx + 1];
             int tcValNnz = valEndIdx - valStartIdx;
 
             const double *tcValPtr = &tcVal[valStartIdx];
 
-            // 获取该 Tc 碎片对应的 x 的索引
+            // Get the indices of the x corresponding to the Tc fragment
             const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK]; // 大小为 fragK
 
-            // 遍历碎片中的每个位置 (m, k)
+            // Traverse each position (m, k) in the fragment
             int valIdx = 0; // tcValPtr 中的当前非零值索引
 
             for (int m = 0; m < fragM; ++m)
             {
                 int rowIdx = rowStart + m;
                 if (rowIdx >= dRows)
-                    continue; // 超出矩阵的行数，跳过
+                    continue; // Exceed the number of rows of the matrix, skip
 
                 for (int k = 0; k < fragK; ++k)
                 {
                     int bitPos = m * fragK + k;
                     if (bitPos >= 32)
-                        continue; // 位图只有 32 位，超出则跳过
+                        continue; // The bitmap only has 32 bits, if it exceeds, skip
 
                     int bit = (bitmap >> bitPos) & 1;
 
                     if (bit)
                     {
-                        // 碎片中位置 (m, k) 有非零元素
+                        // The position (m, k) in the fragment has a non-zero element
                         double a_value = tcValPtr[valIdx];
-                        valIdx++; // 移动到 tcValPtr 中的下一个非零值
+                        valIdx++; // Move to the next non-zero value in tcValPtr
 
                         int x_idx = x_indices[k];
                         if (x_idx >= dCols)
                         {
-                            // 非法的 x 索引，输出错误信息
+                            // Invalid x index, output error information
                             std::cerr << "Invalid x index: " << x_idx << std::endl;
                             continue;
                         }
                         double x_value = x_d[x_idx];
 
-                        // 进行乘积并累加到 y_d 中
+                        // Multiply and accumulate to y_d
                         y_d[rowIdx] += a_value * x_value;
                     }
-                    // 否则该位置为零，跳过
+                    // Otherwise the position is zero, skip
                 }
             }
         }
@@ -559,7 +559,7 @@ void generateFormat_half(
                 }
 
                 // Set the bit in fragBit[tcFragIndex]
-                int bitArrayIndex = bitPosition / 64; // 0 or 1
+                int bitArrayIndex = bitPosition / 64; // 0 or 1, 0 for the first 64 bits, 1 for the second 64 bits
                 int bitOffset = bitPosition % 64;     // 0 to 63
                 fragBit[tcFragIndex][bitArrayIndex] |= (uint64_t(1) << bitOffset);
             }
@@ -648,7 +648,7 @@ void tcspmv_serial_half(
                     if (bitPos >= 128)
                         continue;
 
-                    int bitArrayIndex = bitPos / 64; // 0 or 1
+                    int bitArrayIndex = bitPos / 64; // 0 or 1, 0 for the first 64 bits, 1 for the second 64 bits   
                     int bitOffset = bitPos % 64;     // 0 to 63
 
                     int bit = (bitmapArray[bitArrayIndex] >> bitOffset) & 1;
@@ -1218,22 +1218,22 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // 保存 chunkPtr
+    // Save chunkPtr
     outfile.write(reinterpret_cast<char*>(&chunkNum), sizeof(int));
     outfile.write(reinterpret_cast<char*>(chunkPtr), sizeof(int) * (chunkNum + 1));
 
-    // 保存 sparse_AToX_index
+    // Save sparse_AToX_index
     outfile.write(reinterpret_cast<char*>(&totalTcFrags), sizeof(int));
     // outfile.write(reinterpret_cast<char*>(&fragK), sizeof(int));
     outfile.write(const_cast<char*>(reinterpret_cast<const char*>(&fragK)), sizeof(int));
     outfile.write(reinterpret_cast<char*>(sparse_AToX_index), sizeof(int) * totalTcFrags * fragK);
 
-    // 保存 fragPtr
+    // Save fragPtr
     size_t fragPtr_size = fragPtr.size();
     outfile.write(reinterpret_cast<char*>(&fragPtr_size), sizeof(size_t));
     outfile.write(reinterpret_cast<char*>(fragPtr.data()), sizeof(int) * fragPtr_size);
 
-    // 保存 fragBit
+    // Save fragBit
 /*
 #ifdef fp64
 */
@@ -1247,7 +1247,7 @@ int main(int argc, char **argv)
     outfile.write(reinterpret_cast<char*>(fragBit.data()), sizeof(uint64_t) * 4 * fragBit_size);
 #endif
 */
-    // 保存 tcVal
+    // Save tcVal
     size_t tcVal_size = tcVal.size();
     outfile.write(reinterpret_cast<char*>(&tcVal_size), sizeof(size_t));
     outfile.write(reinterpret_cast<char*>(tcVal.data()), sizeof(valT) * tcVal_size);
