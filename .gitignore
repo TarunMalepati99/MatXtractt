@@ -72,3 +72,5 @@ dkms.conf
 # *.csv
 *.xlsx
 
+#Build File
+build/
