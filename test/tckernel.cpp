@@ -192,10 +192,10 @@ void tcspmv_serial_fp64(
             const double *tcValPtr = &tcVal[valStartIdx];
 
             // Get the indices of the x corresponding to the Tc fragment
-            const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK]; // 大小为 fragK
+            const int *x_indices = &sparse_AToX_index[tcFragIdx * fragK]; // Size is fragK
 
             // Traverse each position (m, k) in the fragment
-            int valIdx = 0; // tcValPtr 中的当前非零值索引
+            int valIdx = 0; // Current non-zero value index in tcValPtr
 
             for (int m = 0; m < fragM; ++m)
             {

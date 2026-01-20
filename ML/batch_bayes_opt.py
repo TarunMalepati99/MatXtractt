@@ -2,7 +2,7 @@ import os
 import subprocess
 import re
 import numpy as np
-import pandas as pd  # 用于生成 CSV 文件
+import pandas as pd  # For generating CSV file
 import matplotlib.pyplot as plt
 
 from skopt import gp_minimize

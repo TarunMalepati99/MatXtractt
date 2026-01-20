@@ -40,8 +40,8 @@ for dir in "$data_dir"/*/; do
       /rowProp:/ { rowProp=$2 }
       /colProp:/ { colProp=$2 }
       /TC_nnz_ratio =/ { tc_nnz_ratio=$3 }
-      /du_spmv:/ { du_spmv=$2 + 0 }  # 确保提取数字部分
-      /cdspmv:/ { cdspmv=$2 + 0 }  # 同样处理 cdspmv
+      /du_spmv:/ { du_spmv=$2 + 0 }  # Ensure to extract the numerical part
+      /cdspmv:/ { cdspmv=$2 + 0 }  # Similarly process cdspmv
       /Success!/ {
         missing_fields = ""
         if (rowProp == "") missing_fields = missing_fields "rowProp "
