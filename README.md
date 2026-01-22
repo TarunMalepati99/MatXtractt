@@ -15,7 +15,7 @@ This repository provides a **Sparse Matrix-Vector Multiplication (SpMV)** comput
 
 - **CPU**: AMD EPYC 7V13 64-Core Processor
 - **GPU**: NVIDIA A100 80GB PCIe (GPU driver version 570.124.06 or later)
-- **Disk Space**: At least 400GB (required to store the sparse matrix dataset)
+- **Disk Space**: At least 300GB (required to store the sparse matrix dataset)
 
 ### Software Requirements
 
