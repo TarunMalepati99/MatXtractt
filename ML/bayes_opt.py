@@ -153,7 +153,7 @@ if __name__ == "__main__":
     res = gp_minimize(
         func=objective,
         dimensions=space,
-        n_calls=20,           # Total 20 points to evaluate
+        n_calls=8,           # Total 20 points to evaluate
         n_random_starts=4,    # 4 random points + 2 manual points => 6 initial samples
         acq_func="EI",        # Acquisition function: Expected Improvement
         random_state=42,
@@ -175,3 +175,4 @@ if __name__ == "__main__":
     # plt.savefig("convergence_plot.pdf")
     # # Close figure to release memory
     # plt.close()
+

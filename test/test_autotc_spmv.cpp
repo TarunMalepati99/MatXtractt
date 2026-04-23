@@ -1,3 +1,26 @@
+#ifdef _WIN32
+#include <windows.h>
+#undef min
+#undef max
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
+struct timezone { int tz_minuteswest; int tz_dsttime; };
+static inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    unsigned long long t = ((unsigned long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    t -= 116444736000000000ULL;
+    tv->tv_sec  = (long)(t / 10000000);
+    tv->tv_usec = (long)((t % 10000000) / 10);
+    return 0;
+}
+#else
+#include <sys/time.h>
+#endif
+#include <unordered_map>
+#include <algorithm>
+#include <numeric>
 /*
  * MatXtract SpMV Performance Test
  * Author: luuhwy
@@ -542,7 +565,7 @@ void ecrPreprocess_opt1(
                 continue;
             }
             std::memcpy(neighbor_window, &csrColInd[block_start], num_window_nnzs * sizeof(int));
-            __gnu_parallel::sort(neighbor_window, neighbor_window + num_window_nnzs);
+            std::sort(neighbor_window, neighbor_window + num_window_nnzs);
             auto end_it = std::unique(neighbor_window, neighbor_window + num_window_nnzs);
             int unique_size = end_it - neighbor_window;
 
@@ -1667,3 +1690,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+

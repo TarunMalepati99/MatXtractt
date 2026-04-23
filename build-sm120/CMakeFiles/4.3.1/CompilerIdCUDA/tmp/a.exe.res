@@ -1,0 +1,1 @@
+-D__CUDA_ARCH_LIST__=750 -nologo /Zc:preprocessor "C:\Users\tarun\MatXtract\build-sm120\CMakeFiles\4.3.1\CompilerIdCUDA\tmp\a_dlink.obj" "C:\Users\tarun\MatXtract\build-sm120\CMakeFiles\4.3.1\CompilerIdCUDA\tmp\CMakeCUDACompilerId.obj" -link -INCREMENTAL:NO   "/LIBPATH:C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.2/bin/../lib/x64"  cudadevrt.lib  cudart.lib

@@ -1,3 +1,21 @@
+#ifdef _WIN32
+#include <windows.h>
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
+struct timezone { int tz_minuteswest; int tz_dsttime; };
+static inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    unsigned long long t = ((unsigned long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    t -= 116444736000000000ULL;
+    tv->tv_sec  = (long)(t / 10000000);
+    tv->tv_usec = (long)((t % 10000000) / 10);
+    return 0;
+}
+#else
+#include <sys/time.h>
+#endif
 #include "common.h"
 
 #define SHM_SIZE 128  // Shared memory size in doubles (8 KB)
@@ -348,3 +366,4 @@ void du_tcspmv_fp64(indT *chunkPtr, std::vector<int> fragPtr, std::vector<uint32
     CUDA_CHECK_ERROR(cudaFree(d_Y_val));
     CUDA_CHECK_ERROR(cudaFree(d_Y_val_perf));
 }
+

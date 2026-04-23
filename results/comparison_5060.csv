@@ -1,0 +1,17 @@
+matrix,mode,baseline_ms,optimized_ms,speedup,status
+ash85,Baseline,0.0122,0.0094,1.2979,GAIN
+ash85,Manual,0.0105,0.0092,1.1413,GAIN
+bcsstk14,Baseline,0.0125,0.0114,1.0965,GAIN
+bcsstk14,Manual,0.0143,0.0126,1.1349,GAIN
+cnr-2000,Baseline,0.1807,0.1857,0.9731,REG
+cnr-2000,Manual,0.2309,0.239,0.9661,REG
+com-Amazon,Baseline,0.1479,0.1511,0.9788,REG
+com-Amazon,Manual,0.1482,0.1437,1.0313,GAIN
+com-Youtube,Baseline,0.5594,0.5456,1.0253,GAIN
+com-Youtube,Manual,0.5049,0.4914,1.0275,GAIN
+poisson3Da,Baseline,0.0194,0.0194,1.0,REG
+poisson3Da,Manual,0.0304,0.0298,1.0201,GAIN
+web-Stanford,Baseline,0.1993,0.2135,0.9335,REG
+web-Stanford,Manual,0.1605,0.1649,0.9733,REG
+west0479,Baseline,0.0134,0.0108,1.2407,GAIN
+west0479,Manual,0.0117,0.0093,1.2581,GAIN

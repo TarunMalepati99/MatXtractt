@@ -5,7 +5,7 @@
 train_and_save_model.py
 
 Functions:
-1) Read data from ML_data_fp16.csv and shuffle randomly;
+1) Read data from ML_data_fp64.csv and shuffle randomly;
 2) Split into train/test sets with 80:20 ratio;
 3) Perform 5-Fold CV on training set, compare four models (RF, XGB, AdaBoost, GBDT);
 4) Select best performing model from CV and fit on entire training set;
@@ -108,7 +108,7 @@ def final_evaluation(model, X_test, y_test):
 
 def main():
     # 1) Read CSV
-    data_path = "ML_data_fp16.csv"  # Your data file
+    data_path = "ML_data_fp64.csv"  # Your data file
     df = pd.read_csv(data_path)
     
     # Shuffle DataFrame rows

@@ -1,5 +1,22 @@
 #include "common.h"
-
+#ifdef _WIN32
+#include <windows.h>
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
+struct timezone { int tz_minuteswest; int tz_dsttime; };
+inline int gettimeofday(struct timeval* tv, struct timezone* tz) {
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    unsigned long long t = ((unsigned long long)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    t -= 116444736000000000ULL;
+    tv->tv_sec  = (long)(t / 10000000);
+    tv->tv_usec = (long)((t % 10000000) / 10);
+    return 0;
+}
+#else
+#include <sys/time.h>
+#endif
 // 1 warp - 1 row chunk
 __global__ void tcspmv_kernel_fp16_v2(
     const half *__restrict__ x_d,

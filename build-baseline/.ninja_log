@@ -1,0 +1,21 @@
+# ninja log v7
+35	2791	7986166731849759	CMakeFiles/cuda_utilities_lib.dir/utilities/csr2csc.cpp.obj	43fab7bfe5702a0b
+45	2810	7986166731950329	CMakeFiles/cuda_perftest.dir/test/test_cdspmv.cpp.obj	1cff9994099aee98
+40	2835	7986166731898391	CMakeFiles/cuda_utilities_lib.dir/utilities/mmio.cpp.obj	cc8b67ce9d028dd4
+2835	2896	7986166759842860	cuda_utilities_lib.lib	91f16050210a123b
+56	3338	7986166732057461	CMakeFiles/extract_features.dir/ML/extract_features.cpp.obj	b8d2623446f3c622
+51	3463	7986166732000431	CMakeFiles/matxtract_perftest.dir/test/test_autotc_spmv.cpp.obj	13147f58a9159f9b
+22	33833	7986166731715010	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/du_tcSpMV_half.cu.obj	d45d30c0f2df5c6d
+18	33863	7986166731670759	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/du_tcSpMV_fp64.cu.obj	ce4fc54cd3dd81b6
+13	33885	7986166731626200	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/du_tcSpMV_fp16_v2.cu.obj	24eec3153df59122
+9	33917	7986166731586380	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/du_tcSpMV_fp16.cu.obj	93be5d5d446068d7
+4	33980	7986166731543891	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/cdSpMV.cu.obj	a65a42ecceba2dd7
+26	34834	7986166731750336	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/se_tcSpMV_fp16.cu.obj	86279876529ac805
+30	34968	7986166731794040	CMakeFiles/MatXtractlib.dir/src/spmv_kernel/se_tcSpMV_fp64.cu.obj	fcdc21d8d50c0f46
+34968	35030	7986167081180814	MatXtractlib.lib	899fec267d094e02
+35035	35533	7986167081845294	CMakeFiles/matxtract_perftest.dir/cmake_device_link.obj	46df08942524e2c2
+35030	35548	7986167081800627	CMakeFiles/cuda_perftest.dir/cmake_device_link.obj	bf2062c693bbeecd
+35039	35569	7986167081890936	CMakeFiles/extract_features.dir/cmake_device_link.obj	d81c0c1ee30b880c
+35533	35705	7986167086829145	matxtract_perftest.exe	4846ef1acdc2eb95
+35548	35705	7986167086981096	cuda_perftest.exe	5eabbbc028c9b2fb
+35569	35721	7986167087192146	extract_features.exe	a3bec1412a533025

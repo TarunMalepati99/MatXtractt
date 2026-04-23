@@ -22,7 +22,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/unique.h>
 #include <thrust/copy.h>
-#include <parallel/algorithm>
+#include <algorithm>
+#include <execution>
 
 // #include <cuda/std/future>
 // #include <cuda_pipeline.h>
@@ -31,7 +32,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/time.h>
+#endif
 #include <math.h>
 
 // #include <helper_cuda.h>
@@ -334,4 +339,5 @@ inline void radix_sort(int *arr, int *idx, int len)
     }
 }
 #define UNUSED(x) do { (void)(x); } while (0)
+
 

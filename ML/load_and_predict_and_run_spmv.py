@@ -22,25 +22,21 @@ def apply_zero_clamp(y_pred, threshold):
     return y_pred_clamped
 
 def execute_tcspmv_test(matrix_name, col_frac, hot_frac):
-    """
-    Execute the specified command line program ../build/matxtract_perftest.
-    """
-    matrix_path = f"../../../data/mtx/{matrix_name}/{matrix_name}.mtx"
-    cmd = [
-        "../build/matxtract_perftest",
-        f"{col_frac}",
-        f"{hot_frac}",
-        matrix_path
-    ]
+    exe = r"C:\Users\tarun\MatXtract\build\matxtract_perftest.exe"
+    matrix_path = rf"C:\Users\tarun\MatXtract\data\mtx\{matrix_name}\{matrix_name}.mtx"
+
+    if col_frac == 0.0 and hot_frac == 0.0:
+        cmd = [exe, matrix_path]
+    else:
+        cmd = [exe, str(col_frac), str(hot_frac), matrix_path]
 
     try:
-        output = subprocess.check_output(cmd, universal_newlines=True)
+        output = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.STDOUT)
         print(f"[Info] Command executed successfully for {matrix_name}")
         print(output)
     except subprocess.CalledProcessError as e:
         print(f"[Error] Command failed for {matrix_name}: {e}")
-
-
+        print(e.output)
 def main():
     # 1) Load model
     model = load("best_model.joblib")
@@ -68,3 +64,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

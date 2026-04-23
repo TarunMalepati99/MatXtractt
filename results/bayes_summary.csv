@@ -1,0 +1,9 @@
+matrix,best_col_frac,best_hot_frac,best_runtime_ms,wall_time_s
+cnr-2000,0.0,0.0,0.1746,19.45
+web-Stanford,1.0,0.5386,0.1612,17.64
+com-Amazon,0.77,0.1916,0.1472,15.29
+com-Youtube,1.0,1.0,0.5229,29.15
+ash85,1.0,1.0,0.0107,4.19
+west0479,1.0,1.0,0.011,4.26
+bcsstk14,1.0,1.0,0.0136,3.68
+poisson3Da,0.0,0.0,0.021,7.17

@@ -1,0 +1,7 @@
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/MatXtractlib.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/cuda_utilities_lib.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/cuda_perftest.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/matxtract_perftest.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/extract_features.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/edit_cache.dir
+C:/Users/tarun/MatXtract/build-5060/CMakeFiles/rebuild_cache.dir
